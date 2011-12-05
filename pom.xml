@@ -11,6 +11,16 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+	
+	<repositories>
+		<repository>
+			<id>repository.jboss.org</id>
+			<url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
+			<snapshots>
+			  <enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
 
 	<dependencies>
 		<dependency>
@@ -19,5 +29,13 @@
 			<version>3.8.1</version>
 			<scope>test</scope>
 		</dependency>
+		
+		<!-- Netty 3.2.7.Final -->
+		<dependency>
+	    	<groupId>org.jboss.netty</groupId>
+	    	<artifactId>netty</artifactId>
+	    	<version>3.2.7.Final</version>
+	    	<scope>compile</scope>
+ 		</dependency>
 	</dependencies>
 </project>

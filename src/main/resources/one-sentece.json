@@ -1,0 +1,14 @@
+
+{
+  "predicate":
+    {
+      "lemma":"clinched",
+      "text":"clinched",
+      "arguments":
+        [
+          {"text":"european leaders","role":"NMOD"},
+          {"text":"a deal Thursday they hope will mark a turning point in their two-year debt crisis , agreeing after a night of tense negotiations to have banks take bigger losses on Greece's debts and to boost the region's weapons against the market turmoil","role":"NMOD"}
+        ]
+    }
+
+}

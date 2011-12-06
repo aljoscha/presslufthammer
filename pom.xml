@@ -13,6 +13,7 @@
 	</properties>
 	
 	<repositories>
+		<!-- repository for Netty -->
 		<repository>
 			<id>repository.jboss.org</id>
 			<url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
@@ -23,6 +24,14 @@
 	</repositories>
 
 	<dependencies>
+		<!-- log4j 1.2.16 -->
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.16</version>
+		</dependency>
+		
+		<!-- jUnit 3.8.1 -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -37,6 +46,8 @@
 	    	<version>3.2.7.Final</version>
 	    	<scope>compile</scope>
  		</dependency>
+ 		
+ 		<!-- Protobuf 2.4.1 -->
  		<dependency>
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java</artifactId>

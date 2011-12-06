@@ -8,6 +8,8 @@ target
 
 # IDEA files #
 ##############
+.idea
+*.iml
 *.ipr
 *.iws
 

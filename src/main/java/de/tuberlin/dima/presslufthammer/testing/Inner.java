@@ -1,7 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer;
+package de.tuberlin.dima.presslufthammer.testing;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

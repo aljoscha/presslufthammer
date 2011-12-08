@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer;
+package de.tuberlin.dima.presslufthammer.testing;
 
 import org.apache.log4j.BasicConfigurator;
 

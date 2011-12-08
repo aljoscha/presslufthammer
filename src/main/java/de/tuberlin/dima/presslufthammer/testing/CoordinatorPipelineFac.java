@@ -1,7 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer;
+package de.tuberlin.dima.presslufthammer.testing;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 

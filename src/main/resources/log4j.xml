@@ -23,6 +23,7 @@
 
 	<root>
 		<priority value="ALL" />
+		<appender-ref ref="CONSOLE" />
 		<appender-ref ref="FILE" />
 	</root>
 

@@ -34,7 +34,6 @@ public class CoordinatorPipelineFac implements ChannelPipelineFactory
 	 * 
 	 * @see org.jboss.netty.channel.ChannelPipelineFactory#getPipeline()
 	 */
-	@Override
 	public ChannelPipeline getPipeline() throws Exception
 	{
 		// TODO

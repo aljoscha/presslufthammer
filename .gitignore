@@ -2,9 +2,11 @@
 .project
 .settings
 target
+log
 
 *.patch
 *.diff
+*.log
 *.bak
 
 # IDEA files #

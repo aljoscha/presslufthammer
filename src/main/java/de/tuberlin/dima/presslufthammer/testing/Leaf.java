@@ -6,12 +6,12 @@ package de.tuberlin.dima.presslufthammer.testing;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Logger;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 
@@ -19,9 +19,9 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  * @author feichh
  * 
  */
-public class Leaf
+public class Leaf extends ChannelNode
 {
-//	private Logger logg = Logger.getLogger( "Leaf");
+	private Logger log = LoggerFactory.getLogger( getClass());
 	private static Channel coordChannel;
 
 	/**
@@ -40,7 +40,6 @@ public class Leaf
 	 */
 	public static void main( String[] args) throws InterruptedException
 	{
-		BasicConfigurator.configure();
 		// Print usage if necessary.
 		if( args.length < 2)
 		{
@@ -62,7 +61,7 @@ public class Leaf
 				host, port));
 
 		coordChannel = connectFuture.awaitUninterruptibly().getChannel();
-		ChannelFuture writeFuture = coordChannel.write( new Pressluft( de.tuberlin.dima.presslufthammer.pressluft.Type.RESULT, new byte[] { (byte) 7, (byte) 3}));
+		ChannelFuture writeFuture = coordChannel.write( new Pressluft( de.tuberlin.dima.presslufthammer.pressluft.Type.REGLEAF, new byte[] { (byte) 7, (byte) 3}));
 		
 		writeFuture.await();
 		

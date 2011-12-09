@@ -3,13 +3,13 @@
  */
 package de.tuberlin.dima.presslufthammer.testing;
 
-import org.apache.log4j.Logger;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 
@@ -22,18 +22,19 @@ public class CoordinatorHandler extends SimpleChannelHandler
 	/**
 	 * Logger
 	 */
-	private final Logger				logger	= Logger.getLogger( getClass());
+	private final Logger				log	= LoggerFactory.getLogger( getClass());
 
-	private final ChannelGroup	openChannels;															// = new
-																																				// DefaultChannelGroup(
-																																				// "");
+	private final Coordinator		coord;
+	private final ChannelGroup	openChannels;
 
+	
 	/**
 	 * @param coord
 	 */
-	public CoordinatorHandler( ChannelGroup channels)
+	public CoordinatorHandler( Coordinator coord)
 	{
-		openChannels = channels;
+		this.coord = coord;
+		openChannels = coord.openChannels;
 	}
 
 	/*
@@ -47,7 +48,7 @@ public class CoordinatorHandler extends SimpleChannelHandler
 	public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception
 	{
-		logger.debug( "channelOpen " + e.getChannel().getRemoteAddress());
+		log.debug( "channelOpen " + e.getChannel().getRemoteAddress());
 		openChannels.add( e.getChannel());
 		super.channelOpen( ctx, e);
 	}
@@ -64,12 +65,36 @@ public class CoordinatorHandler extends SimpleChannelHandler
 	public void messageReceived( ChannelHandlerContext ctx, MessageEvent e)
 			throws Exception
 	{
-		logger.debug( "messageReceived " + e.getRemoteAddress());
+		log.debug( "messageReceived " + e.getRemoteAddress());
 		if( e.getMessage() instanceof Pressluft)
 		{
-			logger.debug( ((Pressluft) e.getMessage()));
-			e.getChannel().write( new Pressluft( de.tuberlin.dima.presslufthammer.pressluft.Type.ACK, new byte[] { (byte) 0}));
-		} else {
+			Pressluft prsslft = ((Pressluft) e.getMessage());
+			log.debug( prsslft.toString());
+
+			switch( prsslft.getType())
+			{
+				case ACK:
+					break;
+				case REGINNER:
+					coord.addInner( e.getChannel(), e.getRemoteAddress());
+					break;
+				case REGLEAF:
+					coord.addLeaf( e.getChannel(), e.getRemoteAddress());
+					break;
+				case RESULT:
+					break;
+				case QUERY:
+					break;
+				case UNKNOWN:
+					break;
+			}
+
+			e.getChannel().write(
+					new Pressluft( de.tuberlin.dima.presslufthammer.pressluft.Type.ACK,
+							new byte[] { (byte) 0 }));
+		}
+		else
+		{
 			super.messageReceived( ctx, e);
 		}
 	}

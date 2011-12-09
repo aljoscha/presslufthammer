@@ -3,7 +3,6 @@
  */
 package de.tuberlin.dima.presslufthammer.testing;
 
-
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
@@ -21,29 +20,36 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  */
 public class LeafHandler extends SimpleChannelHandler
 {
-	private Logger	log	= LoggerFactory.getLogger( getClass());
-	private ChannelGroup channelGroup;
-	
+	private final Logger	log	= LoggerFactory.getLogger( getClass());
+	private ChannelGroup	openChannels;
+
 	public LeafHandler( ChannelGroup channelGroup)
 	{
-		this.channelGroup = channelGroup;
+		this.openChannels = channelGroup;
 	}
-	
-  @Override
-  public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
-      this.channelGroup.add(e.getChannel());
-  }
-  
-  @Override
-  public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-      if (e.getMessage() instanceof Pressluft) {
-      	log.debug("received: " + ((Pressluft) e.getMessage()).getType());
-          //e.getChannel().write(e.getMessage());
-      } else {
-          super.messageReceived(ctx, e);
-      }
-  }
-  
+
+	@Override
+	public void channelConnected( ChannelHandlerContext ctx, ChannelStateEvent e)
+			throws Exception
+	{
+		this.openChannels.add( e.getChannel());
+	}
+
+	@Override
+	public void messageReceived( ChannelHandlerContext ctx, MessageEvent e)
+			throws Exception
+	{
+		if( e.getMessage() instanceof Pressluft)
+		{
+			log.debug( "received: " + ((Pressluft) e.getMessage()).getType());
+			// e.getChannel().write(e.getMessage());
+		}
+		else
+		{
+			super.messageReceived( ctx, e);
+		}
+	}
+
 	// Sending the event downstream (outbound)
 	@Override
 	public void handleDownstream( ChannelHandlerContext ctx, ChannelEvent e)

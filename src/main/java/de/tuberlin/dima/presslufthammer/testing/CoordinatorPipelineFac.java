@@ -19,16 +19,16 @@ import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
 public class CoordinatorPipelineFac implements ChannelPipelineFactory
 {
 
-	private ChannelGroup openChannels;
-	private CoordinatorHandler handler;
-	
-	public CoordinatorPipelineFac( ChannelGroup cGroup, CoordinatorHandler hand)
+	private ChannelGroup				openChannels;
+	private CoordinatorHandler	handler;
+
+	public CoordinatorPipelineFac( ChannelGroup group, CoordinatorHandler hand)
 	{
-		assert( cGroup != null);
-		this.openChannels = cGroup;
+		assert (group != null);
+		this.openChannels = group;
 		this.handler = hand;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -37,12 +37,12 @@ public class CoordinatorPipelineFac implements ChannelPipelineFactory
 	public ChannelPipeline getPipeline() throws Exception
 	{
 		// TODO
-		
+
 		ChannelPipeline pipe = pipeline();
 		pipe.addLast( "Encoder", Encoder.getInstance());
 		pipe.addLast( "Decoder", new Decoder());
 		pipe.addLast( "CoordinatorHandler", handler);
-		
+
 		return pipe;
 	}
 

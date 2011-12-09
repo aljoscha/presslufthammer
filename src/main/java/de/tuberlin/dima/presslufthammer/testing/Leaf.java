@@ -21,7 +21,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  */
 public class Leaf extends ChannelNode
 {
-	private Logger log = LoggerFactory.getLogger( getClass());
+	private final Logger log = LoggerFactory.getLogger( getClass());
 	private static Channel coordChannel;
 
 	/**

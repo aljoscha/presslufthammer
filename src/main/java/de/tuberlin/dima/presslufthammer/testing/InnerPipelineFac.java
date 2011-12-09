@@ -14,12 +14,12 @@ import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
 
 /**
  * @author feichh
- *
+ * 
  */
 public class InnerPipelineFac implements ChannelPipelineFactory
 {
-	private ChannelGroup channelGroup;
-	
+	private ChannelGroup	channelGroup;
+
 	/**
 	 * @param channelGroup
 	 */
@@ -29,7 +29,9 @@ public class InnerPipelineFac implements ChannelPipelineFactory
 		this.channelGroup = channelGroup;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.jboss.netty.channel.ChannelPipelineFactory#getPipeline()
 	 */
 	public ChannelPipeline getPipeline() throws Exception

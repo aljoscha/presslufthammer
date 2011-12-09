@@ -28,5 +28,4 @@ public abstract class ChannelNode implements Closeable
 	{
 		openChannels.close().awaitUninterruptibly();
 	}
-
 }

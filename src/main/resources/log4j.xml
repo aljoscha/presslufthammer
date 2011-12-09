@@ -4,7 +4,7 @@
 	debug="false">
 
 	<appender name="FILE" class="org.apache.log4j.DailyRollingFileAppender">
-		<param name="File" value="${user.dir}/logs/rapexcrawler.log" />
+		<param name="File" value="${user.dir}/logs/presslufthammer.log" />
 		<param name="DatePattern" value="'.'yyyy-MM-dd-HH" />
 		<param name="Encoding" value="utf-8" />
 		<param name="Threshold" value="ALL" />
@@ -22,7 +22,7 @@
 	</appender>
 
 	<root>
-		<priority value="ALL" />
+		<priority value="INFO" />
 		<appender-ref ref="FILE" />
 	</root>
 

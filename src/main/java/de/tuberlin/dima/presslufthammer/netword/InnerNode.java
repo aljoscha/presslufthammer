@@ -4,6 +4,9 @@ import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 
+import de.tuberlin.dima.presslufthammer.ontology.Data;
+import de.tuberlin.dima.presslufthammer.ontology.Query;
+
 public class InnerNode extends Node {
 	
 	Set<InetSocketAddress> childNodes;
@@ -28,5 +31,11 @@ public class InnerNode extends Node {
 	
 	public InetSocketAddress getParentNode() {
 		return parentNode;
+	}
+
+	@Override
+	public Data answer(Query q) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

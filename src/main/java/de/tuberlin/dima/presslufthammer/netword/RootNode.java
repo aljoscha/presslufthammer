@@ -1,15 +1,21 @@
 package de.tuberlin.dima.presslufthammer.netword;
 
 import java.net.InetSocketAddress;
+import java.util.HashSet;
 import java.util.Set;
+
+import de.tuberlin.dima.presslufthammer.ontology.Data;
+import de.tuberlin.dima.presslufthammer.ontology.Query;
 
 public class RootNode extends Node {
 	
+	private Set<InetSocketAddress> childNodes;
+	
 	public RootNode(String name, int port) {
 		super(name, port);
+		
+		childNodes = new HashSet<InetSocketAddress>();
 	}
-	
-	Set<InetSocketAddress> childNodes;
 	
 	public void addData(Object data) {
 		// TODO
@@ -39,5 +45,11 @@ public class RootNode extends Node {
 	
 	public boolean revomeChildNode(String hostname, int port) {
 		return childNodes.remove(new InetSocketAddress(hostname, port));
+	}
+	
+	@Override
+	public Data answer(Query q) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

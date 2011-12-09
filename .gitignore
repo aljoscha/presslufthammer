@@ -5,6 +5,7 @@ target
 
 *.patch
 *.diff
+*.bak
 
 # IDEA files #
 ##############

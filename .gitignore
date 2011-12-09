@@ -2,7 +2,7 @@
 .project
 .settings
 target
-log
+logs
 
 *.patch
 *.diff

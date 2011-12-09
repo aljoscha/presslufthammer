@@ -37,8 +37,7 @@ public class CoordinatorPipelineFac implements ChannelPipelineFactory
 	@Override
 	public ChannelPipeline getPipeline() throws Exception
 	{
-		// TODO Auto-generated method stub
-		assert( openChannels != null);
+		// TODO
 		
 		ChannelPipeline pipe = pipeline();
 		pipe.addLast( "Encoder", Encoder.getInstance());

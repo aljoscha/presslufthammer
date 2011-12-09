@@ -1,7 +1,5 @@
 package de.tuberlin.dima.presslufthammer.testing;
 
-import org.apache.log4j.BasicConfigurator;
-
 /**
  * Hello world!
  * 
@@ -27,7 +25,6 @@ public class RunCoordinator
 			printUsage();
 			return;
 		}
-		BasicConfigurator.configure();
 
 		int port = Integer.parseInt( args[0]);
 

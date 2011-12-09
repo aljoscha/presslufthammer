@@ -4,13 +4,14 @@
 package de.tuberlin.dima.presslufthammer.testing;
 
 
-import org.apache.log4j.Logger;
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 
@@ -20,7 +21,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  */
 public class LeafHandler extends SimpleChannelHandler
 {
-	private Logger	logger	= Logger.getLogger( getClass());
+	private Logger	log	= LoggerFactory.getLogger( getClass());
 	private ChannelGroup channelGroup;
 	
 	public LeafHandler( ChannelGroup channelGroup)
@@ -36,7 +37,7 @@ public class LeafHandler extends SimpleChannelHandler
   @Override
   public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
       if (e.getMessage() instanceof Pressluft) {
-      	logger.debug("received: " + ((Pressluft) e.getMessage()).getType());
+      	log.debug("received: " + ((Pressluft) e.getMessage()).getType());
           //e.getChannel().write(e.getMessage());
       } else {
           super.messageReceived(ctx, e);
@@ -59,7 +60,7 @@ public class LeafHandler extends SimpleChannelHandler
 		// Log all channel state changes.
 		if( e instanceof ChannelStateEvent)
 		{
-			logger.info( "Channel state changed: " + e);
+			log.info( "Channel state changed: " + e);
 		}
 
 		super.handleUpstream( ctx, e);

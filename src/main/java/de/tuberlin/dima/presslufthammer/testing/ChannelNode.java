@@ -24,7 +24,6 @@ public abstract class ChannelNode implements Closeable
 	/* (non-Javadoc)
 	 * @see java.io.Closeable#close()
 	 */
-	@Override
 	public void close() throws IOException
 	{
 		openChannels.close().awaitUninterruptibly();

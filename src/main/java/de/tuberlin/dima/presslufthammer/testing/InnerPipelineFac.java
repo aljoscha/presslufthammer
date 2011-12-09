@@ -32,7 +32,6 @@ public class InnerPipelineFac implements ChannelPipelineFactory
 	/* (non-Javadoc)
 	 * @see org.jboss.netty.channel.ChannelPipelineFactory#getPipeline()
 	 */
-	@Override
 	public ChannelPipeline getPipeline() throws Exception
 	{
 		// TODO Auto-generated method stub

@@ -5,6 +5,7 @@ package de.tuberlin.dima.presslufthammer.testing;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
@@ -27,7 +28,6 @@ public class CoordinatorHandler extends SimpleChannelHandler
 	private final Coordinator		coord;
 	private final ChannelGroup	openChannels;
 
-	
 	/**
 	 * @param coord
 	 */
@@ -35,6 +35,26 @@ public class CoordinatorHandler extends SimpleChannelHandler
 	{
 		this.coord = coord;
 		openChannels = coord.openChannels;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jboss.netty.channel.SimpleChannelHandler#exceptionCaught(org.jboss.
+	 * netty.channel.ChannelHandlerContext,
+	 * org.jboss.netty.channel.ExceptionEvent)
+	 */
+	@Override
+	public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e)
+			throws Exception
+	{
+		// TODO
+		Throwable cause = e.getCause();
+		log.error( "caught an exception", cause);
+		ctx.getChannel().close();
+		// super.exceptionCaught( ctx, e);
+    ctx.sendUpstream(e);
 	}
 
 	/*

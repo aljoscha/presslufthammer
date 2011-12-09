@@ -5,6 +5,7 @@ package de.tuberlin.dima.presslufthammer.testing;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.SocketAddress;
 
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
@@ -19,7 +20,7 @@ public abstract class ChannelNode implements Closeable
 	/**
 	 * All connected/open netty channels;
 	 */
-	protected ChannelGroup openChannels	= new DefaultChannelGroup();
+	ChannelGroup openChannels	= new DefaultChannelGroup();
 
 	/* (non-Javadoc)
 	 * @see java.io.Closeable#close()

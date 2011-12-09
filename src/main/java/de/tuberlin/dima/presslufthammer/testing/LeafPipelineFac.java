@@ -22,7 +22,19 @@ import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
  */
 public class LeafPipelineFac implements ChannelPipelineFactory
 {
+	
+	private final Leaf leaf;
 
+	
+	/**
+	 * @param leaf
+	 */
+	public LeafPipelineFac( Leaf leaf)
+	{
+		this.leaf = leaf;
+	}
+
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -45,7 +57,7 @@ public class LeafPipelineFac implements ChannelPipelineFactory
 
 		pipe.addLast( "Encoder", Encoder.getInstance());
 		pipe.addLast( "Decoder", new Decoder());
-		pipe.addLast( "LeafHandler", new LeafHandler( new DefaultChannelGroup()));
+		pipe.addLast( "LeafHandler", new LeafHandler( leaf, new DefaultChannelGroup()));
 		return pipe;
 	}
 

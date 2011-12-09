@@ -48,6 +48,7 @@
 			<version>2.4.1</version>
 		</dependency>
 
+		<!-- slf4j 1.6.4 -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>

@@ -3,7 +3,9 @@
  */
 package de.tuberlin.dima.presslufthammer.testing;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -21,8 +23,47 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  */
 public class Leaf extends ChannelNode
 {
-	private final Logger log = LoggerFactory.getLogger( getClass());
-	private static Channel coordChannel;
+	private static final Pressluft REGMSG = new Pressluft(
+			de.tuberlin.dima.presslufthammer.pressluft.Type.REGLEAF,
+			new byte[] { (byte) 7 });
+	
+	private final Logger	log	= LoggerFactory.getLogger( getClass());
+	private Channel				parentChannel;
+
+	public Leaf( String host, int port)
+	{
+
+		if( connectNReg( host, port))
+		{
+			log.info( "registered with coordinator");
+		}
+	}
+
+	public boolean connectNReg( String host, int port)
+	{
+		return connectNReg( new InetSocketAddress( host, port));
+	}
+
+	/**
+	 * @param innerAddress
+	 */
+	public boolean connectNReg( SocketAddress address)
+	{
+		// TODO
+		ClientBootstrap bootstrap = new ClientBootstrap(
+				new NioClientSocketChannelFactory(
+						Executors.newCachedThreadPool(),
+						Executors.newCachedThreadPool()));
+
+		bootstrap.setPipelineFactory( new LeafPipelineFac( this));
+
+		ChannelFuture connectFuture = bootstrap.connect( address);
+
+		parentChannel = connectFuture.awaitUninterruptibly().getChannel();
+		ChannelFuture writeFuture = parentChannel.write( REGMSG);
+
+		return writeFuture.awaitUninterruptibly().isSuccess();
+	}
 
 	/**
 	 * Prints the usage to System.out.
@@ -34,9 +75,23 @@ public class Leaf extends ChannelNode
 		System.out.println( "hostname port");
 	}
 
+	// /* (non-Javadoc)
+	// * @see de.tuberlin.dima.presslufthammer.testing.ChannelNode#close()
+	// */
+	// @Override
+	// public void close() throws IOException
+	// {
+	// // TODO Auto-generated method stub
+	// //
+	// // channel.close().awaitUninterruptibly();
+	// // bootstrap.releaseExternalResources();
+	// super.close();
+	// }
+
 	/**
 	 * @param args
-	 * @throws InterruptedException if interrupted
+	 * @throws InterruptedException
+	 *           if interrupted
 	 */
 	public static void main( String[] args) throws InterruptedException
 	{
@@ -46,29 +101,10 @@ public class Leaf extends ChannelNode
 			printUsage();
 			return;
 		}
-
 		// Parse options.
 		String host = args[0];
 		int port = Integer.parseInt( args[1]);
 
-		ClientBootstrap bootstrap = new ClientBootstrap(
-				new NioClientSocketChannelFactory( Executors.newCachedThreadPool(),
-						Executors.newCachedThreadPool()));
-
-		bootstrap.setPipelineFactory( new LeafPipelineFac());
-
-		ChannelFuture connectFuture = bootstrap.connect( new InetSocketAddress(
-				host, port));
-
-		coordChannel = connectFuture.awaitUninterruptibly().getChannel();
-		ChannelFuture writeFuture = coordChannel.write( new Pressluft( de.tuberlin.dima.presslufthammer.pressluft.Type.REGLEAF, new byte[] { (byte) 7, (byte) 3}));
-		
-		writeFuture.await();
-		
-		System.out.println( "written");
-		
-//		
-//		channel.close().awaitUninterruptibly();
-//		bootstrap.releaseExternalResources();
+		Leaf leaf = new Leaf( host, port);
 	}
 }

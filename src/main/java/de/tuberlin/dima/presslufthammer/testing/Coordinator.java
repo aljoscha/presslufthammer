@@ -15,6 +15,9 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.pressluft.Type;
+
 /**
  * @author feichh
  * 
@@ -22,12 +25,12 @@ import org.slf4j.LoggerFactory;
 public class Coordinator extends ChannelNode
 {
 
-	private final Logger				log					= LoggerFactory.getLogger( getClass());
-
-	protected ChannelGroup			innerChannels	= new DefaultChannelGroup();
-	protected ChannelGroup			leafChannels	= new DefaultChannelGroup();
-	private CoordinatorHandler	handler				= new CoordinatorHandler( this);
-	private Channel							innerRootChan;
+	private final Logger				log					= LoggerFactory
+																							.getLogger( getClass());
+	ChannelGroup								innerChans	= new DefaultChannelGroup();
+	ChannelGroup								leafChans		= new DefaultChannelGroup();
+	private CoordinatorHandler	handler			= new CoordinatorHandler( this);
+	private Channel							rootChan;
 
 	/**
 	 * @param port
@@ -41,8 +44,7 @@ public class Coordinator extends ChannelNode
 						Executors.newCachedThreadPool()));
 
 		// Set up the event pipeline factory.
-		bootstrap.setPipelineFactory( new CoordinatorPipelineFac(
-				this.openChannels, this.handler));
+		bootstrap.setPipelineFactory( new CoordinatorPipelineFac( this.handler));
 
 		// Bind and start to accept incoming connections.
 		bootstrap.bind( new InetSocketAddress( port));
@@ -57,10 +59,30 @@ public class Coordinator extends ChannelNode
 	{
 		// TODO
 		log.debug( "query()");
+		assert isServing();
 		if( handler != null)
 		{
-
+			Pressluft queryMSG = getQMSG( query);
+			rootChan.write( queryMSG);
 		}
+	}
+
+	/**
+	 * @param query
+	 * @return
+	 */
+	private Pressluft getQMSG( String query)
+	{
+		// TODO
+		Type type = Type.QUERY;
+		byte[] payload = query.getBytes();
+
+		return new Pressluft( type, payload);
+	}
+
+	public boolean isServing()
+	{
+		return !(innerChans.isEmpty() || leafChans.isEmpty());
 	}
 
 	/**
@@ -71,10 +93,10 @@ public class Coordinator extends ChannelNode
 	{
 		// TODO
 		log.debug( "adding inner channel: " + remoteAddress);
-		innerChannels.add( channel);
-		if( innerRootChan == null)
+		innerChans.add( channel);
+		if( rootChan == null)
 		{
-			innerRootChan = channel;
+			rootChan = channel;
 		}
 	}
 
@@ -86,6 +108,18 @@ public class Coordinator extends ChannelNode
 	{
 		// TODO
 		log.debug( "adding leaf channel: " + remoteAddress);
-		leafChannels.add( channel);
+		leafChans.add( channel);
+		channel.write( getRootInfo());
+	}
+
+	/**
+	 * @return
+	 */
+	private Pressluft getRootInfo()
+	{
+		// TODO
+		Type type = Type.INFO;
+		byte[] payload = rootChan.getRemoteAddress().toString().getBytes();
+		return new Pressluft( type, payload);
 	}
 }

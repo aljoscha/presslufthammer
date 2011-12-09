@@ -13,11 +13,12 @@ public enum Type {
 
   // constants ------------------------------------------------------------------------------------------------------
 
-	ACK((byte) 0x05),
   QUERY((byte) 0x01),
   RESULT((byte) 0x02),
   REGINNER((byte) 0x03),
   REGLEAF((byte) 0x04),
+  INFO((byte) 0x05),
+	ACK((byte) 0x06),
   // put last since it's the least likely one to be encountered in the fromByte() function
   UNKNOWN((byte) 0x00);
 

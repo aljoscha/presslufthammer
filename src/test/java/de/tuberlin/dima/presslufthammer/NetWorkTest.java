@@ -2,9 +2,9 @@ package de.tuberlin.dima.presslufthammer;
 
 import org.apache.log4j.BasicConfigurator;
 
-import de.tuberlin.dima.presslufthammer.netword.InnerNode;
-import de.tuberlin.dima.presslufthammer.netword.LeafNode;
-import de.tuberlin.dima.presslufthammer.netword.RootNode;
+import de.tuberlin.dima.presslufthammer.network.InnerNode;
+import de.tuberlin.dima.presslufthammer.network.LeafNode;
+import de.tuberlin.dima.presslufthammer.network.RootNode;
 import de.tuberlin.dima.presslufthammer.ontology.Data;
 import de.tuberlin.dima.presslufthammer.ontology.Query;
 import junit.framework.Test;

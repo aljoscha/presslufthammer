@@ -11,20 +11,20 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
-	
+
 	<repositories>
 		<!-- repository for Netty -->
 		<repository>
 			<id>repository.jboss.org</id>
 			<url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
 			<snapshots>
-			  <enabled>false</enabled>
+				<enabled>false</enabled>
 			</snapshots>
 		</repository>
 	</repositories>
 
 	<dependencies>
-		
+
 		<!-- jUnit 3.8.1 -->
 		<dependency>
 			<groupId>junit</groupId>
@@ -32,17 +32,17 @@
 			<version>3.8.1</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<!-- Netty 3.2.7.Final -->
 		<dependency>
-	    	<groupId>org.jboss.netty</groupId>
-	    	<artifactId>netty</artifactId>
-	    	<version>3.2.7.Final</version>
-	    	<scope>compile</scope>
- 		</dependency>
- 		
- 		<!-- Protobuf 2.4.1 -->
- 		<dependency>
+			<groupId>org.jboss.netty</groupId>
+			<artifactId>netty</artifactId>
+			<version>3.2.7.Final</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<!-- Protobuf 2.4.1 -->
+		<dependency>
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java</artifactId>
 			<version>2.4.1</version>
@@ -53,11 +53,7 @@
 			<artifactId>slf4j-log4j12</artifactId>
 			<version>1.6.4</version>
 		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>1.6.4</version>
-		</dependency>
+
 	</dependencies>
 
 </project>

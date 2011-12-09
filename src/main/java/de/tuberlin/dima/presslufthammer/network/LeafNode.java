@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.netword;
+package de.tuberlin.dima.presslufthammer.network;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

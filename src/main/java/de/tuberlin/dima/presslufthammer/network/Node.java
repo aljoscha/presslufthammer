@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.netword;
+package de.tuberlin.dima.presslufthammer.network;
 
 import org.apache.log4j.Logger;
 import de.tuberlin.dima.presslufthammer.ontology.Data;

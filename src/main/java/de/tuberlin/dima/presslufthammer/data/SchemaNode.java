@@ -123,6 +123,14 @@ public class SchemaNode {
         fieldMap.put(name, newField);
     }
 
+    public boolean hasField(String fieldName) {
+        return fieldMap.containsKey(fieldName);
+    }
+
+    public SchemaNode getField(String fieldName) {
+        return fieldMap.get(fieldName);
+    }
+
     public String toString() {
         return toStringRecursive(0);
     }

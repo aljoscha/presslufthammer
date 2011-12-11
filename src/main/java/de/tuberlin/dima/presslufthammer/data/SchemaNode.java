@@ -161,8 +161,8 @@ public class SchemaNode {
             break;
         case RECORD:
             result += "record " + name + "\n";
-            for (String fieldName : fieldMap.keySet()) {
-                result += fieldMap.get(fieldName)
+            for (SchemaNode schema : fieldList) {
+                result += fieldMap.get(schema.getName())
                         .toStringRecursive(indentation) + "\n";
             }
             break;

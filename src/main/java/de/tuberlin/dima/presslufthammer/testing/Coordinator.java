@@ -55,15 +55,16 @@ public class Coordinator extends ChannelNode
 	/**
 	 * @param query
 	 */
-	public void query( String query)
+	public void query( Pressluft query)
 	{
 		// TODO
 		log.debug( "query()");
 		assert isServing();
-		if( handler != null)
+		if( handler != null && rootChan != null)
 		{
-			Pressluft queryMSG = getQMSG( query);
-			rootChan.write( queryMSG);
+//			Pressluft queryMSG = getQMSG( query);
+//			rootChan.write( queryMSG);
+			rootChan.write( query);
 		}
 	}
 
@@ -92,10 +93,11 @@ public class Coordinator extends ChannelNode
 	public void addInner( Channel channel, SocketAddress remoteAddress)
 	{
 		// TODO
-		log.debug( "adding inner channel: " + remoteAddress);
+		log.info( "adding inner channel: " + remoteAddress);
 		innerChans.add( channel);
 		if( rootChan == null)
 		{
+			log.debug( "new root node found.");
 			rootChan = channel;
 		}
 	}
@@ -109,7 +111,9 @@ public class Coordinator extends ChannelNode
 		// TODO
 		log.debug( "adding leaf channel: " + remoteAddress);
 		leafChans.add( channel);
-		channel.write( getRootInfo());
+		if( rootChan != null) {
+			channel.write( getRootInfo());
+		}
 	}
 
 	/**
@@ -121,5 +125,18 @@ public class Coordinator extends ChannelNode
 		Type type = Type.INFO;
 		byte[] payload = rootChan.getRemoteAddress().toString().getBytes();
 		return new Pressluft( type, payload);
+	}
+
+	/**
+	 * @param channel
+	 */
+	public void removeChannel( Channel channel)
+	{
+		// TODO
+		if( rootChan == channel) {
+			rootChan = null;
+		}
+		channel.close();
+//		log.debug( "" + openChannels.remove( channel));
 	}
 }

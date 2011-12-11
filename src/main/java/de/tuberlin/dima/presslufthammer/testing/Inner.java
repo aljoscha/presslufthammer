@@ -41,24 +41,41 @@ public class Inner extends ChannelNode
 	 */
 	public Inner( String host, int port)
 	{
-		// Configure the server.
-		ServerBootstrap bootstrap = new ServerBootstrap(
-				new NioServerSocketChannelFactory( Executors.newCachedThreadPool(),
-						Executors.newCachedThreadPool()));
-
-		// Set up the event pipeline factory.
-		bootstrap.setPipelineFactory( new InnerPipelineFac( this));
-
-		// Bind and start to accept incoming connections.
-		bootstrap.bind( new InetSocketAddress( port + 1));
 		
 		if( connectNReg( host, port))
 		{
 			log.info( "connected");
+			
+			port = getPortFromSocketAddress( coordChan.getLocalAddress()) + 1;
+			// Configure the server.
+			ServerBootstrap bootstrap = new ServerBootstrap(
+					new NioServerSocketChannelFactory( Executors.newCachedThreadPool(),
+							Executors.newCachedThreadPool()));
+
+			// Set up the event pipeline factory.
+			bootstrap.setPipelineFactory( new InnerPipelineFac( this));
+			
+			// Bind and start to accept incoming connections.
+			bootstrap.bind( new InetSocketAddress( port));
+			log.info( "serving on port: " + port);
 		}
+		
 //
 //		channel.close().awaitUninterruptibly();
 //		bootstrap.releaseExternalResources();
+	}
+
+	/**
+	 * @param localAddress
+	 * @return
+	 */
+	private int getPortFromSocketAddress( SocketAddress localAddress)
+	{
+		String s = localAddress.toString();
+//		log.debug(  s);
+		String[] temp = s.split( ":");
+		
+		return Integer.parseInt( temp[temp.length - 1]);
 	}
 
 	/**

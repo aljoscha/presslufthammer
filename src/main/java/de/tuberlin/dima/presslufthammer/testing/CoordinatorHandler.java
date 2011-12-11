@@ -3,6 +3,7 @@
  */
 package de.tuberlin.dima.presslufthammer.testing;
 
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -52,7 +53,8 @@ public class CoordinatorHandler extends SimpleChannelHandler
 		// TODO
 		Throwable cause = e.getCause();
 		log.error( "caught an exception", cause);
-		ctx.getChannel().close();
+		
+		coord.removeChannel( ctx.getChannel());
 		// super.exceptionCaught( ctx, e);
     ctx.sendUpstream(e);
 	}
@@ -102,8 +104,11 @@ public class CoordinatorHandler extends SimpleChannelHandler
 					coord.addLeaf( e.getChannel(), e.getRemoteAddress());
 					break;
 				case RESULT:
+					// TODO get the result to the client
 					break;
 				case QUERY:
+					// TODO get the query to the root node
+					coord.query( prsslft);
 					break;
 				case UNKNOWN:
 					break;

@@ -98,10 +98,12 @@ class JSONDecoder implements RecordDecoder {
             if (schema.hasField(key)) {
                 SchemaNode childSchema = schema.getField(key);
                 if (childSchema.isRepeated()) {
-                    JSONArray array = (JSONArray) value;
-                    arrayIterator = array.iterator();
-                    arrayKey = key;
-                    field = next();
+                    if (value instanceof JSONArray) {
+                        JSONArray array = (JSONArray) value;
+                        arrayIterator = array.iterator();
+                        arrayKey = key;
+                        field = next();
+                    }
                 } else {
                     field = wrapValue(key, value, childSchema);
                 }

@@ -30,7 +30,7 @@ public class DummyFieldWriter extends FieldWriter {
         for (Value value : values) {
             System.out.println("r: " + value.repetitionLevel + ", d: "
                     + value.definitionLevel + ", field: "
-                    + value.field.toString());
+                    + value.field);
         }
         for (FieldWriter childWriter : getChildren()) {
             DummyFieldWriter child = (DummyFieldWriter) childWriter;

@@ -1,0 +1,2 @@
+{"DocId":10, "Links": {"Forward": [20,40,60]}, "Name": [{"Language": [ {"Code": "en-us", "Country": "us"}, {"Code": "en"}], "Url": "http://A"}, {"Url":"http://B"}, {"Language":[{"Code":"en-gb","Country":"gb"}]}]}
+{"DocId":20, "Links": {"Backward": [10,30],"Forward": [80]}, "Name": [{"Url":"http://C"}]}

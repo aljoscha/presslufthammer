@@ -27,7 +27,8 @@ public class ColumnStriper {
             dissectRecord(decoder, rootWriter, 0);
             decoder = recordProvider.next();
         }
-
+        rootWriter.finalizeLevels();
+        
         DummyFieldWriter dummy = (DummyFieldWriter) rootWriter;
         dummy.printToStdout();
     }
@@ -40,7 +41,7 @@ public class ColumnStriper {
             FieldWriter childWriter = writer.getChild(field.schema);
             int childRepetitionLevel = repetitionLevel;
             if (seenFields.contains(field.schema)) {
-                childRepetitionLevel = childWriter.getTreeDepth();
+                childRepetitionLevel = childWriter.getRepetition();
             } else {
                 seenFields.add(field.schema);
             }
@@ -48,6 +49,7 @@ public class ColumnStriper {
                 childWriter.writeField(field, childRepetitionLevel);
             } else {
                 RecordField record = (RecordField) field;
+                childWriter.writeField(null, childRepetitionLevel);
                 dissectRecord(decoder.newDecoder(field.schema,
                         record.getData()), childWriter,
                         childRepetitionLevel);

@@ -3,7 +3,7 @@ package scratch;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import de.tuberlin.dima.presslufthammer.data.ColumnStriper;
+import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.RecordProvider;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
@@ -50,7 +50,7 @@ public class JSONDefinitionTest {
         System.out.println(document.toString());
         RecordProvider recordProvider = new JSONRecordProvider(document,
                 "documents.json");
-        ColumnStriper striper = new ColumnStriper(document,
+        FieldStriper striper = new FieldStriper(document,
                 new DummyFieldWriterFactory());
         striper.dissectRecords(recordProvider);
     }

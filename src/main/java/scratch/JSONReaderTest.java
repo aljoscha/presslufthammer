@@ -3,7 +3,7 @@ package scratch;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import de.tuberlin.dima.presslufthammer.data.ColumnStriper;
+import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.RecordProvider;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
@@ -38,7 +38,7 @@ public class JSONReaderTest {
         System.out.println(predicate.toString());
         RecordProvider recordProvider = new JSONRecordProvider(schemaRoot,
                 "sentences-reducedPunctuation-json-1-2");
-        ColumnStriper striper = new ColumnStriper(schemaRoot,
+        FieldStriper striper = new FieldStriper(schemaRoot,
                 new DummyFieldWriterFactory());
         striper.dissectRecords(recordProvider);
     }

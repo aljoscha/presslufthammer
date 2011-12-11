@@ -7,12 +7,12 @@ import com.google.common.collect.Sets;
 import de.tuberlin.dima.presslufthammer.data.dummy.DummyFieldWriter;
 import de.tuberlin.dima.presslufthammer.data.fields.RecordField;
 
-public class ColumnStriper {
+public class FieldStriper {
     private SchemaNode schema;
     private FieldWriterFactory fieldWriterFactory;
     private FieldWriter rootWriter;
 
-    public ColumnStriper(SchemaNode schema,
+    public FieldStriper(SchemaNode schema,
             FieldWriterFactory fieldWriterFactory) {
         this.schema = schema;
         this.fieldWriterFactory = fieldWriterFactory;

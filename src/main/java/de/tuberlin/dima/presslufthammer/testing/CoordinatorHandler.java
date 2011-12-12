@@ -98,10 +98,10 @@ public class CoordinatorHandler extends SimpleChannelHandler
 				case ACK:
 					break;
 				case REGINNER:
-					coord.addInner( e.getChannel(), e.getRemoteAddress());
+					coord.addInner( e.getChannel());
 					break;
 				case REGLEAF:
-					coord.addLeaf( e.getChannel(), e.getRemoteAddress());
+					coord.addLeaf( e.getChannel());
 					break;
 				case RESULT:
 					// TODO get the result to the client
@@ -111,6 +111,11 @@ public class CoordinatorHandler extends SimpleChannelHandler
 					coord.query( prsslft);
 					break;
 				case UNKNOWN:
+					break;
+				case INFO:
+					break;
+				case REGCLIENT:
+					coord.addClient( e.getChannel());
 					break;
 			}
 

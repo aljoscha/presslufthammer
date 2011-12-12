@@ -3,6 +3,10 @@
  */
 package de.tuberlin.dima.presslufthammer.testing;
 
+import java.io.BufferedReader;
+import java.io.Console;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
@@ -20,16 +24,16 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  * @author feichh
  * 
  */
-public class Leaf extends ChannelNode
+public class CLIClient extends ChannelNode
 {
 	private static final Pressluft REGMSG = new Pressluft(
-			de.tuberlin.dima.presslufthammer.pressluft.Type.REGLEAF,
+			de.tuberlin.dima.presslufthammer.pressluft.Type.REGCLIENT,
 			new byte[] { (byte) 7 });
 	
 	private final Logger	log	= LoggerFactory.getLogger( getClass());
 	private Channel				parentChannel;
 
-	public Leaf( String host, int port)
+	public CLIClient( String host, int port)
 	{
 
 		if( connectNReg( host, port))
@@ -62,7 +66,7 @@ public class Leaf extends ChannelNode
 						Executors.newCachedThreadPool(),
 						Executors.newCachedThreadPool()));
 
-		bootstrap.setPipelineFactory( new LeafPipelineFac( this));
+		bootstrap.setPipelineFactory( new ClientPipelineFac( this));
 
 		ChannelFuture connectFuture = bootstrap.connect( address);
 
@@ -70,6 +74,24 @@ public class Leaf extends ChannelNode
 		ChannelFuture writeFuture = parentChannel.write( REGMSG);
 
 		return writeFuture.awaitUninterruptibly().isSuccess();
+	}
+	
+	/**
+	 * @param query
+	 * @return
+	 */
+	public boolean sendQuery( String query)
+	{
+		boolean result = false;
+		if( !( query == null || query.length() < 1)
+				&& parentChannel != null
+				&& parentChannel.isConnected()
+				&& parentChannel.isWritable())
+		{
+			parentChannel.write( Pressluft.getQueryMSG( query));
+		}
+		
+		return result;
 	}
 
 	/**
@@ -99,8 +121,9 @@ public class Leaf extends ChannelNode
 	 * @param args
 	 * @throws InterruptedException
 	 *           if interrupted
+	 * @throws IOException if IO goes awry
 	 */
-	public static void main( String[] args) throws InterruptedException
+	public static void main( String[] args) throws InterruptedException, IOException
 	{
 		// Print usage if necessary.
 		if( args.length < 2)
@@ -112,6 +135,20 @@ public class Leaf extends ChannelNode
 		String host = args[0];
 		int port = Integer.parseInt( args[1]);
 
-		Leaf leaf = new Leaf( host, port);
+		CLIClient client = new CLIClient( host, port);
+		boolean assange = true;
+//		Console console = System.console();
+		BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+		while( assange)
+		{
+			String line = bufferedReader.readLine();
+			if( line.startsWith( "x"))
+			{
+				assange = false;
+			}
+			else {
+				client.sendQuery( line);
+			}
+		}
 	}
 }

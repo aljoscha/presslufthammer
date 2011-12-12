@@ -59,6 +59,19 @@ public class Pressluft implements Serializable
 		this.payload = payload;
 	}
 
+	/**
+	 * @param query
+	 * @return
+	 */
+	public static Pressluft getQueryMSG( String query)
+	{
+		// TODO
+		Type type = Type.QUERY;
+		byte[] payload = query.getBytes();
+
+		return new Pressluft( type, payload);
+	}
+
 	@Override
 	public String toString()
 	{

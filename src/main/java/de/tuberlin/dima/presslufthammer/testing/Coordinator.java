@@ -29,6 +29,7 @@ public class Coordinator extends ChannelNode
 																							.getLogger( getClass());
 	ChannelGroup								innerChans	= new DefaultChannelGroup();
 	ChannelGroup								leafChans		= new DefaultChannelGroup();
+	ChannelGroup								clientChans	= new DefaultChannelGroup();
 	private CoordinatorHandler	handler			= new CoordinatorHandler( this);
 	private Channel							rootChan;
 
@@ -69,18 +70,8 @@ public class Coordinator extends ChannelNode
 	}
 
 	/**
-	 * @param query
-	 * @return
+	 * @return true if this coordinator is connected to at least 1 Inner and 1 Leaf
 	 */
-	private Pressluft getQMSG( String query)
-	{
-		// TODO
-		Type type = Type.QUERY;
-		byte[] payload = query.getBytes();
-
-		return new Pressluft( type, payload);
-	}
-
 	public boolean isServing()
 	{
 		return !(innerChans.isEmpty() || leafChans.isEmpty());
@@ -88,12 +79,22 @@ public class Coordinator extends ChannelNode
 
 	/**
 	 * @param channel
-	 * @param remoteAddress
 	 */
-	public void addInner( Channel channel, SocketAddress remoteAddress)
+	public void addClient( Channel channel)
+	{
+		// TODO Auto-generated method stub
+		log.info( "adding client channel: " + channel.getRemoteAddress());
+		clientChans.add( channel);
+	}
+
+	/**
+	 * @param channel
+	 * @param address
+	 */
+	public void addInner( Channel channel)
 	{
 		// TODO
-		log.info( "adding inner channel: " + remoteAddress);
+		log.info( "adding inner channel: " + channel.getRemoteAddress());
 		innerChans.add( channel);
 		if( rootChan == null)
 		{
@@ -101,15 +102,15 @@ public class Coordinator extends ChannelNode
 			rootChan = channel;
 		}
 	}
-
+	
 	/**
 	 * @param channel
-	 * @param remoteAddress
+	 * @param address
 	 */
-	public void addLeaf( Channel channel, SocketAddress remoteAddress)
+	public void addLeaf( Channel channel)
 	{
 		// TODO
-		log.debug( "adding leaf channel: " + remoteAddress);
+		log.debug( "adding leaf channel: " + channel.getRemoteAddress());
 		leafChans.add( channel);
 		if( rootChan != null) {
 			channel.write( getRootInfo());

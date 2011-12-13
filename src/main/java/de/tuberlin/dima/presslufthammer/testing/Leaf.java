@@ -3,6 +3,7 @@
  */
 package de.tuberlin.dima.presslufthammer.testing;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
@@ -22,12 +23,13 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  */
 public class Leaf extends ChannelNode
 {
-	private static final Pressluft REGMSG = new Pressluft(
-			de.tuberlin.dima.presslufthammer.pressluft.Type.REGLEAF,
-			new byte[] { (byte) 7 });
-	
-	private final Logger	log	= LoggerFactory.getLogger( getClass());
-	private Channel				parentChannel;
+	private static final Pressluft	REGMSG	= new Pressluft(
+																							de.tuberlin.dima.presslufthammer.pressluft.Type.REGLEAF,
+																							new byte[] { (byte) 7 });
+
+	private final Logger						log			= LoggerFactory
+																							.getLogger( getClass());
+	private Channel									parentChannel;
 
 	public Leaf( String host, int port)
 	{
@@ -58,8 +60,7 @@ public class Leaf extends ChannelNode
 	{
 		// TODO
 		ClientBootstrap bootstrap = new ClientBootstrap(
-				new NioClientSocketChannelFactory(
-						Executors.newCachedThreadPool(),
+				new NioClientSocketChannelFactory( Executors.newCachedThreadPool(),
 						Executors.newCachedThreadPool()));
 
 		bootstrap.setPipelineFactory( new LeafPipelineFac( this));
@@ -72,28 +73,30 @@ public class Leaf extends ChannelNode
 		return writeFuture.awaitUninterruptibly().isSuccess();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see de.tuberlin.dima.presslufthammer.testing.ChannelNode#close()
+	 */
+	@Override
+	public void close() throws IOException
+	{
+		// TODO
+		//
+		// channel.close().awaitUninterruptibly();
+		// bootstrap.releaseExternalResources();
+		parentChannel.close();
+		super.close();
+	}
+
 	/**
 	 * Prints the usage to System.out.
 	 */
 	private static void printUsage()
 	{
-		// TODO Auto-generated method stub
 		System.out.println( "Usage:");
 		System.out.println( "hostname port");
 	}
-
-	// /* (non-Javadoc)
-	// * @see de.tuberlin.dima.presslufthammer.testing.ChannelNode#close()
-	// */
-	// @Override
-	// public void close() throws IOException
-	// {
-	// // TODO Auto-generated method stub
-	// //
-	// // channel.close().awaitUninterruptibly();
-	// // bootstrap.releaseExternalResources();
-	// super.close();
-	// }
 
 	/**
 	 * @param args

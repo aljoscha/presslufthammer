@@ -104,18 +104,18 @@ public class CLIClient extends ChannelNode
 		System.out.println( "hostname port");
 	}
 
-	// /* (non-Javadoc)
-	// * @see de.tuberlin.dima.presslufthammer.testing.ChannelNode#close()
-	// */
-	// @Override
-	// public void close() throws IOException
-	// {
-	// // TODO Auto-generated method stub
-	// //
-	// // channel.close().awaitUninterruptibly();
-	// // bootstrap.releaseExternalResources();
-	// super.close();
-	// }
+	 /* (non-Javadoc)
+	 * @see de.tuberlin.dima.presslufthammer.testing.ChannelNode#close()
+	 */
+	 @Override
+	 public void close() throws IOException
+	 {
+	 // TODO
+	 // channel.close().awaitUninterruptibly();
+	 // bootstrap.releaseExternalResources();
+		 parentChannel.disconnect();
+		 super.close();
+	 }
 
 	/**
 	 * @param args
@@ -150,5 +150,7 @@ public class CLIClient extends ChannelNode
 				client.sendQuery( line);
 			}
 		}
+		
+		client.close();
 	}
 }

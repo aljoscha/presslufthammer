@@ -5,7 +5,6 @@ import org.apache.log4j.BasicConfigurator;
 import de.tuberlin.dima.presslufthammer.network.InnerNode;
 import de.tuberlin.dima.presslufthammer.network.LeafNode;
 import de.tuberlin.dima.presslufthammer.network.RootNode;
-import de.tuberlin.dima.presslufthammer.ontology.Data;
 import de.tuberlin.dima.presslufthammer.ontology.Query;
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -67,8 +66,6 @@ public class NetWorkTest extends TestCase {
 		lisa.setParentNode(HOSTNAME, 7002);
 		maggy.setParentNode(HOSTNAME, 7002);
 		
-		Data res = root.answer(new Query(1));
-		
-		System.out.println(res);
+		root.handleQuery(new Query(1));
 	}
 }

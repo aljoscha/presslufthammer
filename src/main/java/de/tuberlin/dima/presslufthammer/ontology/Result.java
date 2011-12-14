@@ -10,28 +10,34 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 /**
- * a query representation for sending in network
+ * resposnse to an query
  */
-public class Query implements Serializable {
+public class Result implements Serializable {
 	
 	private long id;
 	
-	// TODO for testing the network there is no content yet
+	// TODO for testing the network the response is just a string with the name of the answered nodes
+	private String value;
 	
-	public Query(long id) {
+	public Result(long id, String value) {
 		this.id = id;
+		this.value = value;
 	}
 	
 	public long getId() {
 		return id;
 	}
 	
-	public static byte[] toByteArray(Query query) throws IOException {
+	public String getValue() {
+		return value;
+	}
+	
+	public static byte[] toByteArray(Result data) throws IOException {
 		byte[] res = null;
 		ByteArrayOutputStream aout = new ByteArrayOutputStream();
 		ObjectOutput oout = new ObjectOutputStream(aout);
 		
-		oout.writeObject(query);
+		oout.writeObject(data);
 		
 		res = aout.toByteArray();
 		
@@ -41,7 +47,7 @@ public class Query implements Serializable {
 		return res;
 	}
 	
-	public static Query fromByteArray(byte[] bytes) throws IOException, ClassNotFoundException{
+	public static Result fromByteArray(byte[] bytes) throws IOException, ClassNotFoundException {
 		ByteArrayInputStream ain = new ByteArrayInputStream(bytes);
 		ObjectInput in = new ObjectInputStream(ain);
 		Object obj = in.readObject();
@@ -49,6 +55,6 @@ public class Query implements Serializable {
 		ain.close();
 		in.close();
 		
-		return (Query) obj;
+		return (Result) obj;
 	}
 }

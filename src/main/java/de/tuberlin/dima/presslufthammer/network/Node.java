@@ -1,13 +1,20 @@
 package de.tuberlin.dima.presslufthammer.network;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 
+import de.tuberlin.dima.presslufthammer.network.handler.ClientHandler;
+import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
 import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 
 public abstract class Node {
@@ -18,7 +25,6 @@ public abstract class Node {
 	protected final String name;
 	
 	protected ServerBootstrap serverBootstrap;
-	protected ClientBootstrap clientBootstrap;
 	
 	public Node(String name, int port) {
 		logger = Logger.getLogger(name);
@@ -27,22 +33,35 @@ public abstract class Node {
 	}
 	
 	protected void sendPressLuft(Pressluft p, InetSocketAddress addr) {
-		ChannelFuture future = this.clientBootstrap.connect(addr);
+		ClientBootstrap bootstrap = Node.getNewClientBootstrap();
+		
+		ChannelFuture future = bootstrap.connect(addr);
 		
 		if (!future.awaitUninterruptibly().isSuccess()) {
-			logger.error("Failed to connect with \"" + addr + "\"");
-			this.clientBootstrap.releaseExternalResources();
+			logger.error("failed to connect with " + addr + "");
+			bootstrap.releaseExternalResources();
 			return;
 		}
 		
 		if (future.getChannel().isConnected()) {
-			future.getChannel().write(p).addListener(ChannelFutureListener.CLOSE);
+			future.getChannel().write(p);
 			logger.trace("sending " + p + " to " + addr);
 		} else {
 			logger.error("channel was already closed");
 			logger.error("could not send " + p + " to " + addr);
 		}
+	}
+	
+	public static ClientBootstrap getNewClientBootstrap() {
+		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+		ClientBootstrap res = new ClientBootstrap(factory);
+		res.setPipelineFactory(new ChannelPipelineFactory() {
+			
+			public ChannelPipeline getPipeline() throws Exception {
+				return Channels.pipeline(Encoder.getInstance(), new ClientHandler());
+			}
+		});
 		
-//		future.addListener(ChannelFutureListener.CLOSE);
+		return res;
 	}
 }

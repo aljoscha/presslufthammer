@@ -28,7 +28,7 @@ public class ParentNode extends Node {
 	}
 	
 	protected void forwardTask(Task task) {
-		logger.trace("sending " + task.getQuery().getId() + " to " + task.getSolver() + ":");
+		logger.debug("sending " + task.getQuery().getId() + " to " + task.getSolver());
 		Pressluft p;
 		try {
 			p = new Pressluft(Type.QUERY, Query.toByteArray(task.getQuery()));

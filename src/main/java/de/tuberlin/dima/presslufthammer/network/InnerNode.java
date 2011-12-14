@@ -5,21 +5,17 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
-import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import de.tuberlin.dima.presslufthammer.network.handler.ClientHandler;
 import de.tuberlin.dima.presslufthammer.network.handler.ServerHandler;
 import de.tuberlin.dima.presslufthammer.ontology.Result;
 import de.tuberlin.dima.presslufthammer.ontology.Query;
 import de.tuberlin.dima.presslufthammer.ontology.Task;
 import de.tuberlin.dima.presslufthammer.pressluft.Decoder;
-import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
 import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 import de.tuberlin.dima.presslufthammer.pressluft.Type;
 
@@ -38,7 +34,7 @@ public class InnerNode extends ParentNode {
 		this.serverBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 			
 			public ChannelPipeline getPipeline() throws Exception {
-				return Channels.pipeline(new Decoder(), new ServerHandler() {
+				return Channels.pipeline(new Decoder(), new ServerHandler(logger) {
 					
 					@Override
 					public void handleResult(Result data, SocketAddress socketAddress) {
@@ -62,7 +58,7 @@ public class InnerNode extends ParentNode {
 					
 					@Override
 					public void handleQuery(Query query) {
-						logger.trace("recieved query \"" + query.getId() + "\"");
+						logger.trace("recieved query " + query.getId());
 						
 						Task[] tasks = factorQuery(query);
 						taskMap.put(query.getId(), tasks);
@@ -75,16 +71,6 @@ public class InnerNode extends ParentNode {
 		});
 		
 		this.serverBootstrap.bind(new InetSocketAddress(port));
-		
-		// setup client
-		factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
-		this.clientBootstrap = new ClientBootstrap(factory);
-		this.clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-			
-			public ChannelPipeline getPipeline() throws Exception {
-				return Channels.pipeline(Encoder.getInstance(), new ClientHandler(logger));
-			}
-		});
 	}
 	
 	private void sendAnswer(Result answer) {

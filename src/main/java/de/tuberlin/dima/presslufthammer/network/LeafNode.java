@@ -5,32 +5,22 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
-import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.channel.Channels;
-import de.tuberlin.dima.presslufthammer.network.handler.ClientHandler;
 import de.tuberlin.dima.presslufthammer.network.handler.ServerHandler;
 import de.tuberlin.dima.presslufthammer.ontology.Result;
 import de.tuberlin.dima.presslufthammer.ontology.Query;
 import de.tuberlin.dima.presslufthammer.pressluft.Decoder;
-import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
 import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 import de.tuberlin.dima.presslufthammer.pressluft.Type;
 
 public class LeafNode extends Node {
 	
 	InetSocketAddress parentNode;
-	
-	// client part: send data (responses) 
-	private ClientBootstrap clientBootstrap;
-	
-	// server part: listen for queries
-	private ServerBootstrap serverBootstrap;
 	
 	public LeafNode(String name, int port) {
 		super(name, port);
@@ -43,7 +33,7 @@ public class LeafNode extends Node {
 		this.serverBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 			
 			public ChannelPipeline getPipeline() throws Exception {
-				return Channels.pipeline(new Decoder(), new ServerHandler() {
+				return Channels.pipeline(new Decoder(), new ServerHandler(logger) {
 					
 					@Override
 					public void handleResult(Result data, SocketAddress socketAddress) {
@@ -51,7 +41,7 @@ public class LeafNode extends Node {
 					
 					@Override
 					public void handleQuery(Query query) {
-						logger.trace("recieved query \"" + query.getId() + "\"");
+						logger.debug("recieved query " + query.getId());
 						sendAnswer(answer(query));
 					}
 				});
@@ -60,15 +50,6 @@ public class LeafNode extends Node {
 		
 		this.serverBootstrap.bind(new InetSocketAddress(port));
 		
-		// setup client
-		factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
-		this.clientBootstrap = new ClientBootstrap(factory);
-		this.clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-			
-			public ChannelPipeline getPipeline() throws Exception {
-				return Channels.pipeline(Encoder.getInstance(), new ClientHandler(logger));
-			}
-		});
 	}
 	
 	private Result answer(Query q) {
@@ -78,6 +59,8 @@ public class LeafNode extends Node {
 	}
 	
 	private void sendAnswer(Result answer) {
+		logger.debug("sending " + answer.getId() + " to " + parentNode);
+		
 		Pressluft p;
 		try {
 			p = new Pressluft(Type.RESULT, Result.toByteArray(answer));

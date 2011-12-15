@@ -1,29 +1,90 @@
 package de.tuberlin.dima.presslufthammer.network;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Set;
+import java.net.SocketAddress;
+import java.util.concurrent.Executors;
 
-import de.tuberlin.dima.presslufthammer.ontology.Data;
+import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.ChannelFactory;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import de.tuberlin.dima.presslufthammer.network.handler.ServerHandler;
+import de.tuberlin.dima.presslufthammer.ontology.Result;
 import de.tuberlin.dima.presslufthammer.ontology.Query;
+import de.tuberlin.dima.presslufthammer.ontology.Task;
+import de.tuberlin.dima.presslufthammer.pressluft.Decoder;
+import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.pressluft.Type;
 
-public class InnerNode extends Node {
+public class InnerNode extends ParentNode {
 	
-	Set<InetSocketAddress> childNodes;
 	InetSocketAddress parentNode;
 	
 	public InnerNode(String name, int port) {
 		super(name, port);
-		childNodes = new HashSet<InetSocketAddress>();
+		
+		ChannelFactory factory;
+		
+		// setup server
+		factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+		this.serverBootstrap = new ServerBootstrap(factory);
+		this.serverBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+			
+			public ChannelPipeline getPipeline() throws Exception {
+				return Channels.pipeline(new Decoder(), new ServerHandler(logger) {
+					
+					@Override
+					public void handleResult(Result data, SocketAddress socketAddress) {
+						logger.trace("recieved data \"" + data.getId() + "\" from \"" + socketAddress + "\"");
+						
+						Task[] tasks = taskMap.get(data.getId());
+						
+						for (Task task : tasks) {
+							if (((SocketAddress) task.getSolver()).equals(socketAddress)) {
+								task.setSolution(data);
+							}
+						}
+						
+						if (isSolved(data.getId())) {
+							Result res = mergeResults(ParentNode.extractResults(taskMap.get(data.getId())));
+							logger.info("Answer to " + res.getId() + " : " + res.getValue());
+							
+							sendAnswer(res);
+						}
+					}
+					
+					@Override
+					public void handleQuery(Query query) {
+						logger.trace("recieved query " + query.getId());
+						
+						Task[] tasks = factorQuery(query);
+						taskMap.put(query.getId(), tasks);
+						for (Task task : tasks) {
+							forwardTask(task);
+						}
+					}
+				});
+			}
+		});
+		
+		this.serverBootstrap.bind(new InetSocketAddress(port));
 	}
 	
-	public void addChildNode(String hostname, int port) {
-		childNodes.add(new InetSocketAddress(hostname, port));
+	private void sendAnswer(Result answer) {
+		Pressluft p;
+		try {
+			p = new Pressluft(Type.RESULT, Result.toByteArray(answer));
+			sendPressLuft(p, parentNode);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
-	public boolean revomeChildNode(String hostname, int port) {
-		return childNodes.remove(new InetSocketAddress(hostname, port));
-	}
+	// -- GETTERS AND SETTERS ---------------------------------------------------------------------
 	
 	public void setParentNode(String hostname, int port) {
 		parentNode = new InetSocketAddress(hostname, port);
@@ -31,11 +92,5 @@ public class InnerNode extends Node {
 	
 	public InetSocketAddress getParentNode() {
 		return parentNode;
-	}
-
-	@Override
-	public Data answer(Query q) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 }

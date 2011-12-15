@@ -22,13 +22,12 @@ public class ClientHandler extends SimpleChannelUpstreamHandler {
 	
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-		super.messageReceived(ctx, e);
-		System.err.println("WDF : " + e.getMessage());
+//		super.messageReceived(ctx, e);
 	}
 	
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-		logger.error(e);
+		logger.error("client : "+e);
 		ctx.getChannel().close();
 		ctx.sendUpstream(e);
 	}
@@ -37,7 +36,7 @@ public class ClientHandler extends SimpleChannelUpstreamHandler {
 	public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
 		// Log all channel state changes.
 		if (e instanceof ChannelStateEvent) {
-			logger.trace("Channel state changed: " + e);
+//			logger.trace("client : channel state changed: " + e);
 		}
 		
 		super.handleUpstream(ctx, e);

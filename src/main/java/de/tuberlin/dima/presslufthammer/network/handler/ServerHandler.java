@@ -38,14 +38,12 @@ public abstract class ServerHandler extends SimpleChannelHandler {
 				default:
 					logger.error("can not handle pressluft : " + prsslft.getType());
 			}
-		} else {
-			logger.error("WDF : " + e.getMessage());
 		}
 	}
 	
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-		logger.error(e);
+		logger.error("server : "+e);
 		ctx.getChannel().close();
 		ctx.sendUpstream(e);
 	}
@@ -54,7 +52,7 @@ public abstract class ServerHandler extends SimpleChannelHandler {
 	public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
 		// Log all channel state changes.
 		if (e instanceof ChannelStateEvent) {
-			logger.trace("Channel state changed: " + e);
+//			logger.trace("server : channel state changed: " + e);
 		}
 		
 		super.handleUpstream(ctx, e);
@@ -64,11 +62,11 @@ public abstract class ServerHandler extends SimpleChannelHandler {
 	public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
 		// Log all channel state changes.
 		if (e instanceof ChannelStateEvent) {
-			logger.trace("Channel state changed: " + e);
+//			logger.trace("server : channel state changed: " + e);
 		}
 		
 		// Sending the event downstream (outbound)
-//		ctx.sendDownstream(e);
-		super.handleDownstream(ctx, e);
+		ctx.sendDownstream(e);
+//		super.handleDownstream(ctx, e);
 	}
 }

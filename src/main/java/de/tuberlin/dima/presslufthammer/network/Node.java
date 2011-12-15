@@ -8,6 +8,7 @@ import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
@@ -25,15 +26,26 @@ public abstract class Node {
 	protected final String name;
 	
 	protected ServerBootstrap serverBootstrap;
+//	protected ClientBootstrap clientBootstrap;
 	
 	public Node(String name, int port) {
 		logger = Logger.getLogger(name);
 		this.name = name;
 		this.port = port;
+		
+//		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+//		clientBootstrap = new ClientBootstrap(factory);
+//		clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+//			
+//			public ChannelPipeline getPipeline() throws Exception {
+//				return Channels.pipeline(Encoder.getInstance(), new ClientHandler(logger));
+//			}
+//		});
+		
 	}
 	
 	protected void sendPressLuft(Pressluft p, InetSocketAddress addr) {
-		ClientBootstrap bootstrap = Node.getNewClientBootstrap();
+		ClientBootstrap bootstrap = Node.getNewClientBootstrap(logger);
 		
 		ChannelFuture future = bootstrap.connect(addr);
 		
@@ -44,21 +56,21 @@ public abstract class Node {
 		}
 		
 		if (future.getChannel().isConnected()) {
-			future.getChannel().write(p);
-			logger.trace("sending " + p + " to " + addr);
+			future.getChannel().write(p).awaitUninterruptibly();
+			logger.trace("sended " + p + " to " + addr);
 		} else {
 			logger.error("channel was already closed");
 			logger.error("could not send " + p + " to " + addr);
 		}
 	}
 	
-	public static ClientBootstrap getNewClientBootstrap() {
+	private static ClientBootstrap getNewClientBootstrap(final Logger logger) {
 		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 		ClientBootstrap res = new ClientBootstrap(factory);
 		res.setPipelineFactory(new ChannelPipelineFactory() {
 			
 			public ChannelPipeline getPipeline() throws Exception {
-				return Channels.pipeline(Encoder.getInstance(), new ClientHandler());
+				return Channels.pipeline(Encoder.getInstance(), new ClientHandler(logger));
 			}
 		});
 		

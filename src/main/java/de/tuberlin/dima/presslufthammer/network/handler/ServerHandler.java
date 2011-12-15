@@ -3,7 +3,9 @@ package de.tuberlin.dima.presslufthammer.network.handler;
 import java.net.SocketAddress;
 
 import org.apache.log4j.Logger;
+import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
@@ -33,7 +35,11 @@ public abstract class ServerHandler extends SimpleChannelHandler {
 					handleQuery(Query.fromByteArray(prsslft.getPayload()));
 				case RESULT:
 					handleResult(Result.fromByteArray(prsslft.getPayload()), e.getRemoteAddress());
+				default:
+					logger.error("can not handle pressluft : " + prsslft.getType());
 			}
+		} else {
+			logger.error("WDF : " + e.getMessage());
 		}
 	}
 	
@@ -42,5 +48,27 @@ public abstract class ServerHandler extends SimpleChannelHandler {
 		logger.error(e);
 		ctx.getChannel().close();
 		ctx.sendUpstream(e);
+	}
+	
+	@Override
+	public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
+		// Log all channel state changes.
+		if (e instanceof ChannelStateEvent) {
+			logger.trace("Channel state changed: " + e);
+		}
+		
+		super.handleUpstream(ctx, e);
+	}
+	
+	@Override
+	public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
+		// Log all channel state changes.
+		if (e instanceof ChannelStateEvent) {
+			logger.trace("Channel state changed: " + e);
+		}
+		
+		// Sending the event downstream (outbound)
+//		ctx.sendDownstream(e);
+		super.handleDownstream(ctx, e);
 	}
 }

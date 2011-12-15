@@ -43,7 +43,7 @@ public abstract class ServerHandler extends SimpleChannelHandler {
 	
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-		logger.error("server : "+e);
+		logger.error("server : " + e);
 		ctx.getChannel().close();
 		ctx.sendUpstream(e);
 	}

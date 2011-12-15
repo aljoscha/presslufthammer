@@ -49,7 +49,6 @@ public class LeafNode extends Node {
 		});
 		
 		this.serverBootstrap.bind(new InetSocketAddress(port));
-		
 	}
 	
 	private Result answer(Query q) {
@@ -59,6 +58,7 @@ public class LeafNode extends Node {
 	}
 	
 	private void sendAnswer(Result answer) {
+		// TODO replace with private void answer(Query q)
 		logger.debug("sending " + answer.getId() + " to " + parentNode);
 		
 		Pressluft p;
@@ -66,8 +66,10 @@ public class LeafNode extends Node {
 			p = new Pressluft(Type.RESULT, Result.toByteArray(answer));
 			sendPressLuft(p, parentNode);
 		} catch (IOException e) {
+			System.err.println("FUCK");
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			
 		}
 	}
 	

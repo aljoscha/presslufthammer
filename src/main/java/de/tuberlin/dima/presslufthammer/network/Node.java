@@ -26,7 +26,7 @@ public abstract class Node {
 	protected final String name;
 	
 	protected ServerBootstrap serverBootstrap;
-//	protected ClientBootstrap clientBootstrap;
+	protected ClientBootstrap clientBootstrap;
 	
 	public Node(String name, int port) {
 		logger = Logger.getLogger(name);
@@ -45,8 +45,8 @@ public abstract class Node {
 	}
 	
 	protected void sendPressLuft(Pressluft p, InetSocketAddress addr) {
-		ClientBootstrap bootstrap = Node.getNewClientBootstrap(logger);
-		
+		ClientBootstrap bootstrap = getNewClientBootstrap(logger);
+//		ClientBootstrap bootstrap = this.clientBootstrap;
 		ChannelFuture future = bootstrap.connect(addr);
 		
 		if (!future.awaitUninterruptibly().isSuccess()) {
@@ -57,20 +57,33 @@ public abstract class Node {
 		
 		if (future.getChannel().isConnected()) {
 			future.getChannel().write(p).awaitUninterruptibly();
-			logger.trace("sended " + p + " to " + addr);
+			logger.trace("send " + p + " to " + addr);
 		} else {
 			logger.error("channel was already closed");
 			logger.error("could not send " + p + " to " + addr);
 		}
 	}
 	
-	private static ClientBootstrap getNewClientBootstrap(final Logger logger) {
+	private ClientBootstrap getNewClientBootstrap(final Logger logger) {
 		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 		ClientBootstrap res = new ClientBootstrap(factory);
 		res.setPipelineFactory(new ChannelPipelineFactory() {
 			
 			public ChannelPipeline getPipeline() throws Exception {
 				return Channels.pipeline(Encoder.getInstance(), new ClientHandler(logger));
+			}
+		});
+		
+		return res;
+	}
+	
+	private static ClientBootstrap getNewClientBootstrap() {
+		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+		ClientBootstrap res = new ClientBootstrap(factory);
+		res.setPipelineFactory(new ChannelPipelineFactory() {
+			
+			public ChannelPipeline getPipeline() throws Exception {
+				return Channels.pipeline(Encoder.getInstance(), new ClientHandler());
 			}
 		});
 		

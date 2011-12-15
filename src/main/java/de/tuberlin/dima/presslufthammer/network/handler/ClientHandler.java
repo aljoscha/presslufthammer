@@ -27,7 +27,7 @@ public class ClientHandler extends SimpleChannelUpstreamHandler {
 	
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-		logger.error("client : "+e);
+		logger.error("client : " + e);
 		ctx.getChannel().close();
 		ctx.sendUpstream(e);
 	}

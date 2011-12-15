@@ -41,7 +41,7 @@ public class Query implements Serializable {
 		return res;
 	}
 	
-	public static Query fromByteArray(byte[] bytes) throws IOException, ClassNotFoundException{
+	public static Query fromByteArray(byte[] bytes) throws IOException, ClassNotFoundException {
 		ByteArrayInputStream ain = new ByteArrayInputStream(bytes);
 		ObjectInput in = new ObjectInputStream(ain);
 		Object obj = in.readObject();

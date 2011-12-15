@@ -87,6 +87,7 @@ public class InnerHandler extends SimpleChannelHandler
 					break;
 				case QUERY:
 					// TODO split query and hand parts over to children
+					inner.handDownQuery( prsslft);
 					break;
 				case REGINNER:
 					// not used yet

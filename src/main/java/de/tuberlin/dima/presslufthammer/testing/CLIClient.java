@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,11 +70,18 @@ public class CLIClient extends ChannelNode
 		bootstrap.setPipelineFactory( new ClientPipelineFac( this));
 
 		ChannelFuture connectFuture = bootstrap.connect( address);
+		connectFuture.addListener( new ChannelFutureListener() {
+			public void operationComplete( ChannelFuture future)
+			{
+				// Perform post-closure operation
+				parentChannel = future.getChannel();
+				parentChannel.write( REGMSG);
+			}
+		});
+//		parentChannel = connectFuture.awaitUninterruptibly().getChannel();
+//		ChannelFuture writeFuture = parentChannel.write( REGMSG);
 
-		parentChannel = connectFuture.awaitUninterruptibly().getChannel();
-		ChannelFuture writeFuture = parentChannel.write( REGMSG);
-
-		return writeFuture.awaitUninterruptibly().isSuccess();
+		return parentChannel != null && parentChannel.isConnected();
 	}
 	
 	/**
@@ -92,6 +100,15 @@ public class CLIClient extends ChannelNode
 		}
 		
 		return result;
+	}
+
+	/**
+	 * @param prsslft
+	 */
+	public void receiveResult( Pressluft prsslft)
+	{
+		// TODO
+		System.out.println( new String( prsslft.getPayload()));
 	}
 
 	/**

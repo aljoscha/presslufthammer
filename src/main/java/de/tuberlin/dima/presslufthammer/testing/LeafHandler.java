@@ -85,9 +85,12 @@ public class LeafHandler extends SimpleChannelHandler
 					break;
 				case INFO:
 					InetSocketAddress innerAddress = getSockAddrFromBytes(prsslft.getPayload());
+					log.info( "reconnecting to " + innerAddress);
 					leaf.connectNReg( innerAddress);
 					break;
 				case QUERY:
+					// TODO handle query
+					log.debug( "query: " + new String( prsslft.getPayload()));
 					break;
 				case REGINNER:
 				case REGLEAF:
@@ -112,11 +115,11 @@ public class LeafHandler extends SimpleChannelHandler
 	{
 		// TODO
 		String temp = new String( payload);
-		log.debug( temp);
+//		log.debug( temp);
 		String[] split = temp.split( ":");
 		String ipaddr = split[0].replaceAll( "/", "");
 		int port = Integer.parseInt( split[1]) + 1;
-		log.debug( ipaddr + " " + port);
+//		log.debug( ipaddr + " " + port);
 		return new InetSocketAddress( ipaddr, port);
 	}
 
@@ -142,7 +145,7 @@ public class LeafHandler extends SimpleChannelHandler
 		// Log all channel state changes.
 		if( e instanceof ChannelStateEvent)
 		{
-			log.info( "Channel state changed: " + e);
+			log.info( "Channel state changed: " + e + " " + e.getChannel().getRemoteAddress());
 		}
 
 		super.handleUpstream( ctx, e);

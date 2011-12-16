@@ -3,6 +3,7 @@ package de.tuberlin.dima.presslufthammer.data;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -26,6 +27,8 @@ public class SchemaNode {
     private NodeType type;
 
     private FieldRule fieldRule = FieldRule.REQUIRED;
+
+    private SchemaNode parent = null;
 
     private SchemaNode(NodeType nodeType) {
         type = nodeType;
@@ -121,6 +124,7 @@ public class SchemaNode {
         }
         fieldList.add(newField);
         fieldMap.put(name, newField);
+        newField.parent = this;
     }
 
     public boolean hasField(String fieldName) {
@@ -129,6 +133,60 @@ public class SchemaNode {
 
     public SchemaNode getField(String fieldName) {
         return fieldMap.get(fieldName);
+    }
+
+    public boolean hasParent() {
+        return parent != null;
+    }
+
+    public SchemaNode getParent() {
+        return parent;
+    }
+
+    public boolean equals(Object other) {
+        if (!(other instanceof SchemaNode)) {
+            return false;
+        }
+
+        SchemaNode otherSchema = (SchemaNode) other;
+
+        if (getType() != otherSchema.getType()) {
+            return false;
+        }
+
+        if (getFieldRule() != otherSchema.getFieldRule()) {
+            return false;
+        }
+
+        if (isPrimitive()
+                && !(this.primitiveType.equals(otherSchema.primitiveType))) {
+            return false;
+        }
+
+        if (isRecord() && fieldList.size() != otherSchema.fieldList.size()) {
+            return false;
+        }
+
+        if (isRecord()) {
+            for (int i = 0; i < fieldList.size(); ++i) {
+                if (!fieldList.get(i).equals(otherSchema.fieldList.get(i))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public int hashCode() {
+        return Objects.hashCode(fieldMap, primitiveType, name, type, fieldRule);
+    }
+
+    public String getQualifiedName() {
+        if (hasParent()) {
+            return parent.getQualifiedName() + "." + name;
+        } else {
+            return name;
+        }
     }
 
     public String toString() {
@@ -162,8 +220,9 @@ public class SchemaNode {
         case RECORD:
             result += "record " + name + "\n";
             for (SchemaNode schema : fieldList) {
-                result += fieldMap.get(schema.getName())
-                        .toStringRecursive(indentation) + "\n";
+                result += fieldMap.get(schema.getName()).toStringRecursive(
+                        indentation)
+                        + "\n";
             }
             break;
         default:

@@ -4,21 +4,20 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 
-import de.tuberlin.dima.presslufthammer.data.dummy.DummyFieldWriter;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
+import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.fields.RecordField;
 
-public class FieldStriper {
+public final class FieldStriper {
     private SchemaNode schema;
-    private FieldWriterFactory fieldWriterFactory;
+    private Tablet tablet;
     private FieldWriter rootWriter;
 
-    public FieldStriper(SchemaNode schema,
-            FieldWriterFactory fieldWriterFactory) {
+    public FieldStriper(SchemaNode schema, Tablet targetTablet) {
         this.schema = schema;
-        this.fieldWriterFactory = fieldWriterFactory;
+        this.tablet = targetTablet;
 
-        rootWriter = createWriterTree(null, this.schema,
-                this.fieldWriterFactory);
+        rootWriter = createWriterTree(null, this.schema);
     }
 
     public void dissectRecords(RecordProvider recordProvider) {
@@ -28,9 +27,6 @@ public class FieldStriper {
             decoder = recordProvider.next();
         }
         rootWriter.finalizeLevels();
-        
-        DummyFieldWriter dummy = (DummyFieldWriter) rootWriter;
-        dummy.printToStdout();
     }
 
     private void dissectRecord(RecordDecoder decoder, FieldWriter writer,
@@ -50,25 +46,23 @@ public class FieldStriper {
             } else {
                 RecordField record = (RecordField) field;
                 childWriter.writeField(null, childRepetitionLevel);
-                dissectRecord(decoder.newDecoder(field.schema,
-                        record.getData()), childWriter,
-                        childRepetitionLevel);
+                dissectRecord(
+                        decoder.newDecoder(field.schema, record.getData()),
+                        childWriter, childRepetitionLevel);
             }
             field = decoder.next();
         }
     }
 
-    private FieldWriter createWriterTree(FieldWriter parent, SchemaNode schema,
-            FieldWriterFactory fieldWriterFactory) {
-        FieldWriter writer = fieldWriterFactory.createFieldWriter(parent,
-                schema);
+    private FieldWriter createWriterTree(FieldWriter parent, SchemaNode schema) {
+        ColumnWriter columnWriter = tablet.getColumnWriter(schema);
+        FieldWriter fieldWriter = new FieldWriter(parent, schema, columnWriter);
         if (schema.isRecord()) {
             for (SchemaNode childSchema : schema.getFieldList()) {
-                FieldWriter childWriter = createWriterTree(writer, childSchema,
-                        fieldWriterFactory);
-                writer.addChild(childSchema, childWriter);
+                FieldWriter childWriter = createWriterTree(fieldWriter, childSchema);
+                fieldWriter.addChild(childSchema, childWriter);
             }
         }
-        return writer;
+        return fieldWriter;
     }
 }

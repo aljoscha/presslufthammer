@@ -5,36 +5,29 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 import de.tuberlin.dima.presslufthammer.data.Field;
-import de.tuberlin.dima.presslufthammer.data.FieldWriter;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
-public class DummyFieldWriter extends FieldWriter {
-
+public class DummyColumnWriter implements ColumnWriter {
+    private SchemaNode schema;
     private List<Value> values;
 
-    protected DummyFieldWriter(FieldWriter parent, SchemaNode schema) {
-        super(parent, schema);
+    protected DummyColumnWriter(SchemaNode schema) {
         values = Lists.newLinkedList();
+        this.schema = schema;
     }
 
-    @Override
-    protected void writeFieldInternal(Field field, int repetitionLevel,
-            int definitionLevel) {
+    public void writeField(Field field, int repetitionLevel, int definitionLevel) {
         Value value = new Value(field, repetitionLevel, definitionLevel);
         values.add(value);
 
     }
 
     public void printToStdout() {
-        System.out.println("COLUMN: " + getQualifiedName());
+        System.out.println("COLUMN: " + schema.getQualifiedName());
         for (Value value : values) {
             System.out.println("r: " + value.repetitionLevel + ", d: "
-                    + value.definitionLevel + ", field: "
-                    + value.field);
-        }
-        for (FieldWriter childWriter : getChildren()) {
-            DummyFieldWriter child = (DummyFieldWriter) childWriter;
-            child.printToStdout();
+                    + value.definitionLevel + ", field: " + value.field);
         }
     }
 

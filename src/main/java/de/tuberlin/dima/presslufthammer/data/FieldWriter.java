@@ -6,11 +6,13 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-public abstract class FieldWriter {
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
+
+public final class FieldWriter {
     private final FieldWriter parent;
     private final SchemaNode schema;
+    private final ColumnWriter writer;
     private final Map<SchemaNode, FieldWriter> children;
-    private final String qualifiedName;
     private final int repetition;
     private final int maxDefinition;
 
@@ -18,17 +20,16 @@ public abstract class FieldWriter {
     int lastParentStateVersion;
     int parentStateInsertPoint;
 
-    protected FieldWriter(FieldWriter parent, SchemaNode schema) {
+    public FieldWriter(FieldWriter parent, SchemaNode schema,
+            ColumnWriter writer) {
         this.parent = parent;
         this.schema = schema;
+        this.writer = writer;
 
         int parentMaxDefinition = 0;
         int parentRepetition = 0;
         if (this.parent == null) {
-            this.qualifiedName = schema.getName();
         } else {
-            this.qualifiedName = parent.getQualifiedName() + "."
-                    + schema.getName();
             parentRepetition = parent.getRepetition();
             parentMaxDefinition = parent.getMaxDefinition();
         }
@@ -49,9 +50,6 @@ public abstract class FieldWriter {
         lastParentStateVersion = -1;
         parentStateInsertPoint = 0;
     }
-
-    protected abstract void writeFieldInternal(Field field,
-            int repetitionLevel, int definitionLevel);
 
     public final void writeField(Field field, int repetitionLevel) {
         if (field != null) {
@@ -78,11 +76,11 @@ public abstract class FieldWriter {
                                 && nextState.d > currentState.d) {
                             continue;
                         }
-                        writeFieldInternal(null, currentState.r, currentState.d);
+                        writer.writeField(null, currentState.r, currentState.d);
                     }
                 }
             }
-            writeFieldInternal(field, repetitionLevel, maxDefinition);
+            writer.writeField(field, repetitionLevel, maxDefinition);
         } else {
             fetchParentStates();
         }
@@ -115,10 +113,6 @@ public abstract class FieldWriter {
 
     public final int getRepetition() {
         return repetition;
-    }
-
-    public final String getQualifiedName() {
-        return qualifiedName;
     }
 
     public final int getMaxDefinition() {
@@ -177,7 +171,7 @@ public abstract class FieldWriter {
                                 && nextState.d > currentState.d) {
                             continue;
                         }
-                        writeFieldInternal(null, currentState.r, currentState.d);
+                        writer.writeField(null, currentState.r, currentState.d);
                     }
                 }
             }

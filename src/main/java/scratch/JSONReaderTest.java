@@ -7,7 +7,7 @@ import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.RecordProvider;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.dummy.DummyFieldWriterFactory;
+import de.tuberlin.dima.presslufthammer.data.dummy.DummyTablet;
 import de.tuberlin.dima.presslufthammer.data.json.JSONRecordProvider;
 
 public class JSONReaderTest {
@@ -39,7 +39,7 @@ public class JSONReaderTest {
         RecordProvider recordProvider = new JSONRecordProvider(schemaRoot,
                 "sentences-reducedPunctuation-json-1-2");
         FieldStriper striper = new FieldStriper(schemaRoot,
-                new DummyFieldWriterFactory());
+                new DummyTablet());
         striper.dissectRecords(recordProvider);
     }
 }

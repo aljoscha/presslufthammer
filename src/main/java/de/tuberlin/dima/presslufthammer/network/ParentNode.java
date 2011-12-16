@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
+import org.apache.log4j.Logger;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
@@ -29,7 +30,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
 import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 import de.tuberlin.dima.presslufthammer.pressluft.Type;
 
-public class ParentNode extends Node {
+public abstract class ParentNode extends Node {
 	
 	protected ChannelGroup childNodes;
 	protected Map<Long, Task[]> taskMap;
@@ -39,24 +40,15 @@ public class ParentNode extends Node {
 		
 		childNodes = new DefaultChannelGroup();
 		taskMap = new HashMap<Long, Task[]>();
-		
-		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
-		clientBootstrap = new ClientBootstrap(factory);
-		clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-			
-			public ChannelPipeline getPipeline() throws Exception {
-				return Channels.pipeline(Encoder.getInstance(), new ClientHandler(logger));
-			}
-		});
 	}
 	
-	protected void forwardTask(Task task) {
-		logger.debug("sending " + task.getQuery().getId() + " to " + task.getSolver());
+	protected static void forwardTask(Task task, Logger logger) {
+		logger.debug("sending query " + task.getQuery().getId() + " to " + task.getSolversChannel().getRemoteAddress());
 		Pressluft p;
 		try {
 			p = new Pressluft(Type.QUERY, Query.toByteArray(task.getQuery()));
 			
-			sendPressLuft(p, task.getSolver(), logger);
+			sendPressLuft(p, task.getSolversChannel(), logger);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -92,7 +84,7 @@ public class ParentNode extends Node {
 		
 		int i = 0;
 		for (Channel ch : childNodes) {
-			res[i++] = new Task(query, ch.getRemoteAddress());
+			res[i++] = new Task(query, ch);
 		}
 		
 		return res;
@@ -128,7 +120,7 @@ public class ParentNode extends Node {
 		InetSocketAddress addr = new InetSocketAddress(hostname, port);
 		ChannelFuture f = clientBootstrap.connect(addr);
 		
-		if (f.isSuccess()) {
+		if (f.awaitUninterruptibly().isSuccess()) {
 			childNodes.add(f.getChannel());
 		} else {
 			logger.error("could not connet to " + addr);

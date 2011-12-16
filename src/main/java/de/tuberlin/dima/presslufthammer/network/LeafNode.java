@@ -7,7 +7,9 @@ import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
+import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
@@ -21,7 +23,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Type;
 
 public class LeafNode extends Node {
 	
-	InetSocketAddress parentNode;
+	Channel parentNode;
 	
 	public LeafNode(String name, int port) {
 		super(name, port);
@@ -37,13 +39,13 @@ public class LeafNode extends Node {
 				return Channels.pipeline(new Decoder(), new ServerHandler(logger) {
 					
 					@Override
-					public void handleResult(Result data, SocketAddress socketAddress) {
+					public void handleResult(Result data, Channel ch) {
 					}
 					
 					@Override
 					public void handleQuery(Query query) {
 						logger.debug("recieved query " + query.getId());
-						sendAnswer(answer(query),logger,parentNode);
+						sendAnswer(answer(query), parentNode, logger);
 					}
 				});
 			}
@@ -58,16 +60,15 @@ public class LeafNode extends Node {
 		return new Result(q.getId(), this.name);
 	}
 	
-	private static void sendAnswer(Result answer, Logger logger, InetSocketAddress parentNode) {
+	private static void sendAnswer(Result answer, Channel parentNode, Logger logger) {
 		// TODO replace with private void answer(Query q)
-		logger.debug("sending " + answer.getId() + " to " + parentNode);
+		logger.debug("sending resul" + answer.getId() + " to " + parentNode.getRemoteAddress());
 		
 		Pressluft p;
 		try {
 			p = new Pressluft(Type.RESULT, Result.toByteArray(answer));
 			sendPressLuft(p, parentNode, logger);
 		} catch (IOException e) {
-			System.err.println("FUCK");
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			
@@ -77,10 +78,24 @@ public class LeafNode extends Node {
 	// -- GETTERS AND SETTERS ---------------------------------------------------------------------
 	
 	public void setParentNode(String hostname, int port) {
-		parentNode = new InetSocketAddress(hostname, port);
+		InetSocketAddress addr = new InetSocketAddress(hostname, port);
+		ChannelFuture f = clientBootstrap.connect(addr);
+		
+		if (f.awaitUninterruptibly().isSuccess()) {
+			parentNode = f.getChannel();
+		} else {
+			logger.error("could not connet to " + addr);
+		}
 	}
 	
-	public InetSocketAddress getParentNode() {
-		return parentNode;
+	@Override
+	public void close() throws IOException {
+		parentNode.close().awaitUninterruptibly();
+		serverBootstrap.releaseExternalResources();
+		clientBootstrap.releaseExternalResources();
 	}
+	
+//	public InetSocketAddress getParentNode() {
+//		return parentNode.g;
+//	}
 }

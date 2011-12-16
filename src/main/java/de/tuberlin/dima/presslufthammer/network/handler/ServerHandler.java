@@ -3,12 +3,14 @@ package de.tuberlin.dima.presslufthammer.network.handler;
 import java.net.SocketAddress;
 
 import org.apache.log4j.Logger;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.WriteCompletionEvent;
 
 import de.tuberlin.dima.presslufthammer.ontology.Result;
 import de.tuberlin.dima.presslufthammer.ontology.Query;
@@ -22,22 +24,25 @@ public abstract class ServerHandler extends SimpleChannelHandler {
 		this.logger = logger;
 	}
 	
-	public abstract void handleResult(Result data, SocketAddress socketAddress);
+	public abstract void handleResult(Result data, Channel ch);
 	
 	public abstract void handleQuery(Query query);
 	
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+		System.err.println("beep");
 		if (e.getMessage() instanceof Pressluft) {
 			Pressluft prsslft = ((Pressluft) e.getMessage());
 			switch (prsslft.getType()) {
 				case QUERY:
 					handleQuery(Query.fromByteArray(prsslft.getPayload()));
 				case RESULT:
-					handleResult(Result.fromByteArray(prsslft.getPayload()), e.getRemoteAddress());
+					handleResult(Result.fromByteArray(prsslft.getPayload()), e.getChannel());
 				default:
 					logger.error("can not handle pressluft : " + prsslft.getType());
 			}
+		}else{
+			System.err.println("WDF");
 		}
 	}
 	

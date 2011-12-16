@@ -1,5 +1,7 @@
 package de.tuberlin.dima.presslufthammer;
 
+import java.io.IOException;
+
 import org.apache.log4j.BasicConfigurator;
 
 import de.tuberlin.dima.presslufthammer.network.InnerNode;
@@ -68,7 +70,22 @@ public class NetWorkTest2 extends TestCase {
 		
 		root.handleQuery(new Query(1));
 		root.handleQuery(new Query(2));
-		root.handleQuery(new Query(3));
-		root.handleQuery(new Query(4));
+//		root.handleQuery(new Query(3));
+//		root.handleQuery(new Query(4));
+		
+		
+		
+//		try {
+//			root.close();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		try {
+//			patty.close();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 }

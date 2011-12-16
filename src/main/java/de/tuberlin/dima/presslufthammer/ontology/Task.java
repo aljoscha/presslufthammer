@@ -3,6 +3,8 @@ package de.tuberlin.dima.presslufthammer.ontology;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+import org.jboss.netty.channel.Channel;
+
 public class Task {
 	
 	// Query-ID
@@ -12,11 +14,11 @@ public class Task {
 	private Result solution;
 	
 	// the client, that solves the task
-	private InetSocketAddress solver;
+	private Channel solver;
 	
-	public Task(Query query, SocketAddress socketAddress) {
+	public Task(Query query, Channel ch) {
 		this.query = query;
-		this.solver = socketAddress;
+		this.solver = ch;
 		this.solution = null;
 	}
 	
@@ -32,7 +34,7 @@ public class Task {
 		return solution;
 	}
 	
-	public InetSocketAddress getSolver() {
+	public Channel getSolversChannel() {
 		return solver;
 	}
 	

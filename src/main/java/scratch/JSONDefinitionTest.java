@@ -3,6 +3,8 @@ package scratch;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import com.google.common.io.Resources;
+
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.RecordProvider;
@@ -53,7 +55,7 @@ public class JSONDefinitionTest {
 
         System.out.println(document.toString());
         RecordProvider recordProvider = new JSONRecordProvider(document,
-                "documents.json");
+                Resources.getResource("documents.json"));
         DummyTablet dummyTablet = new DummyTablet();
         FieldStriper striper = new FieldStriper(document, dummyTablet);
         striper.dissectRecords(recordProvider);

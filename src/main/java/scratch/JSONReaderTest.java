@@ -3,6 +3,8 @@ package scratch;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import com.google.common.io.Resources;
+
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.RecordProvider;
@@ -27,8 +29,9 @@ public class JSONReaderTest {
                 PrimitiveType.STRING));
         arguments.setRepeated();
         predicate.addField(arguments);
-        
-        SchemaNode penises = SchemaNode.createPrimitive("numbers", PrimitiveType.INT64);
+
+        SchemaNode penises = SchemaNode.createPrimitive("numbers",
+                PrimitiveType.INT64);
         penises.setRepeated();
 
         SchemaNode schemaRoot = SchemaNode.createRecord("PredicateOuter");
@@ -37,9 +40,8 @@ public class JSONReaderTest {
 
         System.out.println(predicate.toString());
         RecordProvider recordProvider = new JSONRecordProvider(schemaRoot,
-                "sentences-reducedPunctuation-json-1-2");
-        FieldStriper striper = new FieldStriper(schemaRoot,
-                new DummyTablet());
+                Resources.getResource("sentences-reducedPunctuation-json-1-2"));
+        FieldStriper striper = new FieldStriper(schemaRoot, new DummyTablet());
         striper.dissectRecords(recordProvider);
     }
 }

@@ -3,6 +3,7 @@ package de.tuberlin.dima.presslufthammer.data.json;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URL;
 import java.util.Scanner;
 
 import org.json.simple.JSONObject;
@@ -19,13 +20,14 @@ public class JSONRecordProvider implements RecordProvider {
     private Scanner scan;
     private SchemaNode schema;
 
-    public JSONRecordProvider(SchemaNode schema, String filename)
+    public JSONRecordProvider(SchemaNode schema, URL filename)
             throws FileNotFoundException, IOException {
         this.schema = schema;
-        
+
         try {
-            scan = new Scanner(new StringReader(Resources.toString(
-                    Resources.getResource(filename), Charsets.UTF_8)));
+
+            scan = new Scanner(new StringReader(Resources.toString(filename,
+                    Charsets.UTF_8)));
 
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);

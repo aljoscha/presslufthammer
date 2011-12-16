@@ -1,6 +1,5 @@
 package de.tuberlin.dima.presslufthammer.network;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
@@ -10,7 +9,6 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import de.tuberlin.dima.presslufthammer.network.handler.ServerHandler;
 import de.tuberlin.dima.presslufthammer.ontology.Result;
@@ -34,13 +32,13 @@ public class RootNode extends ParentNode {
 				return Channels.pipeline(new Decoder(), new ServerHandler(logger) {
 					
 					@Override
-					public void handleResult(Result data, Channel ch) {
-						logger.debug("recieved result \"" + data.getId() + "\" from \"" + ch.getRemoteAddress() + "\"");
+					public void handleResult(Result data, SocketAddress socketAddress) {
+						logger.debug("recieved data \"" + data.getId() + "\" from \"" + socketAddress + "\"");
 						
 						Task[] tasks = taskMap.get(data.getId());
 						
 						for (Task task : tasks) {
-							if (ch.getRemoteAddress().equals(task.getSolversChannel().getRemoteAddress())) {
+							if (((SocketAddress) task.getSolver()).equals(socketAddress)) {
 								task.setSolution(data);
 							}
 						}
@@ -71,15 +69,7 @@ public class RootNode extends ParentNode {
 		taskMap.put(q.getId(), tasks);
 		
 		for (Task task : tasks) {
-			forwardTask(task, logger);
+			forwardTask(task);
 		}
-		
-	}
-	
-	@Override
-	public void close() throws IOException {
-		childNodes.close().awaitUninterruptibly();
-		serverBootstrap.releaseExternalResources();
-		clientBootstrap.releaseExternalResources();
 	}
 }

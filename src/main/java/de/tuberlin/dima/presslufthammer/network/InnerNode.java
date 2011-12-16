@@ -5,11 +5,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.Logger;
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
@@ -24,7 +21,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Type;
 
 public class InnerNode extends ParentNode {
 	
-	Channel parentNode;
+	InetSocketAddress parentNode;
 	
 	public InnerNode(String name, int port) {
 		super(name, port);
@@ -40,13 +37,13 @@ public class InnerNode extends ParentNode {
 				return Channels.pipeline(new Decoder(), new ServerHandler(logger) {
 					
 					@Override
-					public void handleResult(Result data, Channel ch) {
-						logger.trace("recieved result \"" + data.getId() + "\" from \"" + ch.getRemoteAddress() + "\"");
+					public void handleResult(Result data, SocketAddress socketAddress) {
+						logger.trace("recieved result \"" + data.getId() + "\" from \"" + socketAddress + "\"");
 						
 						Task[] tasks = taskMap.get(data.getId());
 						
 						for (Task task : tasks) {
-							if (ch.getRemoteAddress().equals(task.getSolversChannel().getRemoteAddress())) {
+							if (((SocketAddress) task.getSolver()).equals(socketAddress)) {
 								task.setSolution(data);
 							}
 						}
@@ -55,7 +52,7 @@ public class InnerNode extends ParentNode {
 							Result res = mergeResults(ParentNode.extractResults(taskMap.get(data.getId())));
 							logger.info("Answer to " + res.getId() + " : " + res.getValue());
 							
-							sendAnswer(res, parentNode, logger);
+							sendAnswer(res);
 						}
 					}
 					
@@ -66,7 +63,7 @@ public class InnerNode extends ParentNode {
 						Task[] tasks = factorQuery(query);
 						taskMap.put(query.getId(), tasks);
 						for (Task task : tasks) {
-							forwardTask(task,logger);
+							forwardTask(task);
 						}
 					}
 				});
@@ -76,11 +73,11 @@ public class InnerNode extends ParentNode {
 		this.serverBootstrap.bind(new InetSocketAddress(port));
 	}
 	
-	private static void sendAnswer(Result answer, Channel parentNode, Logger logger) {
+	private void sendAnswer(Result answer) {
 		Pressluft p;
 		try {
 			p = new Pressluft(Type.RESULT, Result.toByteArray(answer));
-			sendPressLuft(p, parentNode, logger);
+			sendPressLuft(p, parentNode);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -90,25 +87,10 @@ public class InnerNode extends ParentNode {
 	// -- GETTERS AND SETTERS ---------------------------------------------------------------------
 	
 	public void setParentNode(String hostname, int port) {
-		InetSocketAddress addr = new InetSocketAddress(hostname, port);
-		ChannelFuture f = clientBootstrap.connect(addr);
-		
-		if (f.awaitUninterruptibly().isSuccess()) {
-			parentNode = f.getChannel();
-		} else {
-			logger.error("could not connet to " + addr);
-		}
+		parentNode = new InetSocketAddress(hostname, port);
 	}
 	
-	@Override
-	public void close() throws IOException {
-		childNodes.close();
-		parentNode.close();
-		serverBootstrap.releaseExternalResources();
-		clientBootstrap.releaseExternalResources();
+	public InetSocketAddress getParentNode() {
+		return parentNode;
 	}
-	
-//	public InetSocketAddress getParentNode() {
-//		return parentNode;
-//	}
 }

@@ -23,7 +23,7 @@ public class JSONDefinitionTest {
 
         System.out.println(schema.toString());
         RecordProvider recordProvider = new JSONRecordProvider(schema,
-                Resources.getResource("documents.json"));
+                Resources.getResource("documents.json").getFile());
         DummyTablet dummyTablet = new DummyTablet();
         FieldStriper striper = new FieldStriper(schema, dummyTablet);
         striper.dissectRecords(recordProvider);

@@ -11,6 +11,8 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 
 import de.tuberlin.dima.presslufthammer.network.handler.ClientHandler;
@@ -25,7 +27,7 @@ public abstract class Node {
 	protected final String name;
 	
 	protected ServerBootstrap serverBootstrap;
-//	protected ClientBootstrap clientBootstrap;
+	protected ClientBootstrap clientBootstrap;
 	
 	public Node(String name, int port) {
 		logger = Logger.getLogger(name);
@@ -43,7 +45,7 @@ public abstract class Node {
 		
 	}
 	
-	protected void sendPressLuft(Pressluft p, InetSocketAddress addr) {
+	protected static void sendPressLuft(Pressluft p, InetSocketAddress addr, Logger logger) {
 		ClientBootstrap bootstrap = getNewClientBootstrap(logger);
 //		ClientBootstrap bootstrap = this.clientBootstrap;
 		ChannelFuture future = bootstrap.connect(addr);
@@ -63,7 +65,7 @@ public abstract class Node {
 		}
 	}
 	
-	private ClientBootstrap getNewClientBootstrap(final Logger logger) {
+	private static ClientBootstrap getNewClientBootstrap(final Logger logger) {
 		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 		ClientBootstrap res = new ClientBootstrap(factory);
 		res.setPipelineFactory(new ChannelPipelineFactory() {

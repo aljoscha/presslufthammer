@@ -77,7 +77,7 @@ public class InnerNode extends ParentNode {
 		Pressluft p;
 		try {
 			p = new Pressluft(Type.RESULT, Result.toByteArray(answer));
-			sendPressLuft(p, parentNode);
+			sendPressLuft(p, parentNode, logger);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

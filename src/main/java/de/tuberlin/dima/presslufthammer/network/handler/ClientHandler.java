@@ -7,6 +7,7 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.jboss.netty.channel.WriteCompletionEvent;
 
 public class ClientHandler extends SimpleChannelUpstreamHandler {
 	
@@ -41,4 +42,18 @@ public class ClientHandler extends SimpleChannelUpstreamHandler {
 		
 		super.handleUpstream(ctx, e);
 	}
+
+	@Override
+	public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+		System.err.println("channelClosed");
+		super.channelClosed(ctx, e);
+	}
+
+	@Override
+	public void writeComplete(ChannelHandlerContext ctx, WriteCompletionEvent e) throws Exception {
+		super.writeComplete(ctx, e);
+		e.getChannel().close();
+	}
+	
+	
 }

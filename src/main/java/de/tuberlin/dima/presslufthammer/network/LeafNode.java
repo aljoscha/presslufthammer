@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
+import org.apache.log4j.Logger;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -42,7 +43,7 @@ public class LeafNode extends Node {
 					@Override
 					public void handleQuery(Query query) {
 						logger.debug("recieved query " + query.getId());
-						sendAnswer(answer(query));
+						sendAnswer(answer(query),logger,parentNode);
 					}
 				});
 			}
@@ -57,14 +58,14 @@ public class LeafNode extends Node {
 		return new Result(q.getId(), this.name);
 	}
 	
-	private void sendAnswer(Result answer) {
+	private static void sendAnswer(Result answer, Logger logger, InetSocketAddress parentNode) {
 		// TODO replace with private void answer(Query q)
 		logger.debug("sending " + answer.getId() + " to " + parentNode);
 		
 		Pressluft p;
 		try {
 			p = new Pressluft(Type.RESULT, Result.toByteArray(answer));
-			sendPressLuft(p, parentNode);
+			sendPressLuft(p, parentNode, logger);
 		} catch (IOException e) {
 			System.err.println("FUCK");
 			// TODO Auto-generated catch block

@@ -1,6 +1,7 @@
 package de.tuberlin.dima.presslufthammer.ontology;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 public class Task {
 	
@@ -13,9 +14,9 @@ public class Task {
 	// the client, that solves the task
 	private InetSocketAddress solver;
 	
-	public Task(Query query, InetSocketAddress solver) {
+	public Task(Query query, SocketAddress socketAddress) {
 		this.query = query;
-		this.solver = solver;
+		this.solver = socketAddress;
 		this.solution = null;
 	}
 	

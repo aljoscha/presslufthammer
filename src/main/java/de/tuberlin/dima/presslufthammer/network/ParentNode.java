@@ -38,7 +38,6 @@ public class ParentNode extends Node {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 	}
 	
 	// -- FACTORING AND MERGING -------------------------------------------------------------------

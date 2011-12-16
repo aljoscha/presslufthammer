@@ -49,7 +49,7 @@ public class InnerNode extends ParentNode {
 						}
 						
 						if (isSolved(data.getId())) {
-							Result res = mergeResults(ParentNode.extractResults(taskMap.get(data.getId())));
+							Result res = mergeResults(extractResults(taskMap.get(data.getId())));
 							logger.info("Answer to " + res.getId() + " : " + res.getValue());
 							
 							sendAnswer(res);

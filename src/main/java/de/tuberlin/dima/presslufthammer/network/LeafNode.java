@@ -22,7 +22,7 @@ public class LeafNode extends Node {
 	
 	InetSocketAddress parentNode;
 	
-	public LeafNode(String name, int port) {
+	public LeafNode(final String name, int port) {
 		super(name, port);
 		
 		ChannelFactory factory;

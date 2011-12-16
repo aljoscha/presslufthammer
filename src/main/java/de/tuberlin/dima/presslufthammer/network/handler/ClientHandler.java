@@ -16,10 +16,6 @@ public class ClientHandler extends SimpleChannelUpstreamHandler {
 		this.logger = logger;
 	}
 	
-	public ClientHandler() {
-		this.logger = Logger.getLogger(ClientHandler.class.getSimpleName());
-	}
-	
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
 		super.messageReceived(ctx, e);

@@ -26,27 +26,14 @@ public abstract class Node {
 	
 	protected ServerBootstrap serverBootstrap;
 	
-//	protected ClientBootstrap clientBootstrap;
-	
 	public Node(String name, int port) {
 		logger = Logger.getLogger(name);
 		this.name = name;
 		this.port = port;
-		
-//		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
-//		clientBootstrap = new ClientBootstrap(factory);
-//		clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-//			
-//			public ChannelPipeline getPipeline() throws Exception {
-//				return Channels.pipeline(Encoder.getInstance(), new ClientHandler(logger));
-//			}
-//		});
-		
 	}
 	
 	protected void sendPressLuft(Pressluft p, InetSocketAddress addr) {
-		ClientBootstrap bootstrap = getNewClientBootstrap(logger);
-//		ClientBootstrap bootstrap = this.clientBootstrap;
+		ClientBootstrap bootstrap = getNewClientBootstrap();
 		ChannelFuture future = bootstrap.connect(addr);
 		
 		if (!future.awaitUninterruptibly().isSuccess()) {
@@ -64,26 +51,13 @@ public abstract class Node {
 		}
 	}
 	
-	private ClientBootstrap getNewClientBootstrap(final Logger logger) {
+	private ClientBootstrap getNewClientBootstrap() {
 		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 		ClientBootstrap res = new ClientBootstrap(factory);
 		res.setPipelineFactory(new ChannelPipelineFactory() {
 			
 			public ChannelPipeline getPipeline() throws Exception {
 				return Channels.pipeline(Encoder.getInstance(), new ClientHandler(logger));
-			}
-		});
-		
-		return res;
-	}
-	
-	private static ClientBootstrap getNewClientBootstrap() {
-		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
-		ClientBootstrap res = new ClientBootstrap(factory);
-		res.setPipelineFactory(new ChannelPipelineFactory() {
-			
-			public ChannelPipeline getPipeline() throws Exception {
-				return Channels.pipeline(Encoder.getInstance(), new ClientHandler());
 			}
 		});
 		

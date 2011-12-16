@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import org.apache.log4j.BasicConfigurator;
+
 import de.tuberlin.dima.presslufthammer.testing.CLIClient;
 import de.tuberlin.dima.presslufthammer.testing.Coordinator;
 import de.tuberlin.dima.presslufthammer.testing.Inner;
@@ -42,6 +44,8 @@ public class PressluftTest
      */
     public void testApp() throws IOException
     {
+    	BasicConfigurator.configure();
+    	
     	String host = "localhost";
     	int port = 44444;
     	

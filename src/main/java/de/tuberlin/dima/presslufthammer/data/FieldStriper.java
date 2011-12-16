@@ -32,7 +32,8 @@ public final class FieldStriper {
     private void dissectRecord(RecordDecoder decoder, FieldWriter writer,
             int repetitionLevel) {
         Set<SchemaNode> seenFields = Sets.newHashSet();
-        Field field = decoder.next();
+        FieldIterator fieldIterator = decoder.fieldIterator();
+        Field field = fieldIterator.next();
         while (field != null) {
             FieldWriter childWriter = writer.getChild(field.schema);
             int childRepetitionLevel = repetitionLevel;
@@ -50,7 +51,7 @@ public final class FieldStriper {
                         decoder.newDecoder(field.schema, record.getData()),
                         childWriter, childRepetitionLevel);
             }
-            field = decoder.next();
+            field = fieldIterator.next();
         }
     }
 
@@ -59,7 +60,8 @@ public final class FieldStriper {
         FieldWriter fieldWriter = new FieldWriter(parent, schema, columnWriter);
         if (schema.isRecord()) {
             for (SchemaNode childSchema : schema.getFieldList()) {
-                FieldWriter childWriter = createWriterTree(fieldWriter, childSchema);
+                FieldWriter childWriter = createWriterTree(fieldWriter,
+                        childSchema);
                 fieldWriter.addChild(childSchema, childWriter);
             }
         }

@@ -9,11 +9,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class SchemaNode {
-    public enum NodeType {
+    public enum Type {
         RECORD, PRIMITIVE
     }
 
-    public enum FieldRule {
+    public enum Modifier {
         REQUIRED, OPTIONAL, REPEATED
     }
 
@@ -25,25 +25,25 @@ public class SchemaNode {
     private PrimitiveType primitiveType = null;
 
     private String name;
-    private NodeType type;
+    private Type type;
 
-    private FieldRule fieldRule = FieldRule.REQUIRED;
+    private Modifier modifier = Modifier.REQUIRED;
 
     private SchemaNode parent = null;
 
-    private SchemaNode(NodeType nodeType) {
+    private SchemaNode(Type nodeType) {
         type = nodeType;
     }
 
     public static SchemaNode createPrimitive(String name, PrimitiveType type) {
-        SchemaNode newSchema = new SchemaNode(NodeType.PRIMITIVE);
+        SchemaNode newSchema = new SchemaNode(Type.PRIMITIVE);
         newSchema.name = name;
         newSchema.primitiveType = type;
         return newSchema;
     }
 
     public static SchemaNode createRecord(String name) {
-        SchemaNode newSchema = new SchemaNode(NodeType.RECORD);
+        SchemaNode newSchema = new SchemaNode(Type.RECORD);
         newSchema.name = name;
         newSchema.fieldList = Lists.newLinkedList();
         newSchema.fieldMap = Maps.newHashMap();
@@ -54,16 +54,16 @@ public class SchemaNode {
         return name;
     }
 
-    public NodeType getType() {
+    public Type getType() {
         return type;
     }
 
     public boolean isPrimitive() {
-        return type == NodeType.PRIMITIVE;
+        return type == Type.PRIMITIVE;
     }
 
     public PrimitiveType getPrimitiveType() {
-        if (type != NodeType.PRIMITIVE) {
+        if (type != Type.PRIMITIVE) {
             throw new RuntimeException("SchemaTree " + name
                     + " is not a primitive type.");
         }
@@ -71,39 +71,39 @@ public class SchemaNode {
     }
 
     public boolean isRequired() {
-        return fieldRule == FieldRule.REQUIRED;
+        return modifier == Modifier.REQUIRED;
     }
 
     public void setRequired() {
-        fieldRule = FieldRule.REQUIRED;
+        modifier = Modifier.REQUIRED;
     }
 
     public boolean isOptional() {
-        return fieldRule == FieldRule.OPTIONAL;
+        return modifier == Modifier.OPTIONAL;
     }
 
     public void setOptional() {
-        fieldRule = FieldRule.OPTIONAL;
+        modifier = Modifier.OPTIONAL;
     }
 
     public boolean isRepeated() {
-        return fieldRule == FieldRule.REPEATED;
+        return modifier == Modifier.REPEATED;
     }
 
     public void setRepeated() {
-        fieldRule = FieldRule.REPEATED;
+        modifier = Modifier.REPEATED;
     }
 
-    public FieldRule getFieldRule() {
-        return fieldRule;
+    public Modifier getModifier() {
+        return modifier;
     }
 
     public boolean isRecord() {
-        return type == NodeType.RECORD;
+        return type == Type.RECORD;
     }
 
     public List<SchemaNode> getFieldList() {
-        if (type != NodeType.RECORD) {
+        if (type != Type.RECORD) {
             throw new RuntimeException("SchemaTree " + name
                     + " is not a record type.");
         }
@@ -115,7 +115,7 @@ public class SchemaNode {
     }
 
     public void addField(SchemaNode newField, String name) {
-        if (type != NodeType.RECORD) {
+        if (type != Type.RECORD) {
             throw new RuntimeException("Adding a field to SchemaTree " + name
                     + " is not possible because it is not a record.");
         }
@@ -155,7 +155,7 @@ public class SchemaNode {
             return false;
         }
 
-        if (getFieldRule() != otherSchema.getFieldRule()) {
+        if (getModifier() != otherSchema.getModifier()) {
             return false;
         }
 
@@ -179,7 +179,7 @@ public class SchemaNode {
     }
 
     public int hashCode() {
-        return Objects.hashCode(fieldMap, primitiveType, name, type, fieldRule);
+        return Objects.hashCode(fieldMap, primitiveType, name, type, modifier);
     }
 
     public String getQualifiedName() {
@@ -204,7 +204,7 @@ public class SchemaNode {
 
         String result = "";
         if (parent != null) {
-            switch (fieldRule) {
+            switch (modifier) {
             case REQUIRED:
                 result += "required ";
                 break;

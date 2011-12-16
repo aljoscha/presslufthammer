@@ -22,6 +22,6 @@ public class RecordField extends Field {
 
     @Override
     public String toString() {
-        return "RECORD FIELD: " + schema.getName();
+        return "RECORD FIELD " + schema.getName() + ": " + data.toString();
     }
 }

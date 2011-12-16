@@ -17,16 +17,16 @@ public class JSONDefinitionTest {
 
         SchemaNode document = SchemaNode.createRecord("Document");
         SchemaNode docId = SchemaNode.createPrimitive("DocId",
-                PrimitiveType.LONG);
+                PrimitiveType.INT64);
         document.addField(docId);
 
         SchemaNode links = SchemaNode.createRecord("Links");
         links.setOptional();
         SchemaNode backward = SchemaNode.createPrimitive("Backward",
-                PrimitiveType.LONG);
+                PrimitiveType.INT64);
         backward.setRepeated();
         SchemaNode forward = SchemaNode.createPrimitive("Forward",
-                PrimitiveType.LONG);
+                PrimitiveType.INT64);
         forward.setRepeated();
         links.addField(backward);
         links.addField(forward);

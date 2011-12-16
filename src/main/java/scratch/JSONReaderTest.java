@@ -28,7 +28,7 @@ public class JSONReaderTest {
         arguments.setRepeated();
         predicate.addField(arguments);
         
-        SchemaNode penises = SchemaNode.createPrimitive("numbers", PrimitiveType.LONG);
+        SchemaNode penises = SchemaNode.createPrimitive("numbers", PrimitiveType.INT64);
         penises.setRepeated();
 
         SchemaNode schemaRoot = SchemaNode.createRecord("PredicateOuter");

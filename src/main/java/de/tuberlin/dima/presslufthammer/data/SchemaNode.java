@@ -3,6 +3,7 @@ package de.tuberlin.dima.presslufthammer.data;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -202,28 +203,38 @@ public class SchemaNode {
         String ident = identBuffer.toString();
 
         String result = "";
-        switch (fieldRule) {
-        case REQUIRED:
-            result += "required ";
-            break;
-        case OPTIONAL:
-            result += "optional ";
-            break;
-        case REPEATED:
-            result += "repeated ";
-            break;
+        if (parent != null) {
+            switch (fieldRule) {
+            case REQUIRED:
+                result += "required ";
+                break;
+            case OPTIONAL:
+                result += "optional ";
+                break;
+            case REPEATED:
+                result += "repeated ";
+                break;
+            }
         }
         switch (type) {
         case PRIMITIVE:
-            result += "primitive " + primitiveType.toString() + " " + name;
+            result += primitiveType.toString() + " " + name + ";";
             break;
         case RECORD:
-            result += "record " + name + "\n";
-            for (SchemaNode schema : fieldList) {
-                result += fieldMap.get(schema.getName()).toStringRecursive(
-                        indentation)
-                        + "\n";
+            if (parent == null) {
+                result += "message ";
+            } else {
+                result += "group ";
             }
+            result += name + " {\n";
+            List<String> childStrings = Lists.newLinkedList();
+            for (SchemaNode schema : fieldList) {
+                childStrings.add(fieldMap.get(schema.getName())
+                        .toStringRecursive(indentation));
+            }
+            Joiner join = Joiner.on('\n');
+            result += join.join(childStrings);
+            result += " }";
             break;
         default:
             throw new RuntimeException("Unexpected node type " + type);

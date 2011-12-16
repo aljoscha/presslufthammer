@@ -30,13 +30,13 @@ public class JSONHelper {
     }
 
     public static Field createPrimitiveField(Object value, SchemaNode childSchema) {
-        if (childSchema.getPrimitiveType() == PrimitiveType.INT
+        if (childSchema.getPrimitiveType() == PrimitiveType.INT32
                 && value instanceof Integer) {
             return new IntField(childSchema, (Integer) value);
         } else if (childSchema.getPrimitiveType() == PrimitiveType.BOOLEAN
                 && value instanceof Boolean) {
             return new BooleanField(childSchema, (Boolean) value);
-        } else if (childSchema.getPrimitiveType() == PrimitiveType.LONG
+        } else if (childSchema.getPrimitiveType() == PrimitiveType.INT64
                 && value instanceof Long) {
             return new LongField(childSchema, (Long) value);
         } else if (childSchema.getPrimitiveType() == PrimitiveType.FLOAT

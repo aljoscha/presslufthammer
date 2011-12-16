@@ -6,7 +6,7 @@ import java.io.IOException;
 import com.google.common.io.Resources;
 
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
-import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
+import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.RecordProvider;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.dummy.DummyTablet;
@@ -17,47 +17,15 @@ public class JSONDefinitionTest {
     public static void main(String[] args) throws FileNotFoundException,
             IOException {
 
-        SchemaNode document = SchemaNode.createRecord("Document");
-        SchemaNode docId = SchemaNode.createPrimitive("DocId",
-                PrimitiveType.INT64);
-        document.addField(docId);
+        
+        SchemaNode schema = ProtobufSchemaHelper.readSchema(Resources
+                .getResource("Document.proto").getFile(), "Document");
 
-        SchemaNode links = SchemaNode.createRecord("Links");
-        links.setOptional();
-        SchemaNode backward = SchemaNode.createPrimitive("Backward",
-                PrimitiveType.INT64);
-        backward.setRepeated();
-        SchemaNode forward = SchemaNode.createPrimitive("Forward",
-                PrimitiveType.INT64);
-        forward.setRepeated();
-        links.addField(backward);
-        links.addField(forward);
-        document.addField(links);
-
-        SchemaNode name = SchemaNode.createRecord("Name");
-        name.setRepeated();
-        SchemaNode language = SchemaNode.createRecord("Language");
-        language.setRepeated();
-        SchemaNode code = SchemaNode.createPrimitive("Code",
-                PrimitiveType.STRING);
-        SchemaNode country = SchemaNode.createPrimitive("Country",
-                PrimitiveType.STRING);
-        country.setOptional();
-        language.addField(code);
-        language.addField(country);
-        name.addField(language);
-        SchemaNode url = SchemaNode
-                .createPrimitive("Url", PrimitiveType.STRING);
-        url.setOptional();
-        name.addField(url);
-
-        document.addField(name);
-
-        System.out.println(document.toString());
-        RecordProvider recordProvider = new JSONRecordProvider(document,
+        System.out.println(schema.toString());
+        RecordProvider recordProvider = new JSONRecordProvider(schema,
                 Resources.getResource("documents.json"));
         DummyTablet dummyTablet = new DummyTablet();
-        FieldStriper striper = new FieldStriper(document, dummyTablet);
+        FieldStriper striper = new FieldStriper(schema, dummyTablet);
         striper.dissectRecords(recordProvider);
 
         dummyTablet.printColumns();

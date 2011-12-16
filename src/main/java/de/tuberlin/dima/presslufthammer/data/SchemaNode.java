@@ -191,7 +191,7 @@ public class SchemaNode {
     }
 
     public String toString() {
-        return toStringRecursive(0);
+        return "package " + getName() + ";\n" + toStringRecursive(0);
     }
 
     private String toStringRecursive(int indentation) {
@@ -200,10 +200,11 @@ public class SchemaNode {
             identBuffer.append("      ");
         }
         indentation++;
-        String ident = identBuffer.toString();
+        String indent = identBuffer.toString();
 
         String result = "";
-        if (parent != null) {
+        switch (type) {
+        case PRIMITIVE:
             switch (modifier) {
             case REQUIRED:
                 result += "required ";
@@ -215,31 +216,40 @@ public class SchemaNode {
                 result += "repeated ";
                 break;
             }
-        }
-        switch (type) {
-        case PRIMITIVE:
-            result += primitiveType.toString() + " " + name + ";";
+            result += primitiveType.toString() + " " + name;
             break;
         case RECORD:
-            if (parent == null) {
-                result += "message ";
-            } else {
-                result += "group ";
-            }
-            result += name + " {\n";
+            result += "message " + name + " {\n";
             List<String> childStrings = Lists.newLinkedList();
+            int count = 1;
             for (SchemaNode schema : fieldList) {
                 childStrings.add(fieldMap.get(schema.getName())
-                        .toStringRecursive(indentation));
+                        .toStringRecursive(indentation) + " = " + count + ";");
+                ++count;
             }
             Joiner join = Joiner.on('\n');
             result += join.join(childStrings);
             result += " }";
+            if (parent != null) {
+                result += "\n" + indent;
+                switch (modifier) {
+                case REQUIRED:
+                    result += "required ";
+                    break;
+                case OPTIONAL:
+                    result += "optional ";
+                    break;
+                case REPEATED:
+                    result += "repeated ";
+                    break;
+                }
+                result += getName() + " " + getName();
+            }
             break;
         default:
             throw new RuntimeException("Unexpected node type " + type);
         }
 
-        return ident + result;
+        return indent + result;
     }
 }

@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
@@ -25,7 +26,8 @@ public class InMemoryTablet implements Tablet {
     private void createColumns(SchemaNode schema) {
         List<ColumnEntry> column = Lists.newLinkedList();
         columns.put(schema, column);
-        InMemoryColumnWriter columnWriter = new InMemoryColumnWriter(schema, column);
+        InMemoryColumnWriter columnWriter = new InMemoryColumnWriter(schema,
+                column);
         columnWriters.put(schema, columnWriter);
         if (schema.isRecord()) {
             for (SchemaNode childSchema : schema.getFieldList()) {
@@ -39,11 +41,19 @@ public class InMemoryTablet implements Tablet {
     }
 
     public ColumnWriter getColumnWriter(SchemaNode schema) {
-        if (!columnWriters.containsKey(schema)) {
+        if (!columns.containsKey(schema)) {
             throw new RuntimeException(
                     "This should not happen, bug in program.");
         }
         return columnWriters.get(schema);
+    }
+
+    public ColumnReader getColumnReader(SchemaNode schema) {
+        if (!columns.containsKey(schema)) {
+            throw new RuntimeException(
+                    "This should not happen, bug in program.");
+        }
+        return new InMemoryColumnReader(schema, columns.get(schema));
     }
 
     public void printColumns() {

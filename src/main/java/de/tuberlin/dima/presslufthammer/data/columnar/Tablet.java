@@ -4,5 +4,8 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 
 public interface Tablet {
     public SchemaNode getSchema();
+
     public ColumnWriter getColumnWriter(SchemaNode schema);
+
+    public ColumnReader getColumnReader(SchemaNode schema);
 }

@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.data.dummy;
+package de.tuberlin.dima.presslufthammer.data.columnar;
 
 import java.util.List;
 
@@ -6,7 +6,6 @@ import com.google.common.collect.Lists;
 
 import de.tuberlin.dima.presslufthammer.data.Field;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
 public class DummyColumnWriter implements ColumnWriter {
     private SchemaNode schema;

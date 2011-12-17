@@ -9,7 +9,7 @@ import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.RecordProvider;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.dummy.DummyTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.DummyTablet;
 import de.tuberlin.dima.presslufthammer.data.json.JSONRecordProvider;
 
 public class JSONReaderTest {

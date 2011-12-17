@@ -76,7 +76,7 @@ public final class FieldWriter {
                                 && nextState.d > currentState.d) {
                             continue;
                         }
-                        writer.writeField(null, currentState.r, currentState.d);
+                        writer.writeNull(currentState.r, currentState.d);
                     }
                 }
             }
@@ -171,7 +171,7 @@ public final class FieldWriter {
                                 && nextState.d > currentState.d) {
                             continue;
                         }
-                        writer.writeField(null, currentState.r, currentState.d);
+                        writer.writeNull(currentState.r, currentState.d);
                     }
                 }
             }

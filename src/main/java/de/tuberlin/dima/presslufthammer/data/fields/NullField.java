@@ -4,16 +4,15 @@ import de.tuberlin.dima.presslufthammer.data.Field;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
-public class RecordField extends Field {
-    private final Object data;
+public class NullField extends Field {
 
-    public RecordField(SchemaNode schema, Object data) {
+    public NullField(SchemaNode schema) {
         super(schema);
-        this.data = data;
     }
 
-    public Object getData() {
-        return data;
+    @Override
+    public String toString() {
+        return "NULL";
     }
 
     @Override
@@ -22,13 +21,8 @@ public class RecordField extends Field {
     }
 
     @Override
-    public String toString() {
-        return "RECORD FIELD " + schema.getName() + ": " + data.toString();
-    }
-
-    @Override
     public void writeToColumn(ColumnWriter writer, int repetitionLevel,
             int definitionLevel) {
-       // Do nothing for now ... 
+        writer.writeNull(repetitionLevel, definitionLevel);
     }
 }

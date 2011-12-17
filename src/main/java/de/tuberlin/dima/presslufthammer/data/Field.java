@@ -1,5 +1,7 @@
 package de.tuberlin.dima.presslufthammer.data;
 
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
+
 public abstract class Field {
     protected final SchemaNode schema;
 
@@ -12,4 +14,7 @@ public abstract class Field {
     }
 
     public abstract boolean isPrimitive();
+
+    public abstract void writeToColumn(ColumnWriter writer,
+            int repetitionLevel, int definitionLevel);
 }

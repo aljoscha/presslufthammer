@@ -1,6 +1,7 @@
 package de.tuberlin.dima.presslufthammer.data.fields;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
 public class StringField extends PrimitiveField {
     private final String value;
@@ -17,5 +18,11 @@ public class StringField extends PrimitiveField {
 
     public String getValue() {
         return value;
+    }
+
+    @Override
+    public void writeToColumn(ColumnWriter writer, int repetitionLevel,
+            int definitionLevel) {
+       writer.writeString(value, repetitionLevel, definitionLevel); 
     }
 }

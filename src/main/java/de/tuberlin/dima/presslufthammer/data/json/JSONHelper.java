@@ -8,8 +8,8 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.fields.BooleanField;
 import de.tuberlin.dima.presslufthammer.data.fields.DoubleField;
 import de.tuberlin.dima.presslufthammer.data.fields.FloatField;
-import de.tuberlin.dima.presslufthammer.data.fields.IntField;
-import de.tuberlin.dima.presslufthammer.data.fields.LongField;
+import de.tuberlin.dima.presslufthammer.data.fields.Int32Field;
+import de.tuberlin.dima.presslufthammer.data.fields.Int64Field;
 import de.tuberlin.dima.presslufthammer.data.fields.RecordField;
 import de.tuberlin.dima.presslufthammer.data.fields.StringField;
 
@@ -32,13 +32,13 @@ public class JSONHelper {
     public static Field createPrimitiveField(Object value, SchemaNode childSchema) {
         if (childSchema.getPrimitiveType() == PrimitiveType.INT32
                 && value instanceof Integer) {
-            return new IntField(childSchema, (Integer) value);
+            return new Int32Field(childSchema, (Integer) value);
         } else if (childSchema.getPrimitiveType() == PrimitiveType.BOOLEAN
                 && value instanceof Boolean) {
             return new BooleanField(childSchema, (Boolean) value);
         } else if (childSchema.getPrimitiveType() == PrimitiveType.INT64
                 && value instanceof Long) {
-            return new LongField(childSchema, (Long) value);
+            return new Int64Field(childSchema, (Long) value);
         } else if (childSchema.getPrimitiveType() == PrimitiveType.FLOAT
                 && value instanceof Float) {
             return new FloatField(childSchema, (Float) value);

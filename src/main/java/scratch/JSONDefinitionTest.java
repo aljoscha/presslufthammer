@@ -9,7 +9,7 @@ import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.RecordProvider;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.columnar.DummyTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryTablet;
 import de.tuberlin.dima.presslufthammer.data.json.JSONRecordProvider;
 
 public class JSONDefinitionTest {
@@ -23,7 +23,7 @@ public class JSONDefinitionTest {
         System.out.println(schema.toString());
         RecordProvider recordProvider = new JSONRecordProvider(schema,
                 Resources.getResource("documents.json").getFile());
-        DummyTablet dummyTablet = new DummyTablet();
+        InMemoryTablet dummyTablet = new InMemoryTablet(schema);
         FieldStriper striper = new FieldStriper(schema, dummyTablet);
         striper.dissectRecords(recordProvider);
 

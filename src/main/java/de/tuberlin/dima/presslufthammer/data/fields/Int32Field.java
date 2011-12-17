@@ -3,26 +3,26 @@ package de.tuberlin.dima.presslufthammer.data.fields;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
-public class BooleanField extends PrimitiveField {
-    private final boolean value;
+public class Int32Field extends PrimitiveField {
+    private final int value;
 
-    public BooleanField(SchemaNode schema, boolean value) {
+    public Int32Field(SchemaNode schema, int value) {
         super(schema);
         this.value = value;
     }
 
     @Override
     public String toString() {
-        return Boolean.toString(value);
+        return Integer.toString(value);
     }
 
-    public boolean getValue() {
+    public int getValue() {
         return value;
     }
 
     @Override
     public void writeToColumn(ColumnWriter writer, int repetitionLevel,
             int definitionLevel) {
-        writer.writeBool(value, repetitionLevel, definitionLevel);
+        writer.writeInt32(value, repetitionLevel, definitionLevel);
     }
 }

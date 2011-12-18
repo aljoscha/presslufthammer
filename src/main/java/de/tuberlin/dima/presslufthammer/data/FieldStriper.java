@@ -9,7 +9,8 @@ import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.FieldIterator;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordDecoder;
-import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordProvider;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordIterator;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordStore;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.RecordField;
 
 public final class FieldStriper {
@@ -24,11 +25,12 @@ public final class FieldStriper {
         rootWriter = createWriterTree(null, this.schema);
     }
 
-    public void dissectRecords(RecordProvider recordProvider) {
-        RecordDecoder decoder = recordProvider.next();
+    public void dissectRecords(RecordStore records) {
+        RecordIterator iterator = records.recordIterator();
+        RecordDecoder decoder = iterator.next();
         while (decoder != null) {
             dissectRecord(decoder, rootWriter, 0);
-            decoder = recordProvider.next();
+            decoder = iterator.next();
         }
         rootWriter.finalizeLevels();
     }

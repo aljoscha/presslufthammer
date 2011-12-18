@@ -1,6 +1,6 @@
 package de.tuberlin.dima.presslufthammer.data.hierarchical;
 
 
-public interface RecordProvider {
+public interface RecordIterator {
     public RecordDecoder next();
 }

@@ -9,8 +9,7 @@ import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryTablet;
-import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordProvider;
-import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordProvider;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordFile;
 
 public class JSONReaderTest {
 
@@ -39,9 +38,9 @@ public class JSONReaderTest {
         schemaRoot.addField(predicate);
 
         System.out.println(predicate.toString());
-        RecordProvider recordProvider = new JSONRecordProvider(schemaRoot,
+        JSONRecordFile records = new JSONRecordFile(schemaRoot,
                 Resources.getResource("sentences-reducedPunctuation-json-1-2").getFile());
         FieldStriper striper = new FieldStriper(schemaRoot, new InMemoryTablet(schemaRoot));
-        striper.dissectRecords(recordProvider);
+        striper.dissectRecords(records);
     }
 }

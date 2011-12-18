@@ -10,7 +10,7 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.FieldIterator;
 
-public class JSONRecordDecoderFieldIterator implements FieldIterator {
+class JSONRecordDecoderFieldIterator implements FieldIterator {
     private JSONRecordDecoder decoder;
     private JSONObject jsonData;
     private SchemaNode schema;

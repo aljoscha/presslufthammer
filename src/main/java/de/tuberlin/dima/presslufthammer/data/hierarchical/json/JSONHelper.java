@@ -13,7 +13,7 @@ import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.Int64Field;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.RecordField;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.StringField;
 
-public class JSONHelper {
+class JSONHelper {
 
     public static Field createField(Object value, SchemaNode childSchema) {
         if (childSchema.isPrimitive()) {

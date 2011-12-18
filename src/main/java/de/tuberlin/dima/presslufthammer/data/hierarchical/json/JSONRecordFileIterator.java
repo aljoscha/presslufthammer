@@ -2,7 +2,6 @@ package de.tuberlin.dima.presslufthammer.data.hierarchical.json;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.Scanner;
 
 import org.json.simple.JSONObject;
@@ -10,20 +9,25 @@ import org.json.simple.JSONValue;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordDecoder;
-import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordProvider;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordIterator;
 
-public class JSONRecordProvider implements RecordProvider {
+class JSONRecordFileIterator implements RecordIterator {
     private Scanner scan;
     private SchemaNode schema;
 
-    public JSONRecordProvider(SchemaNode schema, String filename)
-            throws FileNotFoundException, IOException {
+    public JSONRecordFileIterator(SchemaNode schema, String filename) {
         this.schema = schema;
-
-        scan = new Scanner(new File(filename));
+        try {
+            scan = new Scanner(new File(filename));
+        } catch (FileNotFoundException e) {
+            scan = null;
+        }
     }
 
     public RecordDecoder next() {
+        if (scan == null) {
+            return null;
+        }
         if (scan.hasNextLine()) {
             JSONObject job = (JSONObject) JSONValue.parse(scan.nextLine());
             RecordDecoder decoder = new JSONRecordDecoder(schema, job);

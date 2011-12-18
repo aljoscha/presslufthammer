@@ -39,6 +39,10 @@ public class InMemoryTablet implements Tablet {
     public SchemaNode getSchema() {
         return schema;
     }
+    
+    public boolean hasColumn(SchemaNode schema) {
+        return columns.containsKey(schema);
+    }
 
     public ColumnWriter getColumnWriter(SchemaNode schema) {
         if (!columns.containsKey(schema)) {

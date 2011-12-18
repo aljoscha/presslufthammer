@@ -2,11 +2,11 @@ package de.tuberlin.dima.presslufthammer.data.columnar.inmemory;
 
 import java.util.List;
 
-import de.tuberlin.dima.presslufthammer.data.Field;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryTablet.ColumnEntry;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
 
 public class InMemoryColumnWriter implements ColumnWriter {
     private SchemaNode schema;

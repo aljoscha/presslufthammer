@@ -6,7 +6,11 @@ import com.google.common.collect.Sets;
 
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
-import de.tuberlin.dima.presslufthammer.data.fields.RecordField;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.FieldIterator;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordDecoder;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordProvider;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.RecordField;
 
 public final class FieldStriper {
     private SchemaNode schema;
@@ -35,20 +39,20 @@ public final class FieldStriper {
         FieldIterator fieldIterator = decoder.fieldIterator();
         Field field = fieldIterator.next();
         while (field != null) {
-            FieldWriter childWriter = writer.getChild(field.schema);
+            FieldWriter childWriter = writer.getChild(field.getSchema());
             int childRepetitionLevel = repetitionLevel;
-            if (seenFields.contains(field.schema)) {
+            if (seenFields.contains(field.getSchema())) {
                 childRepetitionLevel = childWriter.getRepetition();
             } else {
-                seenFields.add(field.schema);
+                seenFields.add(field.getSchema());
             }
-            if (field.schema.isPrimitive()) {
+            if (field.getSchema().isPrimitive()) {
                 childWriter.writeField(field, childRepetitionLevel);
             } else {
                 RecordField record = (RecordField) field;
                 childWriter.writeField(null, childRepetitionLevel);
                 dissectRecord(
-                        decoder.newDecoder(field.schema, record.getData()),
+                        decoder.newDecoder(field.getSchema(), record.getData()),
                         childWriter, childRepetitionLevel);
             }
             field = fieldIterator.next();

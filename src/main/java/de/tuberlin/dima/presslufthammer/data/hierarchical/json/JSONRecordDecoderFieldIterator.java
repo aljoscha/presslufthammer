@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.data.json;
+package de.tuberlin.dima.presslufthammer.data.hierarchical.json;
 
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -6,12 +6,12 @@ import java.util.Map.Entry;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import de.tuberlin.dima.presslufthammer.data.Field;
-import de.tuberlin.dima.presslufthammer.data.FieldIterator;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.FieldIterator;
 
-public class JSONDecoderFieldIterator implements FieldIterator {
-    private JSONDecoder decoder;
+public class JSONRecordDecoderFieldIterator implements FieldIterator {
+    private JSONRecordDecoder decoder;
     private JSONObject jsonData;
     private SchemaNode schema;
 
@@ -20,7 +20,7 @@ public class JSONDecoderFieldIterator implements FieldIterator {
     private String arrayKey = null;
 
     @SuppressWarnings("unchecked")
-    public JSONDecoderFieldIterator(JSONDecoder decoder) {
+    public JSONRecordDecoderFieldIterator(JSONRecordDecoder decoder) {
         this.decoder = decoder;
         this.jsonData = this.decoder.getData();
         this.schema = this.decoder.getSchema();

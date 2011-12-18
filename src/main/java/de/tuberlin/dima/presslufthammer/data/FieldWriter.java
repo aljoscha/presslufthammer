@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
 
 public final class FieldWriter {
     private final FieldWriter parent;

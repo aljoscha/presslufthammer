@@ -1,8 +1,8 @@
-package de.tuberlin.dima.presslufthammer.data.fields;
+package de.tuberlin.dima.presslufthammer.data.hierarchical.fields;
 
-import de.tuberlin.dima.presslufthammer.data.Field;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
 
 public class NullField extends Field {
 

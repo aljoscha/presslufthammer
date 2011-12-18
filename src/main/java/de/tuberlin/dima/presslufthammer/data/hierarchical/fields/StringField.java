@@ -1,28 +1,28 @@
-package de.tuberlin.dima.presslufthammer.data.fields;
+package de.tuberlin.dima.presslufthammer.data.hierarchical.fields;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
-public class BooleanField extends PrimitiveField {
-    private final boolean value;
+public class StringField extends PrimitiveField {
+    private final String value;
 
-    public BooleanField(SchemaNode schema, boolean value) {
+    public StringField(SchemaNode schema, String value) {
         super(schema);
         this.value = value;
     }
 
     @Override
     public String toString() {
-        return Boolean.toString(value);
+        return value;
     }
 
-    public boolean getValue() {
+    public String getValue() {
         return value;
     }
 
     @Override
     public void writeToColumn(ColumnWriter writer, int repetitionLevel,
             int definitionLevel) {
-        writer.writeBool(value, repetitionLevel, definitionLevel);
+       writer.writeString(value, repetitionLevel, definitionLevel); 
     }
 }

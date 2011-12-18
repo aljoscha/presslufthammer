@@ -1,5 +1,6 @@
-package de.tuberlin.dima.presslufthammer.data;
+package de.tuberlin.dima.presslufthammer.data.hierarchical;
 
+import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
 public abstract class Field {

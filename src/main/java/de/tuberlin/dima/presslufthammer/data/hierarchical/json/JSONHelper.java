@@ -1,17 +1,17 @@
-package de.tuberlin.dima.presslufthammer.data.json;
+package de.tuberlin.dima.presslufthammer.data.hierarchical.json;
 
 import org.json.simple.JSONObject;
 
-import de.tuberlin.dima.presslufthammer.data.Field;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.fields.BooleanField;
-import de.tuberlin.dima.presslufthammer.data.fields.DoubleField;
-import de.tuberlin.dima.presslufthammer.data.fields.FloatField;
-import de.tuberlin.dima.presslufthammer.data.fields.Int32Field;
-import de.tuberlin.dima.presslufthammer.data.fields.Int64Field;
-import de.tuberlin.dima.presslufthammer.data.fields.RecordField;
-import de.tuberlin.dima.presslufthammer.data.fields.StringField;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.BooleanField;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.DoubleField;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.FloatField;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.Int32Field;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.Int64Field;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.RecordField;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.StringField;
 
 public class JSONHelper {
 

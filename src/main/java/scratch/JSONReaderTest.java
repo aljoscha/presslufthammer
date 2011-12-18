@@ -7,10 +7,10 @@ import com.google.common.io.Resources;
 
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
-import de.tuberlin.dima.presslufthammer.data.RecordProvider;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryTablet;
-import de.tuberlin.dima.presslufthammer.data.json.JSONRecordProvider;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordProvider;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordProvider;
 
 public class JSONReaderTest {
 

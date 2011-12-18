@@ -1,6 +1,6 @@
 package de.tuberlin.dima.presslufthammer.data.columnar;
 
-import de.tuberlin.dima.presslufthammer.data.Field;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
 
 public interface ColumnWriter {
     public void writeField(Field field, int repetitionLevel, int definitionLevel);

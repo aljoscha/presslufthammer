@@ -1,28 +1,28 @@
-package de.tuberlin.dima.presslufthammer.data.fields;
+package de.tuberlin.dima.presslufthammer.data.hierarchical.fields;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
-public class FloatField extends PrimitiveField {
-    private final float value;
+public class Int32Field extends PrimitiveField {
+    private final int value;
 
-    public FloatField(SchemaNode schema, float value) {
+    public Int32Field(SchemaNode schema, int value) {
         super(schema);
         this.value = value;
     }
 
     @Override
     public String toString() {
-        return Float.toString(value);
+        return Integer.toString(value);
     }
 
-    public float getValue() {
+    public int getValue() {
         return value;
     }
 
     @Override
     public void writeToColumn(ColumnWriter writer, int repetitionLevel,
             int definitionLevel) {
-        writer.writeFloat(value, repetitionLevel, definitionLevel);
+        writer.writeInt32(value, repetitionLevel, definitionLevel);
     }
 }

@@ -50,6 +50,31 @@ public class SchemaNode {
         return newSchema;
     }
 
+    public int getRepetition() {
+        int parentRepetition = 0;
+        if (this.parent != null) {
+            parentRepetition = parent.getRepetition();
+        }
+        if (isRepeated()) {
+            return parentRepetition + 1;
+        } else {
+            return parentRepetition;
+        }
+
+    }
+
+    public int getMaxDefinition() {
+        int parentMaxDefinition = 0;
+        if (this.parent != null) {
+            parentMaxDefinition = parent.getMaxDefinition();
+        }
+        if (isOptional() || isRepeated()) {
+            return parentMaxDefinition + 1;
+        } else {
+            return parentMaxDefinition;
+        }
+    }
+
     public String getName() {
         return name;
     }

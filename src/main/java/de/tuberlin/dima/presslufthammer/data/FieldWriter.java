@@ -27,24 +27,8 @@ public final class FieldWriter {
         this.schema = schema;
         this.writer = writer;
 
-        int parentMaxDefinition = 0;
-        int parentRepetition = 0;
-        if (this.parent == null) {
-        } else {
-            parentRepetition = parent.getRepetition();
-            parentMaxDefinition = parent.getMaxDefinition();
-        }
-
-        if (schema.isOptional() || schema.isRepeated()) {
-            maxDefinition = parentMaxDefinition + 1;
-        } else {
-            maxDefinition = parentMaxDefinition;
-        }
-        if (schema.isRepeated()) {
-            repetition = parentRepetition + 1;
-        } else {
-            repetition = parentRepetition;
-        }
+        maxDefinition = schema.getMaxDefinition();
+        repetition = schema.getRepetition();
 
         this.children = Maps.newHashMap();
         this.levelStates = Lists.newLinkedList();

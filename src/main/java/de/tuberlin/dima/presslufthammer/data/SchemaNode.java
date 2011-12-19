@@ -75,6 +75,25 @@ public class SchemaNode {
         }
     }
 
+    public int getFullDefinition() {
+        int parentFullDefinition = 0;
+        if (this.parent != null) {
+            parentFullDefinition = parent.getFullDefinition();
+        }
+        return parentFullDefinition + 1;
+    }
+
+    public List<SchemaNode> getPath() {
+        if (parent == null) {
+            List<SchemaNode> result = Lists.newArrayList(this);
+            return result;
+        } else {
+            List<SchemaNode> result = parent.getPath();
+            result.add(this);
+            return result;
+        }
+    }
+
     public String getName() {
         return name;
     }
@@ -208,7 +227,8 @@ public class SchemaNode {
     }
 
     public int hashCode() {
-        return Objects.hashCode(fieldMap, primitiveType, name, type, modifier);
+        return Objects.hashCode(fieldMap, primitiveType, getQualifiedName(),
+                type, modifier);
     }
 
     public String getQualifiedName() {

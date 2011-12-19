@@ -200,6 +200,10 @@ public class SchemaNode {
                 }
             }
         }
+
+        if (!getName().equals(otherSchema.getName())) {
+            return false;
+        }
         return true;
     }
 

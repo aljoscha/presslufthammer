@@ -25,7 +25,7 @@ public class AssemblyFSMNode {
     }
 
     public boolean isFinal() {
-        return reader == null;
+        return schema == null;
     }
 
     public boolean hasTransition(int level) {

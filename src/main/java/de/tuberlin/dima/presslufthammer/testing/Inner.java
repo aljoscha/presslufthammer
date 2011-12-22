@@ -105,10 +105,15 @@ public class Inner extends ChannelNode {
 
 			public void operationComplete(ChannelFuture future)
 					throws Exception {
-				// TODO Auto-generated method stub
 				coordChan = future.getChannel();
 				openChannels.add(coordChan);
-				serve();
+				coordChan.write(REGMSG).addListener( new ChannelFutureListener() {
+					
+					public void operationComplete(ChannelFuture future) throws Exception {
+						log.debug("registered with coordinator @ " + coordChan.getRemoteAddress());
+						serve();
+					}
+				});
 			}
 		});
 		return true;
@@ -120,6 +125,15 @@ public class Inner extends ChannelNode {
 	public void regChild(Channel channel) {
 		// TODO Auto-generated method stub
 		childChannels.add(channel);
+	}
+
+	/**
+	 * @param query
+	 */
+	public void query(Pressluft query) {
+		for( Channel c: childChannels) {
+			c.write(query);
+		}
 	}
 
 	public static void main(String[] args) throws Exception {

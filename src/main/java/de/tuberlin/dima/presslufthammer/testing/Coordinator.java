@@ -28,7 +28,7 @@ public class Coordinator extends ChannelNode {
 	ChannelGroup leafChans = new DefaultChannelGroup();
 	ChannelGroup clientChans = new DefaultChannelGroup();
 	private CoordinatorHandler handler = new CoordinatorHandler(this);
-	private Channel rootChan;
+	private Channel rootChan = null;
 
 	/**
 	 * @param port
@@ -55,12 +55,20 @@ public class Coordinator extends ChannelNode {
 	 */
 	public void query(Pressluft query) {
 		// TODO
-		log.debug("query()");
+		log.debug("query(" + query + ")");
 		assert isServing();
 		if (handler != null && rootChan != null) {
 			// Pressluft queryMSG = getQMSG( query);
 			// rootChan.write( queryMSG);
+			log.debug("handing query to root");
 			rootChan.write(query);
+		} else if (handler != null && !leafChans.isEmpty()) {
+			log.debug("querying leafs directly");
+			for (Channel c : leafChans) {
+				c.write(query);
+			}
+		} else {
+			log.debug("Query cannot be processed.");
 		}
 	}
 
@@ -90,7 +98,7 @@ public class Coordinator extends ChannelNode {
 		log.info("adding inner channel: " + channel.getRemoteAddress());
 		innerChans.add(channel);
 		if (rootChan == null) {
-			log.debug("new root node found.");
+			log.debug("new root node connected.");
 			rootChan = channel;
 			Pressluft rootInfo = getRootInfo();
 			for (Channel chan : leafChans) {

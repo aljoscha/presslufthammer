@@ -90,10 +90,11 @@ public class LeafHandler extends SimpleChannelHandler {
 			case INFO:
 				InetSocketAddress innerAddress = getSockAddrFromBytes(prsslft
 						.getPayload());
-				leaf.close();
+//				leaf.close();
 				leaf.connectNReg(innerAddress);
 				break;
 			case QUERY:
+				leaf.query( prsslft);
 				break;
 			case REGINNER:
 			case REGLEAF:

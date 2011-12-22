@@ -76,6 +76,11 @@ public class Leaf extends ChannelNode {
 
 		return true;
 	}
+	
+	public void query(Pressluft query) {
+		String queryString = new String( query.getPayload());
+		log.info("query: " + queryString);
+	}
 
 	//
 	// /*

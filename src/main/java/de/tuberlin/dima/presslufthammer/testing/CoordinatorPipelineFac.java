@@ -16,13 +16,11 @@ import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
  * @author feichh
  * 
  */
-public class CoordinatorPipelineFac implements ChannelPipelineFactory
-{
+public class CoordinatorPipelineFac implements ChannelPipelineFactory {
 
-	private CoordinatorHandler	handler;
+	private CoordinatorHandler handler;
 
-	public CoordinatorPipelineFac(  CoordinatorHandler hand)
-	{
+	public CoordinatorPipelineFac(CoordinatorHandler hand) {
 		this.handler = hand;
 	}
 
@@ -31,14 +29,13 @@ public class CoordinatorPipelineFac implements ChannelPipelineFactory
 	 * 
 	 * @see org.jboss.netty.channel.ChannelPipelineFactory#getPipeline()
 	 */
-	public ChannelPipeline getPipeline() throws Exception
-	{
+	public ChannelPipeline getPipeline() throws Exception {
 		// TODO
 
 		ChannelPipeline pipe = pipeline();
-		pipe.addLast( "Encoder", Encoder.getInstance());
-		pipe.addLast( "Decoder", new Decoder());
-		pipe.addLast( "CoordinatorHandler", handler);
+		pipe.addLast("Encoder", Encoder.getInstance());
+		pipe.addLast("Decoder", new Decoder());
+		pipe.addLast("CoordinatorHandler", handler);
 
 		return pipe;
 	}

@@ -3,7 +3,7 @@
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/"
 	debug="false">
 
-	<appender name="FILE" class="org.apache.log4j.DailyRollingFileAppender">
+ 	<appender name="FILE" class="org.apache.log4j.DailyRollingFileAppender">
 		<param name="File" value="${user.dir}/logs/presslufthammer.log" />
 		<param name="DatePattern" value="'.'yyyy-MM-dd-HH" />
 		<param name="Encoding" value="utf-8" />

@@ -16,15 +16,13 @@ import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
  * @author feichh
  * 
  */
-public class InnerPipelineFac implements ChannelPipelineFactory
-{
+public class InnerPipelineFac implements ChannelPipelineFactory {
 	private final Inner inner;
 
 	/**
 	 * @param channelGroup
 	 */
-	public InnerPipelineFac( Inner inner)
-	{
+	public InnerPipelineFac(Inner inner) {
 		this.inner = inner;
 	}
 
@@ -33,13 +31,12 @@ public class InnerPipelineFac implements ChannelPipelineFactory
 	 * 
 	 * @see org.jboss.netty.channel.ChannelPipelineFactory#getPipeline()
 	 */
-	public ChannelPipeline getPipeline() throws Exception
-	{
+	public ChannelPipeline getPipeline() throws Exception {
 		// TODO
 		ChannelPipeline pipe = pipeline();
-		pipe.addLast( "Encoder", Encoder.getInstance());
-		pipe.addLast( "Decoder", new Decoder());
-		pipe.addLast( "InnerHandler", new InnerHandler( inner));
+		pipe.addLast("Encoder", Encoder.getInstance());
+		pipe.addLast("Decoder", new Decoder());
+		pipe.addLast("InnerHandler", new InnerHandler(inner));
 		return pipe;
 	}
 

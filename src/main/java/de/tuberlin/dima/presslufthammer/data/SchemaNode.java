@@ -102,6 +102,18 @@ public class SchemaNode {
         return type;
     }
 
+    public boolean isFirstField() {
+        if (parent == null) {
+            return true;
+        } else {
+            return parent.isFirstField(this);
+        }
+    }
+
+    private boolean isFirstField(SchemaNode child) {
+        return fieldList.indexOf(child) == 0;
+    }
+
     public boolean isPrimitive() {
         return type == Type.PRIMITIVE;
     }
@@ -112,6 +124,15 @@ public class SchemaNode {
                     + " is not a primitive type.");
         }
         return primitiveType;
+    }
+
+    public SchemaNode getSchemaForDefinitionLevel(int definitionLevel) {
+        if (getMaxDefinition() <= definitionLevel) {
+            return this;
+        } else if (hasParent()) {
+            return parent.getSchemaForDefinitionLevel(definitionLevel);
+        }
+        return null;
     }
 
     public boolean isRequired() {

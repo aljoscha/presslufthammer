@@ -55,7 +55,7 @@ public class InMemoryTablet implements Tablet {
     public ColumnReader getColumnReader(SchemaNode schema) {
         if (!columns.containsKey(schema)) {
             throw new RuntimeException(
-                    "This should not happen, bug in program.");
+                    "This should not happen, bug in program. Not contained: " + schema);
         }
         return new InMemoryColumnReader(schema, columns.get(schema));
     }

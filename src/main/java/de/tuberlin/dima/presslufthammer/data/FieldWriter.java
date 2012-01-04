@@ -144,15 +144,9 @@ public final class FieldWriter {
                         LevelState nextState = null;
                         if (i + 1 < parentStates.size()) {
                             nextState = parentStates.get(i + 1);
-                        } else {
-                            nextState = new LevelState(repetition,
-                                    maxDefinition);
-                            if (schema.isRequired()) {
-                                nextState.d += 1;
-                            }
                         }
 
-                        if (nextState.r == currentState.r
+                        if (nextState != null && nextState.r == currentState.r
                                 && nextState.d > currentState.d) {
                             continue;
                         }

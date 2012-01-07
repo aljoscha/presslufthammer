@@ -3,7 +3,6 @@
  */
 package de.tuberlin.dima.presslufthammer.testing;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
@@ -29,7 +28,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Type;
  */
 public class Inner extends ChannelNode {
 	private static final Pressluft REGMSG = new Pressluft(Type.REGINNER,
-			new byte[] { (byte) 0, });
+			"Hello".getBytes());
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
 	ChannelGroup childChannels = new DefaultChannelGroup();
@@ -44,7 +43,6 @@ public class Inner extends ChannelNode {
 	public Inner(String host, int port) {
 
 		connectNReg(host, port);
-
 		//
 		// channel.close().awaitUninterruptibly();
 		// bootstrap.releaseExternalResources();
@@ -98,22 +96,22 @@ public class Inner extends ChannelNode {
 						Executors.newCachedThreadPool()));
 
 		bootstrap.setPipelineFactory(new InnerPipelineFac(this));
-
 		ChannelFuture connectFuture = bootstrap.connect(address);
 
 		connectFuture.addListener(new ChannelFutureListener() {
-
 			public void operationComplete(ChannelFuture future)
 					throws Exception {
 				coordChan = future.getChannel();
 				openChannels.add(coordChan);
-				coordChan.write(REGMSG).addListener( new ChannelFutureListener() {
-					
-					public void operationComplete(ChannelFuture future) throws Exception {
-						log.debug("registered with coordinator @ " + coordChan.getRemoteAddress());
-						serve();
-					}
-				});
+				coordChan.write(REGMSG).addListener(
+						new ChannelFutureListener() {
+							public void operationComplete(ChannelFuture future)
+									throws Exception {
+								log.debug("registered with coordinator @ "
+										+ coordChan.getRemoteAddress());
+								serve();
+							}
+						});
 			}
 		});
 		return true;
@@ -123,7 +121,7 @@ public class Inner extends ChannelNode {
 	 * @param channel
 	 */
 	public void regChild(Channel channel) {
-		// TODO Auto-generated method stub
+		// TODO
 		childChannels.add(channel);
 	}
 
@@ -131,14 +129,20 @@ public class Inner extends ChannelNode {
 	 * @param query
 	 */
 	public void query(Pressluft query) {
-		for( Channel c: childChannels) {
+		for (Channel c : childChannels) {
+			log.debug("querying: " + c.getRemoteAddress());
 			c.write(query);
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
-
-		Inner in = new Inner("localhost", 44444);
-
+	public void handleResult(Pressluft prsslft) {
+		// TODO
+		coordChan.write(prsslft);
 	}
+//
+//	public static void main(String[] args) throws Exception {
+//
+//		Inner in = new Inner("localhost", 44444);
+//
+//	}
 }

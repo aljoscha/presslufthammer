@@ -84,6 +84,11 @@ public class CLIClient extends ChannelNode {
 		return result;
 	}
 
+	public void handleResult(Pressluft prsslft) {
+		// TODO Auto-generated method stub
+		log.info( "Result received: " + new String( prsslft.getPayload()));
+	}
+
 	/**
 	 * Prints the usage to System.out.
 	 */

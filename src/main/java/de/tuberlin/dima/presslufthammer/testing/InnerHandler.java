@@ -103,6 +103,7 @@ public class InnerHandler extends SimpleChannelHandler {
 				break;
 			case RESULT:
 				// TODO accumulate results; combine them; send them to parent;
+				inner.handleResult(prsslft);
 				break;
 			case UNKNOWN:
 				// not used yet

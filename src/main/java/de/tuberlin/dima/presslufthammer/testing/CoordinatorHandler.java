@@ -99,10 +99,11 @@ public class CoordinatorHandler extends SimpleChannelHandler {
 				break;
 			case RESULT:
 				// TODO get the result to the client
+				coord.handleResult(prsslft);
 				break;
 			case QUERY:
 				// TODO get the query to the root node
-				coord.query(prsslft);
+				coord.query(prsslft, e.getChannel());
 				break;
 			case UNKNOWN:
 				break;

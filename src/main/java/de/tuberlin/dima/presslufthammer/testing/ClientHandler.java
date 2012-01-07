@@ -96,6 +96,7 @@ public class ClientHandler extends SimpleChannelHandler {
 			case REGINNER:
 			case REGLEAF:
 			case RESULT:
+				client.handleResult(prsslft);
 			case UNKNOWN:
 				break;
 

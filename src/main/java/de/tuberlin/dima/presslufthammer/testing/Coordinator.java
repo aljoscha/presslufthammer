@@ -4,6 +4,8 @@
 package de.tuberlin.dima.presslufthammer.testing;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -23,12 +25,14 @@ import de.tuberlin.dima.presslufthammer.pressluft.Type;
  */
 public class Coordinator extends ChannelNode {
 
+	static int queryCount = 0;
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	ChannelGroup innerChans = new DefaultChannelGroup();
 	ChannelGroup leafChans = new DefaultChannelGroup();
 	ChannelGroup clientChans = new DefaultChannelGroup();
-	private CoordinatorHandler handler = new CoordinatorHandler(this);
+	private final CoordinatorHandler handler = new CoordinatorHandler(this);
 	private Channel rootChan = null;
+	private final Map<Integer, QueryHandle> queries = new HashMap<Integer, QueryHandle>(); 
 
 	/**
 	 * @param port
@@ -53,20 +57,23 @@ public class Coordinator extends ChannelNode {
 	/**
 	 * @param query
 	 */
-	public void query(Pressluft query) {
+	public void query(Pressluft query, Channel client) {
 		// TODO
 		log.debug("query(" + query + ")");
 		assert isServing();
+		
 		if (handler != null && rootChan != null) {
-			// Pressluft queryMSG = getQMSG( query);
-			// rootChan.write( queryMSG);
+			clientChans.add(client);
+			queries.put(queryCount, new QueryHandle(client));
 			log.debug("handing query to root");
 			rootChan.write(query);
+			
 		} else if (handler != null && !leafChans.isEmpty()) {
 			log.debug("querying leafs directly");
 			for (Channel c : leafChans) {
 				c.write(query);
 			}
+			
 		} else {
 			log.debug("Query cannot be processed.");
 		}
@@ -142,25 +149,45 @@ public class Coordinator extends ChannelNode {
 		// log.debug( "" + openChannels.remove( channel));
 	}
 
-	/**
-	 * Prints the usage to System.out.
-	 */
-	private static void printUsage() {
-		// TODO Auto-generated method stub
-		System.out.println("Parameters:");
-		System.out.println("port");
+	public void handleResult(Pressluft prsslft) {
+		// TODO
+		queries.get(queryCount - 1).client.write(prsslft);
 	}
 
-	public static void main(String[] args) {
-		// System.out.println( "Hello World!" );
-		// Print usage if necessary.
-		if (args.length < 1) {
-			printUsage();
-			return;
+	public enum QueryStatus {
+		OPEN, CLOSED
+	}
+
+	public class QueryHandle {
+
+		final int queryID = queryCount++;
+		final Channel client;
+		QueryStatus status;
+
+		public QueryHandle(Channel client) {
+			this.client = client;
 		}
-
-		int port = Integer.parseInt(args[0]);
-
-		Coordinator coord = new Coordinator(port);
 	}
+
+	// /**
+	// * Prints the usage to System.out.
+	// */
+	// private static void printUsage() {
+	// // TODO Auto-generated method stub
+	// System.out.println("Parameters:");
+	// System.out.println("port");
+	// }
+	//
+	// public static void main(String[] args) {
+	// // System.out.println( "Hello World!" );
+	// // Print usage if necessary.
+	// if (args.length < 1) {
+	// printUsage();
+	// return;
+	// }
+	//
+	// int port = Integer.parseInt(args[0]);
+	//
+	// Coordinator coord = new Coordinator(port);
+	// }
 }

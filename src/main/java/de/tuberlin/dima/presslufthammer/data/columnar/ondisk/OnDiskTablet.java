@@ -1,0 +1,112 @@
+package de.tuberlin.dima.presslufthammer.data.columnar.ondisk;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+
+import com.google.common.collect.Maps;
+
+import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
+import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
+
+public class OnDiskTablet implements Tablet {
+    private SchemaNode schema;
+    private File directory;
+    private Map<SchemaNode, File> columnFiles;
+    private Map<SchemaNode, OnDiskColumnWriter> columnWriters;
+
+    private OnDiskTablet(SchemaNode schema, File directory) {
+        this.schema = schema;
+        this.directory = directory;
+        columnWriters = Maps.newHashMap();
+    }
+
+    public static OnDiskTablet openTablet(String directoryPath) {
+        return null;
+    }
+
+    public static OnDiskTablet createTablet(SchemaNode schema, File directory)
+            throws IOException {
+        OnDiskTablet tablet = new OnDiskTablet(schema, directory);
+        if (directory.exists()) {
+            throw new RuntimeException("Directory for tablet already exists: "
+                    + directory);
+        }
+        directory.mkdirs();
+        tablet.createColumnFiles(directory, schema);
+
+        File schemaFile = new File(directory, "schema.proto");
+        PrintWriter schemaWriter = new PrintWriter(new FileWriter(schemaFile));
+        schemaWriter.write(schema.toString());
+        schemaWriter.close();
+        return tablet;
+    }
+
+    private void createColumnFiles(File directory, SchemaNode schema)
+            throws IOException {
+        if (schema.isRecord()) {
+            for (SchemaNode childSchema : schema.getFieldList()) {
+                createColumnFiles(directory, childSchema);
+            }
+        } else {
+            File columnFile = new File(directory, schema.getQualifiedName()
+                    + ".column");
+            columnFile.createNewFile();
+            columnWriters.put(schema,
+                    new OnDiskColumnWriter(schema, columnFile));
+            // We need these for creating the readers
+            columnFiles.put(schema, columnFile);
+        }
+    }
+
+    public File getDirectory() {
+        return directory;
+    }
+
+    @Override
+    public SchemaNode getSchema() {
+        return schema;
+    }
+
+    @Override
+    public ColumnWriter getColumnWriter(SchemaNode schema) {
+        if (schema.isRecord()) {
+            // return a dummy writer so that the FieldStriper is happy,
+            // he creates FieldWriters for records also ...
+            return new DummyColumnWriter();
+        }
+        if (!columnWriters.containsKey(schema)) {
+            System.out.println("OnDisk column writer requested but not there: "
+                    + schema.getQualifiedName());
+            System.out.println("Available columns:");
+            for (SchemaNode avSchema : columnWriters.keySet()) {
+                System.out.println(avSchema.getQualifiedName());
+            }
+            throw new RuntimeException(
+                    "This should not happen, bug in program.");
+        }
+        return columnWriters.get(schema);
+    }
+
+    @Override
+    public ColumnReader getColumnReader(SchemaNode schema) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public void close() {
+        for (OnDiskColumnWriter writer : columnWriters.values()) {
+            writer.close();
+        }
+    }
+
+    public void flush() {
+        for (OnDiskColumnWriter writer : columnWriters.values()) {
+            writer.flush();
+        }
+    }
+}

@@ -19,21 +19,19 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  * @author feichh
  * 
  */
-public class CoordinatorHandler extends SimpleChannelHandler
-{
+public class CoordinatorHandler extends SimpleChannelHandler {
 	/**
 	 * Logger
 	 */
-	private final Logger				log	= LoggerFactory.getLogger( getClass());
+	private final Logger log = LoggerFactory.getLogger(getClass());
 
-	private final Coordinator		coord;
-	private final ChannelGroup	openChannels;
+	private final Coordinator coord;
+	private final ChannelGroup openChannels;
 
 	/**
 	 * @param coord
 	 */
-	public CoordinatorHandler( Coordinator coord)
-	{
+	public CoordinatorHandler(Coordinator coord) {
 		this.coord = coord;
 		openChannels = coord.openChannels;
 	}
@@ -47,16 +45,15 @@ public class CoordinatorHandler extends SimpleChannelHandler
 	 * org.jboss.netty.channel.ExceptionEvent)
 	 */
 	@Override
-	public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e)
-			throws Exception
-	{
+	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+			throws Exception {
 		// TODO
 		Throwable cause = e.getCause();
-		log.error( "caught an exception", cause);
-		
-		coord.removeChannel( ctx.getChannel());
+		log.error("caught an exception", cause);
+
+		coord.removeChannel(ctx.getChannel());
 		// super.exceptionCaught( ctx, e);
-    ctx.sendUpstream(e);
+		ctx.sendUpstream(e);
 	}
 
 	/*
@@ -64,15 +61,15 @@ public class CoordinatorHandler extends SimpleChannelHandler
 	 * 
 	 * @see
 	 * org.jboss.netty.channel.SimpleChannelHandler#channelOpen(org.jboss.netty
-	 * .channel.ChannelHandlerContext, org.jboss.netty.channel.ChannelStateEvent)
+	 * .channel.ChannelHandlerContext,
+	 * org.jboss.netty.channel.ChannelStateEvent)
 	 */
 	@Override
-	public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e)
-			throws Exception
-	{
-		log.debug( "channelOpen " + e.getChannel().getRemoteAddress());
-		openChannels.add( e.getChannel());
-		super.channelOpen( ctx, e);
+	public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e)
+			throws Exception {
+		log.debug("channelOpen " + e.getChannel().getRemoteAddress());
+		openChannels.add(e.getChannel());
+		super.channelOpen(ctx, e);
 	}
 
 	/*
@@ -84,48 +81,45 @@ public class CoordinatorHandler extends SimpleChannelHandler
 	 * org.jboss.netty.channel.MessageEvent)
 	 */
 	@Override
-	public void messageReceived( ChannelHandlerContext ctx, MessageEvent e)
-			throws Exception
-	{
-		log.debug( "messageReceived " + e.getRemoteAddress());
-		if( e.getMessage() instanceof Pressluft)
-		{
+	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
+			throws Exception {
+		log.debug("messageReceived " + e.getRemoteAddress());
+		if (e.getMessage() instanceof Pressluft) {
 			Pressluft prsslft = ((Pressluft) e.getMessage());
-			log.debug( prsslft.toString());
+			log.debug(prsslft.toString());
 
-			switch( prsslft.getType())
-			{
-				case ACK:
-					break;
-				case REGINNER:
-					coord.addInner( e.getChannel());
-					break;
-				case REGLEAF:
-					coord.addLeaf( e.getChannel());
-					break;
-				case RESULT:
-					// TODO get the result to the client
-					break;
-				case QUERY:
-					// TODO get the query to the root node
-					coord.query( prsslft);
-					break;
-				case UNKNOWN:
-					break;
-				case INFO:
-					break;
-				case REGCLIENT:
-					coord.addClient( e.getChannel());
-					break;
+			switch (prsslft.getType()) {
+			case ACK:
+				break;
+			case REGINNER:
+				coord.addInner(e.getChannel());
+				break;
+			case REGLEAF:
+				coord.addLeaf(e.getChannel());
+				break;
+			case RESULT:
+				// TODO get the result to the client
+				coord.handleResult(prsslft);
+				break;
+			case QUERY:
+				// TODO get the query to the root node
+				coord.query(prsslft, e.getChannel());
+				break;
+			case UNKNOWN:
+				break;
+			case INFO:
+				break;
+			case REGCLIENT:
+				coord.addClient(e.getChannel());
+				break;
 			}
 
-			e.getChannel().write(
-					new Pressluft( de.tuberlin.dima.presslufthammer.pressluft.Type.ACK,
+			e.getChannel()
+					.write(new Pressluft(
+							de.tuberlin.dima.presslufthammer.pressluft.Type.ACK,
 							new byte[] { (byte) 0 }));
-		}
-		else
-		{
-			super.messageReceived( ctx, e);
+		} else {
+			super.messageReceived(ctx, e);
 		}
 	}
 

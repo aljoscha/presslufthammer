@@ -12,21 +12,21 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 
 /**
  * @author feichh
- *
+ * 
  */
-public abstract class ChannelNode implements Closeable
-{
-	
+public abstract class ChannelNode implements Closeable {
+
 	/**
 	 * All connected/open netty channels;
 	 */
-	ChannelGroup openChannels	= new DefaultChannelGroup();
+	ChannelGroup openChannels = new DefaultChannelGroup();
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.io.Closeable#close()
 	 */
-	public void close() throws IOException
-	{
+	public void close() throws IOException {
 		openChannels.close().awaitUninterruptibly();
 	}
 }

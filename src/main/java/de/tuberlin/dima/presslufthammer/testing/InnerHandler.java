@@ -19,20 +19,18 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  * @author feichh
  * 
  */
-public class InnerHandler extends SimpleChannelHandler
-{
-	private final Logger				log	= LoggerFactory.getLogger( getClass());
-	private final ChannelGroup	openChannels;
+public class InnerHandler extends SimpleChannelHandler {
+	private final Logger log = LoggerFactory.getLogger(getClass());
+	private final ChannelGroup openChannels;
 	private final Inner inner;
 
 	/**
 	 * @param inner
 	 */
-	public InnerHandler( Inner inner)
-	{
+	public InnerHandler(Inner inner) {
 		this.inner = inner;
 		this.openChannels = inner.openChannels;
-		
+
 	}
 
 	/*
@@ -44,98 +42,111 @@ public class InnerHandler extends SimpleChannelHandler
 	 * org.jboss.netty.channel.ExceptionEvent)
 	 */
 	@Override
-	public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e)
-			throws Exception
-	{
+	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+			throws Exception {
 		// TODO
 		Throwable cause = e.getCause();
-		log.error( "caught an exception", cause);
+		log.error("caught an exception", cause);
 		ctx.getChannel().close();
 		// super.exceptionCaught( ctx, e);
-    ctx.sendUpstream(e);
+		ctx.sendUpstream(e);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.jboss.netty.channel.SimpleChannelHandler#channelConnected(org.jboss.netty.channel.ChannelHandlerContext, org.jboss.netty.channel.ChannelStateEvent)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jboss.netty.channel.SimpleChannelHandler#channelConnected(org.jboss
+	 * .netty.channel.ChannelHandlerContext,
+	 * org.jboss.netty.channel.ChannelStateEvent)
 	 */
 	@Override
-	public void channelConnected( ChannelHandlerContext ctx, ChannelStateEvent e)
-			throws Exception
-	{
-		this.openChannels.add( e.getChannel());
+	public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e)
+			throws Exception {
+		this.openChannels.add(e.getChannel());
 	}
 
-	/* (non-Javadoc)
-	 * @see org.jboss.netty.channel.SimpleChannelHandler#messageReceived(org.jboss.netty.channel.ChannelHandlerContext, org.jboss.netty.channel.MessageEvent)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jboss.netty.channel.SimpleChannelHandler#messageReceived(org.jboss
+	 * .netty.channel.ChannelHandlerContext,
+	 * org.jboss.netty.channel.MessageEvent)
 	 */
 	@Override
-	public void messageReceived( ChannelHandlerContext ctx, MessageEvent e)
-			throws Exception
-	{
-		if( e.getMessage() instanceof Pressluft)
-		{
+	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
+			throws Exception {
+		if (e.getMessage() instanceof Pressluft) {
 			Pressluft prsslft = (Pressluft) e.getMessage();
-			log.info( prsslft.getType() + " from " + e.getRemoteAddress().toString());
-			
-			switch( prsslft.getType())
-			{
-				case ACK:
-					// not used yet
-					break;
-				case INFO:
-					// not used yet
-					break;
-				case QUERY:
-					// TODO split query and hand parts over to children
-					break;
-				case REGINNER:
-					// not used yet
-					break;
-				case REGLEAF:
-					// TODO handle new leaf connection
-					openChannels.add( e.getChannel());
-					inner.regChild( e.getChannel());
-					break;
-				case RESULT:
-					// TODO accumulate results; combine them; send them to parent;
-					break;
-				case UNKNOWN:
-					// not used yet
-					break;
-				
+			log.info(prsslft.getType() + " from "
+					+ e.getRemoteAddress().toString());
+
+			switch (prsslft.getType()) {
+			case ACK:
+				// not used yet
+				break;
+			case INFO:
+				// not used yet
+				break;
+			case QUERY:
+				// TODO split query and hand parts over to children
+				inner.query( prsslft);
+				break;
+			case REGINNER:
+				// not used yet
+				break;
+			case REGLEAF:
+				// TODO handle new leaf connection
+				openChannels.add(e.getChannel());
+				inner.regChild(e.getChannel());
+				break;
+			case RESULT:
+				// TODO accumulate results; combine them; send them to parent;
+				inner.handleResult(prsslft);
+				break;
+			case UNKNOWN:
+				// not used yet
+				break;
+
 			}
-		}
-		else
-		{
-			super.messageReceived( ctx, e);
+		} else {
+			super.messageReceived(ctx, e);
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see org.jboss.netty.channel.SimpleChannelHandler#handleDownstream(org.jboss.netty.channel.ChannelHandlerContext, org.jboss.netty.channel.ChannelEvent)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jboss.netty.channel.SimpleChannelHandler#handleDownstream(org.jboss
+	 * .netty.channel.ChannelHandlerContext,
+	 * org.jboss.netty.channel.ChannelEvent)
 	 */
 	@Override
-	public void handleDownstream( ChannelHandlerContext ctx, ChannelEvent e)
-			throws Exception
-	{
-	// Sending the event downstream (outbound)
-		ctx.sendDownstream( e);
+	public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent e)
+			throws Exception {
+		// Sending the event downstream (outbound)
+		ctx.sendDownstream(e);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.jboss.netty.channel.SimpleChannelHandler#handleUpstream(org.jboss.netty.channel.ChannelHandlerContext, org.jboss.netty.channel.ChannelEvent)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jboss.netty.channel.SimpleChannelHandler#handleUpstream(org.jboss
+	 * .netty.channel.ChannelHandlerContext,
+	 * org.jboss.netty.channel.ChannelEvent)
 	 */
 	@Override
-	public void handleUpstream( ChannelHandlerContext ctx, ChannelEvent e)
-			throws Exception
-	{
+	public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e)
+			throws Exception {
 
 		// Log all channel state changes.
-		if( e instanceof ChannelStateEvent)
-		{
-			log.info( "Channel state changed: " + e);
+		if (e instanceof ChannelStateEvent) {
+			log.info("Channel state changed: " + e);
 		}
 
-		super.handleUpstream( ctx, e);
+		super.handleUpstream(ctx, e);
 	}
 }

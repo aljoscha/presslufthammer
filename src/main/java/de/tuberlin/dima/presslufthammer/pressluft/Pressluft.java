@@ -10,17 +10,14 @@ import java.io.Serializable;
  * 
  */
 @SuppressWarnings("serial")
-public class Pressluft implements Serializable
-{
-	private Type		type;
-	private byte[]	payload;
+public class Pressluft implements Serializable {
+	private Type type;
+	private byte[] payload;
 
-	public Pressluft()
-	{
+	public Pressluft() {
 	}
 
-	public Pressluft( Type t, byte[] load)
-	{
+	public Pressluft(Type t, byte[] load) {
 		this.type = t;
 		this.payload = load;
 	}
@@ -28,34 +25,30 @@ public class Pressluft implements Serializable
 	/**
 	 * @return the type
 	 */
-	public Type getType()
-	{
+	public Type getType() {
 		return type;
 	}
 
 	/**
 	 * @param type
-	 *          the type to set
+	 *            the type to set
 	 */
-	public void setType( Type type)
-	{
+	public void setType(Type type) {
 		this.type = type;
 	}
 
 	/**
 	 * @return the payload
 	 */
-	public byte[] getPayload()
-	{
+	public byte[] getPayload() {
 		return payload;
 	}
 
 	/**
 	 * @param payload
-	 *          the payload to set
+	 *            the payload to set
 	 */
-	public void setPayload( byte[] payload)
-	{
+	public void setPayload(byte[] payload) {
 		this.payload = payload;
 	}
 
@@ -63,21 +56,19 @@ public class Pressluft implements Serializable
 	 * @param query
 	 * @return
 	 */
-	public static Pressluft getQueryMSG( String query)
-	{
+	public static Pressluft getQueryMSG(String query) {
 		// TODO
 		Type type = Type.QUERY;
 		byte[] payload = query.getBytes();
 
-		return new Pressluft( type, payload);
+		return new Pressluft(type, payload);
 	}
 
 	@Override
-	public String toString()
-	{
-		return new StringBuilder().append( "Pressluft{").append( " type=")
-				.append( type).append( ", payload=")
-				.append( payload == null ? null : payload.length + "bytes")
-				.append( '}').toString();
+	public String toString() {
+		return new StringBuilder().append("Pressluft{").append(" type=")
+				.append(type).append(", payload=")
+				.append(payload == null ? null : payload.length + "bytes")
+				.append('}').toString();
 	}
 }

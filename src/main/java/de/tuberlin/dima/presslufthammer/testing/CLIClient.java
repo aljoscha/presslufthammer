@@ -4,7 +4,6 @@
 package de.tuberlin.dima.presslufthammer.testing;
 
 import java.io.BufferedReader;
-import java.io.Console;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -24,21 +23,18 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  * @author feichh
  * 
  */
-public class CLIClient extends ChannelNode
-{
+public class CLIClient extends ChannelNode {
 	private static final Pressluft REGMSG = new Pressluft(
 			de.tuberlin.dima.presslufthammer.pressluft.Type.REGCLIENT,
 			new byte[] { (byte) 7 });
-	
-	private final Logger	log	= LoggerFactory.getLogger( getClass());
-	private Channel				parentChannel;
 
-	public CLIClient( String host, int port)
-	{
+	private final Logger log = LoggerFactory.getLogger(getClass());
+	private Channel parentChannel;
 
-		if( connectNReg( host, port))
-		{
-			log.info( "registered with coordinator");
+	public CLIClient(String host, int port) {
+
+		if (connectNReg(host, port)) {
+			log.info("registered with coordinator");
 		}
 	}
 
@@ -49,108 +45,105 @@ public class CLIClient extends ChannelNode
 	 * @param port
 	 * @return
 	 */
-	public boolean connectNReg( String host, int port)
-	{
-		return connectNReg( new InetSocketAddress( host, port));
+	public boolean connectNReg(String host, int port) {
+		return connectNReg(new InetSocketAddress(host, port));
 	}
 
 	/**
 	 * @param address
 	 * @return true if connection was established successfully
 	 */
-	public boolean connectNReg( SocketAddress address)
-	{
+	public boolean connectNReg(SocketAddress address) {
 		// TODO
 		ClientBootstrap bootstrap = new ClientBootstrap(
 				new NioClientSocketChannelFactory(
 						Executors.newCachedThreadPool(),
 						Executors.newCachedThreadPool()));
 
-		bootstrap.setPipelineFactory( new ClientPipelineFac( this));
+		bootstrap.setPipelineFactory(new ClientPipelineFac(this));
 
-		ChannelFuture connectFuture = bootstrap.connect( address);
+		ChannelFuture connectFuture = bootstrap.connect(address);
 
 		parentChannel = connectFuture.awaitUninterruptibly().getChannel();
-		ChannelFuture writeFuture = parentChannel.write( REGMSG);
+		ChannelFuture writeFuture = parentChannel.write(REGMSG);
 
 		return writeFuture.awaitUninterruptibly().isSuccess();
 	}
-	
+
 	/**
 	 * @param query
 	 * @return
 	 */
-	public boolean sendQuery( String query)
-	{
+	public boolean sendQuery(String query) {
 		boolean result = false;
-		if( !( query == null || query.length() < 1)
-				&& parentChannel != null
-				&& parentChannel.isConnected()
-				&& parentChannel.isWritable())
-		{
-			parentChannel.write( Pressluft.getQueryMSG( query));
+		if (!(query == null || query.length() < 1) && parentChannel != null
+				&& parentChannel.isConnected() && parentChannel.isWritable()) {
+			parentChannel.write(Pressluft.getQueryMSG(query));
 		}
-		
+
 		return result;
+	}
+
+	public void handleResult(Pressluft prsslft) {
+		// TODO Auto-generated method stub
+		log.info( "Result received: " + new String( prsslft.getPayload()));
 	}
 
 	/**
 	 * Prints the usage to System.out.
 	 */
-	private static void printUsage()
-	{
+	private static void printUsage() {
 		// TODO Auto-generated method stub
-		System.out.println( "Usage:");
-		System.out.println( "hostname port");
+		System.out.println("Usage:");
+		System.out.println("hostname port");
 	}
 
-	 /* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see de.tuberlin.dima.presslufthammer.testing.ChannelNode#close()
 	 */
-	 @Override
-	 public void close() throws IOException
-	 {
-	 // TODO
-	 // channel.close().awaitUninterruptibly();
-	 // bootstrap.releaseExternalResources();
-		 parentChannel.disconnect();
-		 super.close();
-	 }
+	@Override
+	public void close() throws IOException {
+		// TODO
+		// channel.close().awaitUninterruptibly();
+		// bootstrap.releaseExternalResources();
+		parentChannel.disconnect();
+		super.close();
+	}
 
 	/**
 	 * @param args
 	 * @throws InterruptedException
-	 *           if interrupted
-	 * @throws IOException if IO goes awry
+	 *             if interrupted
+	 * @throws IOException
+	 *             if IO goes awry
 	 */
-	public static void main( String[] args) throws InterruptedException, IOException
-	{
+	public static void main(String[] args) throws InterruptedException,
+			IOException {
 		// Print usage if necessary.
-		if( args.length < 2)
-		{
+		if (args.length < 2) {
 			printUsage();
 			return;
 		}
 		// Parse options.
 		String host = args[0];
-		int port = Integer.parseInt( args[1]);
+		int port = Integer.parseInt(args[1]);
 
-		CLIClient client = new CLIClient( host, port);
+		CLIClient client = new CLIClient(host, port);
 		boolean assange = true;
-//		Console console = System.console();
-		BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-		while( assange)
-		{
+		// Console console = System.console();
+		BufferedReader bufferedReader = new BufferedReader(
+				new InputStreamReader(System.in));
+		while (assange) {
 			String line = bufferedReader.readLine();
-			if( line.startsWith( "x"))
-			{
+			if (line.startsWith("x")) {
 				assange = false;
-			}
-			else {
-				client.sendQuery( line);
+			} else {
+				client.sendQuery(line);
 			}
 		}
-		
+
 		client.close();
 	}
 }

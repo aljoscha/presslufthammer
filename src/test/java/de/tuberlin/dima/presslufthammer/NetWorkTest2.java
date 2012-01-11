@@ -70,8 +70,8 @@ public class NetWorkTest2 extends TestCase {
 		
 		root.handleQuery(new Query(1));
 		root.handleQuery(new Query(2));
-//		root.handleQuery(new Query(3));
-//		root.handleQuery(new Query(4));
+		root.handleQuery(new Query(3));
+		root.handleQuery(new Query(4));
 		
 		
 		

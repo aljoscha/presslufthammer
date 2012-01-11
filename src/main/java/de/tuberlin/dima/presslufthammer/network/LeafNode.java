@@ -51,13 +51,13 @@ public class LeafNode extends Node {
 		this.serverBootstrap.bind(new InetSocketAddress(port));
 	}
 	
-	private Result answer(Query q) {
+	private synchronized Result answer(Query q) {
 		// TODO replace with real method
 		// TODO make private void
 		return new Result(q.getId(), this.name);
 	}
 	
-	private void sendAnswer(Result answer) {
+	private synchronized void sendAnswer(Result answer) {
 		// TODO replace with private void answer(Query q)
 		logger.debug("sending " + answer.getId() + " to " + parentNode);
 		
@@ -72,7 +72,7 @@ public class LeafNode extends Node {
 	
 	// -- GETTERS AND SETTERS ---------------------------------------------------------------------
 	
-	public void setParentNode(String hostname, int port) {
+	public synchronized void setParentNode(String hostname, int port) {
 		parentNode = new InetSocketAddress(hostname, port);
 	}
 	

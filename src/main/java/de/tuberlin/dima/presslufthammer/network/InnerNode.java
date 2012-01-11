@@ -73,7 +73,7 @@ public class InnerNode extends ParentNode {
 		this.serverBootstrap.bind(new InetSocketAddress(port));
 	}
 	
-	private void sendAnswer(Result answer) {
+	private synchronized void sendAnswer(Result answer) {
 		Pressluft p;
 		try {
 			p = new Pressluft(Type.RESULT, Result.toByteArray(answer));
@@ -86,7 +86,7 @@ public class InnerNode extends ParentNode {
 	
 	// -- GETTERS AND SETTERS ---------------------------------------------------------------------
 	
-	public void setParentNode(String hostname, int port) {
+	public synchronized void setParentNode(String hostname, int port) {
 		parentNode = new InetSocketAddress(hostname, port);
 	}
 	

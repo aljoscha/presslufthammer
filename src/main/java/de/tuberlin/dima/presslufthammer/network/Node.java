@@ -25,25 +25,37 @@ public abstract class Node {
 	protected final String name;
 	
 	protected ServerBootstrap serverBootstrap;
+	protected ClientBootstrap clientBootstrap;
 	
 	public Node(String name, int port) {
 		logger = Logger.getLogger(name);
 		this.name = name;
 		this.port = port;
+		
+		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+		clientBootstrap = new ClientBootstrap(factory);
+		clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+			
+			public ChannelPipeline getPipeline() throws Exception {
+				return Channels.pipeline(Encoder.getInstance(), new ClientHandler(logger));
+			}
+		});
 	}
 	
-	protected void sendPressLuft(Pressluft p, InetSocketAddress addr) {
-		ClientBootstrap bootstrap = getNewClientBootstrap();
-		ChannelFuture future = bootstrap.connect(addr);
+	protected synchronized void sendPressLuft(Pressluft p, InetSocketAddress addr) {
+//		ClientBootstrap bootstrap = getNewClientBootstrap();
+		ChannelFuture future = clientBootstrap.connect(addr).awaitUninterruptibly();
+//		ChannelFuture future = clientBootstrap.connect(addr);
 		
 		if (!future.awaitUninterruptibly().isSuccess()) {
 			logger.error("failed to connect with " + addr + "");
-			bootstrap.releaseExternalResources();
+			clientBootstrap.releaseExternalResources();
 			return;
 		}
 		
 		if (future.getChannel().isConnected()) {
-			future.getChannel().write(p).awaitUninterruptibly();
+//			future.getChannel().write(p).awaitUninterruptibly();
+			future.getChannel().write(p);
 			logger.trace("send " + p + " to " + addr);
 		} else {
 			logger.error("channel was already closed");
@@ -51,7 +63,7 @@ public abstract class Node {
 		}
 	}
 	
-	private ClientBootstrap getNewClientBootstrap() {
+	private synchronized ClientBootstrap getNewClientBootstrap() {
 		ChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 		ClientBootstrap res = new ClientBootstrap(factory);
 		res.setPipelineFactory(new ChannelPipelineFactory() {

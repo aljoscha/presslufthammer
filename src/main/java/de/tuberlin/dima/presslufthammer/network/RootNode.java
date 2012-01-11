@@ -35,20 +35,22 @@ public class RootNode extends ParentNode {
 					public void handleResult(Result data, SocketAddress socketAddress) {
 						logger.debug("recieved data \"" + data.getId() + "\" from \"" + socketAddress + "\"");
 						
-						Task[] tasks = taskMap.get(data.getId());
-						
-						for (Task task : tasks) {
-							if (((SocketAddress) task.getSolver()).equals(socketAddress)) {
-								task.setSolution(data);
-							}
-						}
-						
-						if (isSolved(data.getId())) {
-							Result res = mergeResults(extractResults(taskMap.get(data.getId())));
-							logger.info("Answer to " + res.getId() + " : " + res.getValue());
+//						synchronized(taskMap){
+							Task[] tasks = taskMap.get(data.getId());
 							
-							// TODO send result to caller
-						}
+							for (Task task : tasks) {
+								if (((SocketAddress) task.getSolver()).equals(socketAddress)) {
+									task.setSolution(data);
+								}
+							}
+							
+							if (isSolved(data.getId())) {
+								Result res = mergeResults(extractResults(taskMap.get(data.getId())));
+								logger.info("Answer to " + res.getId() + " : " + res.getValue());
+								
+								// TODO send result to caller
+							}
+//						}
 					}
 					
 					@Override
@@ -63,7 +65,7 @@ public class RootNode extends ParentNode {
 	
 	// --------------------------------------------------------------------------------------------
 	
-	public void handleQuery(Query q) {
+	public synchronized void handleQuery(Query q) {
 		Task[] tasks = factorQuery(q);
 		
 		taskMap.put(q.getId(), tasks);

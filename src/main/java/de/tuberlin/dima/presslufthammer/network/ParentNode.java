@@ -27,7 +27,7 @@ public class ParentNode extends Node {
 		taskMap = new HashMap<Long, Task[]>();
 	}
 	
-	protected void forwardTask(Task task) {
+	protected synchronized void forwardTask(Task task) {
 		logger.debug("sending " + task.getQuery().getId() + " to " + task.getSolver());
 		Pressluft p;
 		try {
@@ -42,7 +42,7 @@ public class ParentNode extends Node {
 	
 	// -- FACTORING AND MERGING -------------------------------------------------------------------
 	
-	protected Result mergeResults(Result[] results) {
+	protected synchronized Result mergeResults(Result[] results) {
 		// TODO replace with real method
 		// make static or move
 		
@@ -62,7 +62,7 @@ public class ParentNode extends Node {
 		return new Result(results[0].getId(), sb.toString());
 	}
 	
-	protected Task[] factorQuery(Query query) {
+	protected synchronized Task[] factorQuery(Query query) {
 		// TODO replace with real method
 		Task[] res = new Task[childNodes.size()];
 		List<InetSocketAddress> tmp = new ArrayList<InetSocketAddress>(childNodes);
@@ -76,7 +76,7 @@ public class ParentNode extends Node {
 	
 	// --------------------------------------------------------------------------------------------
 	
-	protected boolean isSolved(long id) {
+	protected synchronized boolean isSolved(long id) {
 		Task[] tmp = taskMap.get(id);
 		
 		for (Task task : tmp) {
@@ -88,7 +88,7 @@ public class ParentNode extends Node {
 		return true;
 	}
 	
-	protected static Result[] extractResults(Task[] tasks) {
+	protected static synchronized Result[] extractResults(Task[] tasks) {
 		Result[] res = new Result[tasks.length];
 		
 		for (int i = 0; i < res.length; i++) {

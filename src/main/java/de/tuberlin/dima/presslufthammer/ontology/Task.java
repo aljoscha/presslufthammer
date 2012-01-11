@@ -19,7 +19,7 @@ public class Task {
 		this.solution = null;
 	}
 	
-	public void setSolution(Result solution) {
+	public synchronized void setSolution(Result solution) {
 		this.solution = solution;
 	}
 	

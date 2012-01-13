@@ -28,6 +28,11 @@ public class InMemoryColumnReader implements ColumnReader {
     public boolean hasNext() {
         return currentEntry != null;
     }
+    
+    @Override
+    public boolean nextIsNull() {
+        return currentEntry.value == null;
+    }
 
     @Override
     public int getNextRepetition() {

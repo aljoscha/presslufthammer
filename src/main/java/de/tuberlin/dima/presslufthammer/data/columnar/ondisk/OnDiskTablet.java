@@ -23,6 +23,7 @@ public class OnDiskTablet implements Tablet {
         this.schema = schema;
         this.directory = directory;
         columnWriters = Maps.newHashMap();
+        columnFiles = Maps.newHashMap();
     }
 
     public static OnDiskTablet openTablet(String directoryPath) {
@@ -94,8 +95,26 @@ public class OnDiskTablet implements Tablet {
 
     @Override
     public ColumnReader getColumnReader(SchemaNode schema) {
-        // TODO Auto-generated method stub
-        return null;
+        if (schema.isRecord()) {
+            return null;
+        }
+        if (!columnFiles.containsKey(schema)) {
+            System.out.println("OnDisk column reader requested but not there: "
+                    + schema.getQualifiedName());
+            System.out.println("Available columns:");
+            for (SchemaNode avSchema : columnWriters.keySet()) {
+                System.out.println(avSchema.getQualifiedName());
+            }
+            throw new RuntimeException(
+                    "This should not happen, bug in program.");
+        }
+
+        try {
+            return new OnDiskColumnReader(schema, columnFiles.get(schema));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public void close() {

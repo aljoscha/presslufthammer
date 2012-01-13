@@ -3,6 +3,8 @@ package de.tuberlin.dima.presslufthammer.data.columnar;
 public interface ColumnReader {
     public boolean hasNext();
 
+    public boolean nextIsNull();
+
     public Object getNextValue();
 
     public int getNextRepetition();

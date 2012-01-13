@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import com.google.common.io.Resources;
 
+import de.tuberlin.dima.presslufthammer.data.AssemblyFSM;
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
@@ -28,13 +29,13 @@ public class OnDiskAssemblyTest {
         striper.dissectRecords(records);
         tablet.flush();
 
-//        AssemblyFSM fsm = new AssemblyFSM(schema);
-//        System.out.println(fsm.toString());
-//
-//        JSONRecordFile outRecords = new JSONRecordFile(schema,
-//                "documents-out.json");
-//
-//        fsm.assembleRecords(tablet, outRecords);
+        AssemblyFSM fsm = new AssemblyFSM(schema);
+        System.out.println(fsm.toString());
+
+        JSONRecordFile outRecords = new JSONRecordFile(schema,
+                "documents-out.json");
+
+        fsm.assembleRecords(tablet, outRecords);
     }
 
 }

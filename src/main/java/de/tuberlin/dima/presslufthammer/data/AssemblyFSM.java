@@ -64,7 +64,7 @@ public class AssemblyFSM {
         ColumnReader reader = currentNode.getReader();
 
         while (reader != null && reader.hasNext()) {
-            System.out.println("READER: " + currentSchema.getQualifiedName());
+//            System.out.println("READER: " + currentSchema.getQualifiedName());
             adjustRecordStructure(reader, record, currentSchema, lastSchema);
             Object value = reader.getNextValue();
             if (value != null) {
@@ -72,18 +72,18 @@ public class AssemblyFSM {
             }
             lastNode = currentNode;
             lastSchema = lastNode.getSchema();
-            System.out.println("NEXT REP: " + reader.getNextRepetition());
+//            System.out.println("NEXT REP: " + reader.getNextRepetition());
             currentNode = currentNode.getTransition(reader.getNextRepetition());
-            System.out.println(currentNode.toString());
+//            System.out.println(currentNode.toString());
             reader = currentNode.getReader();
             currentSchema = currentNode.getSchema();
             if (currentSchema != null) {
                 record.returnToLevel(currentSchema.getParent());
             }
         }
-        if (reader == null) {
-            System.out.println("READER IS NULL");
-        }
+//        if (reader == null) {
+//            System.out.println("READER IS NULL");
+//        }
         record.returnToLevel(schema);
         record.finalizeRecord();
     }

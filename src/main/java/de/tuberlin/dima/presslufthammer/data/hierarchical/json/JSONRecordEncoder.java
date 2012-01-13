@@ -106,8 +106,8 @@ public class JSONRecordEncoder implements RecordEncoder {
     }
 
     public void finalizeRecord() {
-        System.out.println("NEW JOB:");
-        System.out.println(rootJob.toJSONString());
+//        System.out.println("NEW JOB:");
+//        System.out.println(rootJob.toJSONString());
         try {
             file.writeRecord(this);
         } catch (IOException e) {

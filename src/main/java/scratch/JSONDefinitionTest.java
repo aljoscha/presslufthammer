@@ -23,8 +23,8 @@ public class JSONDefinitionTest {
         JSONRecordFile records = new JSONRecordFile(schema,
                 Resources.getResource("documents.json").getFile());
         InMemoryTablet dummyTablet = new InMemoryTablet(schema);
-        FieldStriper striper = new FieldStriper(schema, dummyTablet);
-        striper.dissectRecords(records);
+        FieldStriper striper = new FieldStriper(schema);
+        striper.dissectRecords(records, dummyTablet);
 
         dummyTablet.printColumns();
     }

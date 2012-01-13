@@ -24,8 +24,8 @@ public class AssemblyTest {
                 .getResource("documents.json").getFile());
 
         InMemoryTablet inMemoryTablet = new InMemoryTablet(schema);
-        FieldStriper striper = new FieldStriper(schema, inMemoryTablet);
-        striper.dissectRecords(records);
+        FieldStriper striper = new FieldStriper(schema);
+        striper.dissectRecords(records, inMemoryTablet);
 
         inMemoryTablet.printColumns();
 

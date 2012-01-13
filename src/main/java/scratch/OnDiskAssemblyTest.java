@@ -26,8 +26,8 @@ public class OnDiskAssemblyTest {
 
         OnDiskTablet.removeTablet(new File("documents.tablet"));
         OnDiskTablet tablet = OnDiskTablet.createTablet(schema, new File("documents.tablet"));
-        FieldStriper striper = new FieldStriper(schema, tablet);
-        striper.dissectRecords(records);
+        FieldStriper striper = new FieldStriper(schema);
+        striper.dissectRecords(records, tablet);
         tablet.flush();
 
         AssemblyFSM fsm = new AssemblyFSM(schema);

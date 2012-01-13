@@ -15,17 +15,14 @@ import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.RecordField;
 
 public final class FieldStriper {
     private SchemaNode schema;
-    private Tablet tablet;
     private FieldWriter rootWriter;
 
-    public FieldStriper(SchemaNode schema, Tablet targetTablet) {
+    public FieldStriper(SchemaNode schema) {
         this.schema = schema;
-        this.tablet = targetTablet;
-
-        rootWriter = createWriterTree(null, this.schema);
     }
 
-    public void dissectRecords(RecordStore records) {
+    public void dissectRecords(RecordStore records, Tablet targetTablet) {
+        rootWriter = createWriterTree(null, this.schema, targetTablet);
         RecordIterator iterator = records.recordIterator();
         RecordDecoder decoder = iterator.next();
         while (decoder != null) {
@@ -61,13 +58,13 @@ public final class FieldStriper {
         }
     }
 
-    private FieldWriter createWriterTree(FieldWriter parent, SchemaNode schema) {
-        ColumnWriter columnWriter = tablet.getColumnWriter(schema);
+    private FieldWriter createWriterTree(FieldWriter parent, SchemaNode schema, Tablet targetTablet) {
+        ColumnWriter columnWriter = targetTablet.getColumnWriter(schema);
         FieldWriter fieldWriter = new FieldWriter(parent, schema, columnWriter);
         if (schema.isRecord()) {
             for (SchemaNode childSchema : schema.getFieldList()) {
                 FieldWriter childWriter = createWriterTree(fieldWriter,
-                        childSchema);
+                        childSchema, targetTablet);
                 fieldWriter.addChild(childSchema, childWriter);
             }
         }

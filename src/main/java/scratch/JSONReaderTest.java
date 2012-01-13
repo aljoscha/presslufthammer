@@ -40,7 +40,7 @@ public class JSONReaderTest {
         System.out.println(predicate.toString());
         JSONRecordFile records = new JSONRecordFile(schemaRoot,
                 Resources.getResource("sentences-reducedPunctuation-json-1-2").getFile());
-        FieldStriper striper = new FieldStriper(schemaRoot, new InMemoryTablet(schemaRoot));
-        striper.dissectRecords(records);
+        FieldStriper striper = new FieldStriper(schemaRoot);
+        striper.dissectRecords(records, new InMemoryTablet(schemaRoot));
     }
 }

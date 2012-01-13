@@ -19,23 +19,44 @@ public class OnDiskAssemblyTest {
             IOException {
         SchemaNode schema = ProtobufSchemaHelper.readSchema(Resources
                 .getResource("Document.proto").getFile(), "Document");
-
         System.out.println(schema.toString());
+        
         JSONRecordFile records = new JSONRecordFile(schema, Resources
                 .getResource("documents.json").getFile());
 
+        OnDiskTablet.removeTablet(new File("documents.tablet"));
         OnDiskTablet tablet = OnDiskTablet.createTablet(schema, new File("documents.tablet"));
         FieldStriper striper = new FieldStriper(schema, tablet);
         striper.dissectRecords(records);
         tablet.flush();
 
         AssemblyFSM fsm = new AssemblyFSM(schema);
-        System.out.println(fsm.toString());
+//        System.out.println(fsm.toString());
 
+        (new File("documents-out.json")).delete();
         JSONRecordFile outRecords = new JSONRecordFile(schema,
                 "documents-out.json");
 
         fsm.assembleRecords(tablet, outRecords);
+        tablet.close();
+        
+        
+        
+        // Now reopen the tablet ...
+        
+        OnDiskTablet reopenedTablet = OnDiskTablet.openTablet(new File("documents.tablet"), "Document");
+        SchemaNode reopenedSchema = reopenedTablet.getSchema();
+        
+        AssemblyFSM reopenedFsm = new AssemblyFSM(reopenedSchema);
+//        System.out.println(fsm.toString());
+
+        (new File("documents-out2.json")).delete();
+        JSONRecordFile outRecords2 = new JSONRecordFile(reopenedSchema,
+                "documents-out2.json");
+
+        reopenedFsm.assembleRecords(reopenedTablet, outRecords2);
+        reopenedTablet.close();
+        
     }
 
 }

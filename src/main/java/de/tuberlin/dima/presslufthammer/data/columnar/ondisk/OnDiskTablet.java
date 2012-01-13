@@ -6,8 +6,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
+
 import com.google.common.collect.Maps;
 
+import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
@@ -26,8 +29,25 @@ public class OnDiskTablet implements Tablet {
         columnFiles = Maps.newHashMap();
     }
 
-    public static OnDiskTablet openTablet(String directoryPath) {
-        return null;
+    public static OnDiskTablet openTablet(File directory, String messageName) throws IOException {
+        if (!directory.exists() && directory.isDirectory()) {
+            throw new IOException("Directory given in openTablet does not exist or is not a directory.");
+        }
+        File schemaFile = new File(directory, "schema.proto");
+        if (!schemaFile.exists()) {
+            throw new IOException("No schema file in tablet directory " + directory);
+        }
+        SchemaNode schema = ProtobufSchemaHelper.readSchema(schemaFile.getAbsolutePath(), messageName);
+        OnDiskTablet tablet = new OnDiskTablet(schema, directory);
+        tablet.createOrOpenColumnFiles(directory, schema);
+        
+        return tablet;
+    }
+    
+    public static void removeTablet(File directory) throws IOException {
+        if (directory.exists()) {
+            FileUtils.deleteDirectory(directory);
+        }
     }
 
     public static OnDiskTablet createTablet(SchemaNode schema, File directory)
@@ -38,7 +58,7 @@ public class OnDiskTablet implements Tablet {
                     + directory);
         }
         directory.mkdirs();
-        tablet.createColumnFiles(directory, schema);
+        tablet.createOrOpenColumnFiles(directory, schema);
 
         File schemaFile = new File(directory, "schema.proto");
         PrintWriter schemaWriter = new PrintWriter(new FileWriter(schemaFile));
@@ -47,11 +67,11 @@ public class OnDiskTablet implements Tablet {
         return tablet;
     }
 
-    private void createColumnFiles(File directory, SchemaNode schema)
+    private void createOrOpenColumnFiles(File directory, SchemaNode schema)
             throws IOException {
         if (schema.isRecord()) {
             for (SchemaNode childSchema : schema.getFieldList()) {
-                createColumnFiles(directory, childSchema);
+                createOrOpenColumnFiles(directory, childSchema);
             }
         } else {
             File columnFile = new File(directory, schema.getQualifiedName()

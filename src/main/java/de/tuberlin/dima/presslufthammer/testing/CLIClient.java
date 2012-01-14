@@ -26,7 +26,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 public class CLIClient extends ChannelNode {
 	private static final Pressluft REGMSG = new Pressluft(
 			de.tuberlin.dima.presslufthammer.pressluft.Type.REGCLIENT,
-			new byte[] { (byte) 7 });
+			(byte) 0, new byte[] { (byte) 7 });
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	private Channel parentChannel;
@@ -86,7 +86,7 @@ public class CLIClient extends ChannelNode {
 
 	public void handleResult(Pressluft prsslft) {
 		// TODO Auto-generated method stub
-		log.info( "Result received: " + new String( prsslft.getPayload()));
+		log.info("Result received: " + new String(prsslft.getPayload()));
 	}
 
 	/**

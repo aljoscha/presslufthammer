@@ -35,6 +35,9 @@ public class Decoder extends ReplayingDecoder<Decoder.DecodingState> {
 		switch (state) {
 		case TYPE:
 			this.message.setType(Type.fromByte(buffer.readByte()));
+			checkpoint(DecodingState.QID);
+		case QID:
+			this.message.setQueryID(buffer.readByte());
 			checkpoint(DecodingState.PAYLOAD_LENGTH);
 		case PAYLOAD_LENGTH:
 			int size = buffer.readInt();
@@ -88,6 +91,6 @@ public class Decoder extends ReplayingDecoder<Decoder.DecodingState> {
 		// constants
 		// --------------------------------------------------------------------------------------------------
 
-		TYPE, PAYLOAD_LENGTH, PAYLOAD,
+		TYPE, QID, PAYLOAD_LENGTH, PAYLOAD,
 	}
 }

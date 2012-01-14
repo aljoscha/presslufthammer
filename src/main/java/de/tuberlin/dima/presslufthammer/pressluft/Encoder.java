@@ -52,11 +52,12 @@ public class Encoder extends OneToOneEncoder {
 					"Message payload cannot be null or empty");
 		}
 
-		// version(1b) + type(1b) + payload length(4b) + payload(nb)
+		// type(1b) + qid(1b) + payload length(4b) + payload(nb)
 		int size = 6 + message.getPayload().length;
 
 		ChannelBuffer buffer = ChannelBuffers.buffer(size);
 		buffer.writeByte(message.getType().getByteValue());
+		buffer.writeByte(message.getQueryID());
 		buffer.writeInt(message.getPayload().length);
 		buffer.writeBytes(message.getPayload());
 

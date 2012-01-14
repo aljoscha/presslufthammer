@@ -27,7 +27,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Type;
  * 
  */
 public class Inner extends ChannelNode {
-	private static final Pressluft REGMSG = new Pressluft(Type.REGINNER,
+	private static final Pressluft REGMSG = new Pressluft(Type.REGINNER, (byte) 0,
 			"Hello".getBytes());
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -48,6 +48,9 @@ public class Inner extends ChannelNode {
 		// bootstrap.releaseExternalResources();
 	}
 
+	/**
+	 * 
+	 */
 	public void serve() {
 		int port = getPortFromSocketAddress(coordChan.getLocalAddress()) + 1;
 		// Configure the server.

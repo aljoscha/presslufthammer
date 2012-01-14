@@ -32,7 +32,9 @@ public class Coordinator extends ChannelNode {
 	ChannelGroup clientChans = new DefaultChannelGroup();
 	private final CoordinatorHandler handler = new CoordinatorHandler(this);
 	private Channel rootChan = null;
-	private final Map<Integer, QueryHandle> queries = new HashMap<Integer, QueryHandle>(); 
+	private final Map<Byte, QueryHandle> queries = new HashMap<Byte, QueryHandle>();
+
+	private static byte priorQID = 0;
 
 	/**
 	 * @param port
@@ -61,19 +63,25 @@ public class Coordinator extends ChannelNode {
 		// TODO
 		log.debug("query(" + query + ")");
 		assert isServing();
-		
+
 		if (handler != null && rootChan != null) {
-			clientChans.add(client);
-			queries.put(queryCount, new QueryHandle(client));
+			// clientChans.add(client);
+			byte qid = nextQID();
+			query.setQueryID(qid);
+			queries.put(qid, new QueryHandle(1, query, client));
 			log.debug("handing query to root");
 			rootChan.write(query);
-			
+
 		} else if (handler != null && !leafChans.isEmpty()) {
 			log.debug("querying leafs directly");
+			byte qid = nextQID();
+			query.setQueryID(qid);
+			queries.put(qid, new QueryHandle(leafChans.size(), query,
+					client));
 			for (Channel c : leafChans) {
 				c.write(query);
 			}
-			
+
 		} else {
 			log.debug("Query cannot be processed.");
 		}
@@ -84,14 +92,14 @@ public class Coordinator extends ChannelNode {
 	 *         Leaf
 	 */
 	public boolean isServing() {
-		return !(innerChans.isEmpty() || leafChans.isEmpty());
+		return !leafChans.isEmpty();
 	}
 
 	/**
 	 * @param channel
 	 */
 	public void addClient(Channel channel) {
-		// TODO Auto-generated method stub
+		// TODO
 		log.info("adding client channel: " + channel.getRemoteAddress());
 		clientChans.add(channel);
 	}
@@ -134,7 +142,7 @@ public class Coordinator extends ChannelNode {
 		// TODO
 		Type type = Type.INFO;
 		byte[] payload = rootChan.getRemoteAddress().toString().getBytes();
-		return new Pressluft(type, payload);
+		return new Pressluft(type, (byte) 0, payload);
 	}
 
 	/**
@@ -149,24 +157,21 @@ public class Coordinator extends ChannelNode {
 		// log.debug( "" + openChannels.remove( channel));
 	}
 
-	public void handleResult(Pressluft prsslft) {
+	public void handleResult(Pressluft resultMSG) {
 		// TODO
-		queries.get(queryCount - 1).client.write(prsslft);
+		byte qid = resultMSG.getQueryID();
+		QueryHandle qhand = queries.get(qid);
+		if (qhand != null) {
+			qhand.addPart(resultMSG);
+		}
 	}
 
 	public enum QueryStatus {
 		OPEN, CLOSED
 	}
 
-	public class QueryHandle {
-
-		final int queryID = queryCount++;
-		final Channel client;
-		QueryStatus status;
-
-		public QueryHandle(Channel client) {
-			this.client = client;
-		}
+	private byte nextQID() {
+		return ++priorQID;
 	}
 
 	// /**

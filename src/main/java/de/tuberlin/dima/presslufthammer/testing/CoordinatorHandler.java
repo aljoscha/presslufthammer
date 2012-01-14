@@ -117,7 +117,7 @@ public class CoordinatorHandler extends SimpleChannelHandler {
 			e.getChannel()
 					.write(new Pressluft(
 							de.tuberlin.dima.presslufthammer.pressluft.Type.ACK,
-							new byte[] { (byte) 0 }));
+							(byte) 0, new byte[] { (byte) 0 }));
 		} else {
 			super.messageReceived(ctx, e);
 		}

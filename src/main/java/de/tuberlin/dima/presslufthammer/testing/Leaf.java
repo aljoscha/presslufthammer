@@ -24,7 +24,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Type;
  */
 public class Leaf extends ChannelNode {
 	private static final Pressluft REGMSG = new Pressluft(Type.REGLEAF,
-			"Hello".getBytes());
+			(byte) 0, "Hello".getBytes());
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	private Channel parentChannel;
@@ -77,7 +77,7 @@ public class Leaf extends ChannelNode {
 		String queryString = new String(query.getPayload());
 		log.info("query: " + queryString);
 
-		Pressluft message = new Pressluft(Type.RESULT, queryString
+		Pressluft message = new Pressluft(Type.RESULT, query.getQueryID(), queryString
 				.toUpperCase().getBytes());
 
 		parentChannel.write(message);
@@ -100,29 +100,29 @@ public class Leaf extends ChannelNode {
 	// super.close();
 	// }
 
-//	/**
-//	 * Prints the usage to System.out.
-//	 */
-//	private static void printUsage() {
-//		System.out.println("Usage:");
-//		System.out.println("hostname port");
-//	}
-//
-//	/**
-//	 * @param args
-//	 * @throws InterruptedException
-//	 *             if interrupted
-//	 */
-//	public static void main(String[] args) throws InterruptedException {
-//		// Print usage if necessary.
-//		if (args.length < 2) {
-//			printUsage();
-//			return;
-//		}
-//		// Parse options.
-//		String host = args[0];
-//		int port = Integer.parseInt(args[1]);
-//
-//		Leaf leaf = new Leaf(host, port);
-//	}
+	// /**
+	// * Prints the usage to System.out.
+	// */
+	// private static void printUsage() {
+	// System.out.println("Usage:");
+	// System.out.println("hostname port");
+	// }
+	//
+	// /**
+	// * @param args
+	// * @throws InterruptedException
+	// * if interrupted
+	// */
+	// public static void main(String[] args) throws InterruptedException {
+	// // Print usage if necessary.
+	// if (args.length < 2) {
+	// printUsage();
+	// return;
+	// }
+	// // Parse options.
+	// String host = args[0];
+	// int port = Integer.parseInt(args[1]);
+	//
+	// Leaf leaf = new Leaf(host, port);
+	// }
 }

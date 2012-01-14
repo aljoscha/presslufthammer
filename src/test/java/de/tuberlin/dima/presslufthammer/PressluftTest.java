@@ -18,6 +18,9 @@ import junit.framework.TestSuite;
  * Unit test for simple App.
  */
 public class PressluftTest extends TestCase {
+	private static final String HOST = "localhost";
+	private static final int HOSTPORT = 44444;
+	
 	/**
 	 * Create the test case
 	 * 
@@ -40,19 +43,17 @@ public class PressluftTest extends TestCase {
 	 * 
 	 * @throws IOException
 	 */
-	public void testApp() throws IOException {
+	public void testOneOfEach() throws IOException {
 		BasicConfigurator.configure();
 
-		String host = "localhost";
-		int port = 44444;
 
-		Coordinator coord = new Coordinator(port);
+		Coordinator coord = new Coordinator(HOSTPORT);
 
-		Inner inner = new Inner(host, port);
+		Inner inner = new Inner(HOST, HOSTPORT);
 
-		Leaf leaf = new Leaf(host, port);
+		Leaf leaf = new Leaf(HOST, HOSTPORT);
 
-		CLIClient client = new CLIClient(host, port);
+		CLIClient client = new CLIClient(HOST, HOSTPORT);
 		boolean assange = true;
 		// Console console = System.console();
 		BufferedReader bufferedReader = new BufferedReader(
@@ -69,6 +70,35 @@ public class PressluftTest extends TestCase {
 		client.close();
 		leaf.close();
 		inner.close();
+		coord.close();
+	}
+	
+	public void testThreeLeafs() throws IOException {
+		BasicConfigurator.configure();
+		
+		Coordinator coord = new Coordinator(HOSTPORT);
+		Leaf leaf1 = new Leaf(HOST, HOSTPORT);
+		Leaf leaf2 = new Leaf(HOST, HOSTPORT);
+		Leaf leaf3 = new Leaf(HOST, HOSTPORT);
+		CLIClient client = new CLIClient(HOST, HOSTPORT);
+
+		boolean assange = true;
+		// Console console = System.console();
+		BufferedReader bufferedReader = new BufferedReader(
+				new InputStreamReader(System.in));
+		while (assange) {
+			String line = bufferedReader.readLine();
+			if (line.startsWith("x")) {
+				assange = false;
+			} else {
+				client.sendQuery(line);
+			}
+		}
+		
+		client.close();
+		leaf1.close();
+		leaf2.close();
+		leaf3.close();
 		coord.close();
 	}
 }

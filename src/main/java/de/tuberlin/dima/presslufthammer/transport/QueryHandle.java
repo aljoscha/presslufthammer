@@ -6,13 +6,17 @@ package de.tuberlin.dima.presslufthammer.transport;
 import org.jboss.netty.channel.Channel;
 
 import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
-import de.tuberlin.dima.presslufthammer.transport.Coordinator.QueryStatus;
+import de.tuberlin.dima.presslufthammer.pressluft.Type;
 
 /**
  * @author feichh
  * 
  */
 public class QueryHandle {
+
+	public enum QueryStatus {
+		OPEN, CLOSED
+	}
 
 	final byte queryID;
 	final Channel client;
@@ -45,11 +49,16 @@ public class QueryHandle {
 	private void assemble() {
 		// TODO
 		close();
-		System.out.println(getResult());
+		String r = getResult();
+		if (client != null) {
+			client.write(new Pressluft(Type.RESULT, queryID, r.getBytes()));
+		} else {
+			System.out.println(r);
+		}
 	}
 
 	public String getResult() {
-		String result = "";
+		String result = "Query result: ";
 		if (isComplete()) {
 			for (byte[] b : data) {
 				result += new String(b) + " ";

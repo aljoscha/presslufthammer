@@ -84,22 +84,16 @@ public class ClientHandler extends SimpleChannelHandler {
 					+ e.getRemoteAddress());
 			switch (prsslft.getType()) {
 			case ACK:
-				break;
 			case INFO:
-				// InetSocketAddress innerAddress =
-				// getSockAddrFromBytes(prsslft.getPayload());
-				// client.connectNReg( innerAddress);
-				break;
 			case QUERY:
 			case REGINNER:
 			case REGLEAF:
+				break;
 			case RESULT:
 				client.handleResult(prsslft);
 			case UNKNOWN:
 				break;
-
 			}
-			// e.getChannel().write(e.getMessage());
 		} else {
 			super.messageReceived(ctx, e);
 		}

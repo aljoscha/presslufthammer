@@ -3,7 +3,6 @@
  */
 package de.tuberlin.dima.presslufthammer.transport;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
@@ -27,8 +26,13 @@ public class Leaf extends ChannelNode {
 			(byte) 0, "Hello".getBytes());
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
+	
 	private Channel parentChannel;
 
+	/**
+	 * @param host
+	 * @param port
+	 */
 	public Leaf(String host, int port) {
 
 		if (connectNReg(host, port)) {
@@ -36,21 +40,10 @@ public class Leaf extends ChannelNode {
 		}
 	}
 
-	/**
-	 * see connectNReg( SocketAddress)
-	 * 
-	 * @param host
-	 * @param port
-	 * @return
+	/* (non-Javadoc)
+	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#connectNReg(java.net.SocketAddress)
 	 */
-	public boolean connectNReg(String host, int port) {
-		return connectNReg(new InetSocketAddress(host, port));
-	}
-
-	/**
-	 * @param address
-	 * @return true if connection was established successfully
-	 */
+	@Override
 	public boolean connectNReg(SocketAddress address) {
 		// TODO
 		ClientBootstrap bootstrap = new ClientBootstrap(
@@ -73,6 +66,10 @@ public class Leaf extends ChannelNode {
 		return true;
 	}
 
+	/* (non-Javadoc)
+	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#query(de.tuberlin.dima.presslufthammer.pressluft.Pressluft)
+	 */
+	@Override
 	public void query(Pressluft query) {
 		String queryString = new String(query.getPayload());
 		log.info("query: " + queryString);

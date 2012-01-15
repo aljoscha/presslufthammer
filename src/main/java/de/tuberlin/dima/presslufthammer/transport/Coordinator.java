@@ -25,7 +25,6 @@ import de.tuberlin.dima.presslufthammer.pressluft.Type;
  */
 public class Coordinator extends ChannelNode {
 
-	static int queryCount = 0;
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	ChannelGroup innerChans = new DefaultChannelGroup();
 	ChannelGroup leafChans = new DefaultChannelGroup();
@@ -56,13 +55,21 @@ public class Coordinator extends ChannelNode {
 
 	}
 
+	@Override
+	public void query(Pressluft query) {
+		// TODO
+		query(query, null);
+	}
+
 	/**
 	 * @param query
 	 */
 	public void query(Pressluft query, Channel client) {
 		// TODO
 		log.debug("query(" + query + ")");
+		
 		if (isServing()) {
+			
 			if (rootChan != null) {
 				log.debug("handing query to root");
 				// clientChans.add(client);// optional
@@ -81,6 +88,7 @@ public class Coordinator extends ChannelNode {
 					c.write(query);
 				}
 			}
+			
 		} else {
 			log.debug("Query cannot be processed.");
 		}
@@ -163,10 +171,6 @@ public class Coordinator extends ChannelNode {
 		if (qhand != null) {
 			qhand.addPart(resultMSG);
 		}
-	}
-
-	public enum QueryStatus {
-		OPEN, CLOSED
 	}
 
 	private byte nextQID() {

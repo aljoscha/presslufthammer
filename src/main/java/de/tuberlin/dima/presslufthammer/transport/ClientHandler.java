@@ -1,9 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.testing;
-
-import java.net.InetSocketAddress;
+package de.tuberlin.dima.presslufthammer.transport;
 
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -21,17 +19,17 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  * @author feichh
  * 
  */
-public class LeafHandler extends SimpleChannelHandler {
+public class ClientHandler extends SimpleChannelHandler {
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	private final ChannelGroup openChannels;
-	private final Leaf leaf;
+	private final CLIClient client;
 
 	/**
-	 * @param leaf
+	 * @param client
 	 * @param channelGroup
 	 */
-	public LeafHandler(Leaf leaf, ChannelGroup channelGroup) {
-		this.leaf = leaf;
+	public ClientHandler(CLIClient client, ChannelGroup channelGroup) {
+		this.client = client;
 		this.openChannels = channelGroup;
 	}
 
@@ -88,17 +86,15 @@ public class LeafHandler extends SimpleChannelHandler {
 			case ACK:
 				break;
 			case INFO:
-				InetSocketAddress innerAddress = getSockAddrFromBytes(prsslft
-						.getPayload());
-//				leaf.close();
-				leaf.connectNReg(innerAddress);
+				// InetSocketAddress innerAddress =
+				// getSockAddrFromBytes(prsslft.getPayload());
+				// client.connectNReg( innerAddress);
 				break;
 			case QUERY:
-				leaf.query( prsslft);
-				break;
 			case REGINNER:
 			case REGLEAF:
 			case RESULT:
+				client.handleResult(prsslft);
 			case UNKNOWN:
 				break;
 
@@ -107,21 +103,6 @@ public class LeafHandler extends SimpleChannelHandler {
 		} else {
 			super.messageReceived(ctx, e);
 		}
-	}
-
-	/**
-	 * @param payload
-	 * @return
-	 */
-	private InetSocketAddress getSockAddrFromBytes(byte[] payload) {
-		// TODO
-		String temp = new String(payload);
-		log.debug(temp);
-		String[] split = temp.split(":");
-		String ipaddr = split[0].replaceAll("/", "");
-		int port = Integer.parseInt(split[1]) + 1;
-		log.debug(ipaddr + " " + port);
-		return new InetSocketAddress(ipaddr, port);
 	}
 
 	/*

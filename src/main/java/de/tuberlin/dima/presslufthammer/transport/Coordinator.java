@@ -1,7 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.testing;
+package de.tuberlin.dima.presslufthammer.transport;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -62,26 +62,25 @@ public class Coordinator extends ChannelNode {
 	public void query(Pressluft query, Channel client) {
 		// TODO
 		log.debug("query(" + query + ")");
-		assert isServing();
+		if (isServing()) {
+			if (rootChan != null) {
+				log.debug("handing query to root");
+				// clientChans.add(client);// optional
+				byte qid = nextQID();
+				query.setQueryID(qid);
+				queries.put(qid, new QueryHandle(1, query, client));
+				rootChan.write(query);
 
-		if (handler != null && rootChan != null) {
-			// clientChans.add(client);
-			byte qid = nextQID();
-			query.setQueryID(qid);
-			queries.put(qid, new QueryHandle(1, query, client));
-			log.debug("handing query to root");
-			rootChan.write(query);
-
-		} else if (handler != null && !leafChans.isEmpty()) {
-			log.debug("querying leafs directly");
-			byte qid = nextQID();
-			query.setQueryID(qid);
-			queries.put(qid, new QueryHandle(leafChans.size(), query,
-					client));
-			for (Channel c : leafChans) {
-				c.write(query);
+			} else {
+				log.debug("querying leafs directly");
+				byte qid = nextQID();
+				query.setQueryID(qid);
+				queries.put(qid, new QueryHandle(leafChans.size(), query,
+						client));
+				for (Channel c : leafChans) {
+					c.write(query);
+				}
 			}
-
 		} else {
 			log.debug("Query cannot be processed.");
 		}
@@ -92,7 +91,7 @@ public class Coordinator extends ChannelNode {
 	 *         Leaf
 	 */
 	public boolean isServing() {
-		return !leafChans.isEmpty();
+		return handler != null && !leafChans.isEmpty();
 	}
 
 	/**

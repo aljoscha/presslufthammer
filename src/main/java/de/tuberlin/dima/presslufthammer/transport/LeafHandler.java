@@ -1,7 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.testing;
+package de.tuberlin.dima.presslufthammer.transport;
 
 import java.net.InetSocketAddress;
 
@@ -21,17 +21,17 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  * @author feichh
  * 
  */
-public class ClientHandler extends SimpleChannelHandler {
+public class LeafHandler extends SimpleChannelHandler {
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	private final ChannelGroup openChannels;
-	private final CLIClient client;
+	private final Leaf leaf;
 
 	/**
-	 * @param client
+	 * @param leaf
 	 * @param channelGroup
 	 */
-	public ClientHandler(CLIClient client, ChannelGroup channelGroup) {
-		this.client = client;
+	public LeafHandler(Leaf leaf, ChannelGroup channelGroup) {
+		this.leaf = leaf;
 		this.openChannels = channelGroup;
 	}
 
@@ -88,15 +88,17 @@ public class ClientHandler extends SimpleChannelHandler {
 			case ACK:
 				break;
 			case INFO:
-				// InetSocketAddress innerAddress =
-				// getSockAddrFromBytes(prsslft.getPayload());
-				// client.connectNReg( innerAddress);
+				InetSocketAddress innerAddress = getSockAddrFromBytes(prsslft
+						.getPayload());
+//				leaf.close();
+				leaf.connectNReg(innerAddress);
 				break;
 			case QUERY:
+				leaf.query( prsslft);
+				break;
 			case REGINNER:
 			case REGLEAF:
 			case RESULT:
-				client.handleResult(prsslft);
 			case UNKNOWN:
 				break;
 

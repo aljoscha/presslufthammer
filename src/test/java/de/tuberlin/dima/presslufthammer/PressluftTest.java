@@ -6,10 +6,10 @@ import java.io.InputStreamReader;
 
 import org.apache.log4j.BasicConfigurator;
 
-import de.tuberlin.dima.presslufthammer.testing.CLIClient;
-import de.tuberlin.dima.presslufthammer.testing.Coordinator;
-import de.tuberlin.dima.presslufthammer.testing.Inner;
-import de.tuberlin.dima.presslufthammer.testing.Leaf;
+import de.tuberlin.dima.presslufthammer.transport.CLIClient;
+import de.tuberlin.dima.presslufthammer.transport.Coordinator;
+import de.tuberlin.dima.presslufthammer.transport.Inner;
+import de.tuberlin.dima.presslufthammer.transport.Leaf;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;

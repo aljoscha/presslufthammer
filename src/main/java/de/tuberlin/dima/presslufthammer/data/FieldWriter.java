@@ -1,5 +1,6 @@
 package de.tuberlin.dima.presslufthammer.data;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +37,8 @@ public final class FieldWriter {
         parentStateInsertPoint = 0;
     }
 
-    public final void writeField(Field field, int repetitionLevel) {
+    public final void writeField(Field field, int repetitionLevel)
+            throws IOException {
         if (field != null) {
             if (parent != null) {
                 int parentState = parent.getStateVersion();
@@ -131,7 +133,7 @@ public final class FieldWriter {
         return levelStates.size() - 1;
     }
 
-    public void finalizeLevels() {
+    public void finalizeLevels() throws IOException {
         if (schema.isPrimitive()) {
             if (parent != null) {
                 int parentState = parent.getStateVersion();

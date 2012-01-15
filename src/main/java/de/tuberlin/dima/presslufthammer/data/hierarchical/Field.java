@@ -1,5 +1,7 @@
 package de.tuberlin.dima.presslufthammer.data.hierarchical;
 
+import java.io.IOException;
+
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
@@ -17,5 +19,5 @@ public abstract class Field {
     public abstract boolean isPrimitive();
 
     public abstract void writeToColumn(ColumnWriter writer,
-            int repetitionLevel, int definitionLevel);
+            int repetitionLevel, int definitionLevel) throws IOException;
 }

@@ -1,5 +1,6 @@
 package de.tuberlin.dima.presslufthammer.data;
 
+import java.io.IOException;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -13,15 +14,28 @@ import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordIterator;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordStore;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.fields.RecordField;
 
+/**
+ * This class implements the algorithm given in the Dremel paper for dissecting
+ * records to columnar data. Records are read from a given {@link RecordStore}
+ * and the columnar data is written to the given {@link Tablet}.
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public final class FieldStriper {
     private SchemaNode schema;
     private FieldWriter rootWriter;
 
+    /**
+     */
     public FieldStriper(SchemaNode schema) {
         this.schema = schema;
     }
 
-    public void dissectRecords(RecordStore records, Tablet targetTablet) {
+    /**
+     * Dissects records from the given record store to the target tablet.
+     */
+    public void dissectRecords(RecordStore records, Tablet targetTablet) throws IOException {
         rootWriter = createWriterTree(null, this.schema, targetTablet);
         RecordIterator iterator = records.recordIterator();
         RecordDecoder decoder = iterator.next();
@@ -32,8 +46,11 @@ public final class FieldStriper {
         rootWriter.finalizeLevels();
     }
 
+    /**
+     * Dissects one single record.
+     */
     private void dissectRecord(RecordDecoder decoder, FieldWriter writer,
-            int repetitionLevel) {
+            int repetitionLevel) throws IOException {
         Set<SchemaNode> seenFields = Sets.newHashSet();
         FieldIterator fieldIterator = decoder.fieldIterator();
         Field field = fieldIterator.next();
@@ -58,7 +75,11 @@ public final class FieldStriper {
         }
     }
 
-    private FieldWriter createWriterTree(FieldWriter parent, SchemaNode schema, Tablet targetTablet) {
+    /**
+     * Constructs the tree of field writers required by the algorithm.
+     */
+    private FieldWriter createWriterTree(FieldWriter parent, SchemaNode schema,
+            Tablet targetTablet) {
         ColumnWriter columnWriter = targetTablet.getColumnWriter(schema);
         FieldWriter fieldWriter = new FieldWriter(parent, schema, columnWriter);
         if (schema.isRecord()) {

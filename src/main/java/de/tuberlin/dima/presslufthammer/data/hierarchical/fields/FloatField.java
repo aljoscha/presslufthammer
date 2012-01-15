@@ -1,5 +1,7 @@
 package de.tuberlin.dima.presslufthammer.data.hierarchical.fields;
 
+import java.io.IOException;
+
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
@@ -22,7 +24,7 @@ public class FloatField extends PrimitiveField {
 
     @Override
     public void writeToColumn(ColumnWriter writer, int repetitionLevel,
-            int definitionLevel) {
+            int definitionLevel) throws IOException {
         writer.writeFloat(value, repetitionLevel, definitionLevel);
     }
 }

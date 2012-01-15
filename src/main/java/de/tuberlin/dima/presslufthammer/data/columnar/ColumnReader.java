@@ -1,25 +1,27 @@
 package de.tuberlin.dima.presslufthammer.data.columnar;
 
+import java.io.IOException;
+
 public interface ColumnReader {
-    public boolean hasNext();
+    public boolean hasNext() throws IOException;
 
-    public boolean nextIsNull();
+    public boolean nextIsNull() throws IOException;
 
-    public Object getNextValue();
+    public Object getNextValue() throws IOException;
 
-    public int getNextRepetition();
+    public int getNextRepetition() throws IOException;
 
-    public int getNextDefinition();
+    public int getNextDefinition() throws IOException;
 
-    public int getNextInt32();
+    public int getNextInt32() throws IOException;
 
-    public long getNextInt64();
+    public long getNextInt64() throws IOException;
 
-    public boolean getNextBool();
+    public boolean getNextBool() throws IOException;
 
-    public float getNextFloat();
+    public float getNextFloat() throws IOException;
 
-    public double getNextDouble();
+    public double getNextDouble() throws IOException;
 
-    public String getNextString();
+    public String getNextString() throws IOException;
 }

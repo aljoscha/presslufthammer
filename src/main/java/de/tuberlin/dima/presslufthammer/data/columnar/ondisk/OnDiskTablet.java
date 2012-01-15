@@ -1,6 +1,8 @@
 package de.tuberlin.dima.presslufthammer.data.columnar.ondisk;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -13,14 +15,16 @@ import com.google.common.collect.Maps;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderImpl;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriterImpl;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
 public class OnDiskTablet implements Tablet {
     private SchemaNode schema;
     private File directory;
     private Map<SchemaNode, File> columnFiles;
-    private Map<SchemaNode, OnDiskColumnWriter> columnWriters;
+    private Map<SchemaNode, ColumnWriterImpl> columnWriters;
 
     private OnDiskTablet(SchemaNode schema, File directory) {
         this.schema = schema;
@@ -29,21 +33,25 @@ public class OnDiskTablet implements Tablet {
         columnFiles = Maps.newHashMap();
     }
 
-    public static OnDiskTablet openTablet(File directory, String messageName) throws IOException {
+    public static OnDiskTablet openTablet(File directory, String messageName)
+            throws IOException {
         if (!directory.exists() && directory.isDirectory()) {
-            throw new IOException("Directory given in openTablet does not exist or is not a directory.");
+            throw new IOException(
+                    "Directory given in openTablet does not exist or is not a directory.");
         }
         File schemaFile = new File(directory, "schema.proto");
         if (!schemaFile.exists()) {
-            throw new IOException("No schema file in tablet directory " + directory);
+            throw new IOException("No schema file in tablet directory "
+                    + directory);
         }
-        SchemaNode schema = ProtobufSchemaHelper.readSchema(schemaFile.getAbsolutePath(), messageName);
+        SchemaNode schema = ProtobufSchemaHelper.readSchema(
+                schemaFile.getAbsolutePath(), messageName);
         OnDiskTablet tablet = new OnDiskTablet(schema, directory);
         tablet.createOrOpenColumnFiles(directory, schema);
-        
+
         return tablet;
     }
-    
+
     public static void removeTablet(File directory) throws IOException {
         if (directory.exists()) {
             FileUtils.deleteDirectory(directory);
@@ -77,8 +85,9 @@ public class OnDiskTablet implements Tablet {
             File columnFile = new File(directory, schema.getQualifiedName()
                     + ".column");
             columnFile.createNewFile();
-            columnWriters.put(schema,
-                    new OnDiskColumnWriter(schema, columnFile));
+
+            columnWriters.put(schema, new ColumnWriterImpl(schema,
+                    new FileOutputStream(columnFile, true)));
             // We need these for creating the readers
             columnFiles.put(schema, columnFile);
         }
@@ -130,21 +139,23 @@ public class OnDiskTablet implements Tablet {
         }
 
         try {
-            return new OnDiskColumnReader(schema, columnFiles.get(schema));
+            columnWriters.get(schema).flush();
+            return new ColumnReaderImpl(schema, new FileInputStream(
+                    columnFiles.get(schema)));
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    public void close() {
-        for (OnDiskColumnWriter writer : columnWriters.values()) {
+    public void close() throws IOException {
+        for (ColumnWriterImpl writer : columnWriters.values()) {
             writer.close();
         }
     }
 
-    public void flush() {
-        for (OnDiskColumnWriter writer : columnWriters.values()) {
+    public void flush() throws IOException {
+        for (ColumnWriterImpl writer : columnWriters.values()) {
             writer.flush();
         }
     }

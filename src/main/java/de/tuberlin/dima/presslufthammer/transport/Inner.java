@@ -1,7 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.testing;
+package de.tuberlin.dima.presslufthammer.transport;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -27,7 +27,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Type;
  * 
  */
 public class Inner extends ChannelNode {
-	private static final Pressluft REGMSG = new Pressluft(Type.REGINNER,
+	private static final Pressluft REGMSG = new Pressluft(Type.REGINNER, (byte) 0,
 			"Hello".getBytes());
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -35,6 +35,8 @@ public class Inner extends ChannelNode {
 	Channel coordChan, parentChan;
 
 	/**
+	 * Constructor
+	 * 
 	 * @param host
 	 * @param port
 	 * @throws InterruptedException
@@ -48,6 +50,9 @@ public class Inner extends ChannelNode {
 		// bootstrap.releaseExternalResources();
 	}
 
+	/**
+	 * 
+	 */
 	public void serve() {
 		int port = getPortFromSocketAddress(coordChan.getLocalAddress()) + 1;
 		// Configure the server.
@@ -76,17 +81,9 @@ public class Inner extends ChannelNode {
 		return Integer.parseInt(temp[temp.length - 1]);
 	}
 
-	/**
-	 * @param host
-	 * @param port
-	 * @return true if connection attempt was successful
-	 */
-	public boolean connectNReg(String host, int port) {
-		return connectNReg(new InetSocketAddress(host, port));
-	}
 
-	/**
-	 * @param innerAddress
+	/* (non-Javadoc)
+	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#connectNReg(java.net.SocketAddress)
 	 */
 	public boolean connectNReg(SocketAddress address) {
 		// TODO
@@ -124,10 +121,11 @@ public class Inner extends ChannelNode {
 		// TODO
 		childChannels.add(channel);
 	}
-
-	/**
-	 * @param query
+	
+	/* (non-Javadoc)
+	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#query(de.tuberlin.dima.presslufthammer.pressluft.Pressluft)
 	 */
+	@Override
 	public void query(Pressluft query) {
 		for (Channel c : childChannels) {
 			log.debug("querying: " + c.getRemoteAddress());
@@ -139,10 +137,4 @@ public class Inner extends ChannelNode {
 		// TODO
 		coordChan.write(prsslft);
 	}
-//
-//	public static void main(String[] args) throws Exception {
-//
-//		Inner in = new Inner("localhost", 44444);
-//
-//	}
 }

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.testing;
+package de.tuberlin.dima.presslufthammer.transport;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -25,14 +25,15 @@ import de.tuberlin.dima.presslufthammer.pressluft.Type;
  */
 public class Coordinator extends ChannelNode {
 
-	static int queryCount = 0;
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	ChannelGroup innerChans = new DefaultChannelGroup();
 	ChannelGroup leafChans = new DefaultChannelGroup();
 	ChannelGroup clientChans = new DefaultChannelGroup();
 	private final CoordinatorHandler handler = new CoordinatorHandler(this);
 	private Channel rootChan = null;
-	private final Map<Integer, QueryHandle> queries = new HashMap<Integer, QueryHandle>(); 
+	private final Map<Byte, QueryHandle> queries = new HashMap<Byte, QueryHandle>();
+
+	private static byte priorQID = 0;
 
 	/**
 	 * @param port
@@ -54,24 +55,38 @@ public class Coordinator extends ChannelNode {
 
 	}
 
+	@Override
+	public void query(Pressluft query) {
+		// TODO
+		query(query, null);
+	}
+
 	/**
 	 * @param query
 	 */
 	public void query(Pressluft query, Channel client) {
 		// TODO
 		log.debug("query(" + query + ")");
-		assert isServing();
 		
-		if (handler != null && rootChan != null) {
-			clientChans.add(client);
-			queries.put(queryCount, new QueryHandle(client));
-			log.debug("handing query to root");
-			rootChan.write(query);
+		if (isServing()) {
 			
-		} else if (handler != null && !leafChans.isEmpty()) {
-			log.debug("querying leafs directly");
-			for (Channel c : leafChans) {
-				c.write(query);
+			if (rootChan != null) {
+				log.debug("handing query to root");
+				// clientChans.add(client);// optional
+				byte qid = nextQID();
+				query.setQueryID(qid);
+				queries.put(qid, new QueryHandle(1, query, client));
+				rootChan.write(query);
+
+			} else {
+				log.debug("querying leafs directly");
+				byte qid = nextQID();
+				query.setQueryID(qid);
+				queries.put(qid, new QueryHandle(leafChans.size(), query,
+						client));
+				for (Channel c : leafChans) {
+					c.write(query);
+				}
 			}
 			
 		} else {
@@ -84,14 +99,14 @@ public class Coordinator extends ChannelNode {
 	 *         Leaf
 	 */
 	public boolean isServing() {
-		return !(innerChans.isEmpty() || leafChans.isEmpty());
+		return handler != null && !leafChans.isEmpty();
 	}
 
 	/**
 	 * @param channel
 	 */
 	public void addClient(Channel channel) {
-		// TODO Auto-generated method stub
+		// TODO
 		log.info("adding client channel: " + channel.getRemoteAddress());
 		clientChans.add(channel);
 	}
@@ -134,7 +149,7 @@ public class Coordinator extends ChannelNode {
 		// TODO
 		Type type = Type.INFO;
 		byte[] payload = rootChan.getRemoteAddress().toString().getBytes();
-		return new Pressluft(type, payload);
+		return new Pressluft(type, (byte) 0, payload);
 	}
 
 	/**
@@ -149,24 +164,17 @@ public class Coordinator extends ChannelNode {
 		// log.debug( "" + openChannels.remove( channel));
 	}
 
-	public void handleResult(Pressluft prsslft) {
+	public void handleResult(Pressluft resultMSG) {
 		// TODO
-		queries.get(queryCount - 1).client.write(prsslft);
-	}
-
-	public enum QueryStatus {
-		OPEN, CLOSED
-	}
-
-	public class QueryHandle {
-
-		final int queryID = queryCount++;
-		final Channel client;
-		QueryStatus status;
-
-		public QueryHandle(Channel client) {
-			this.client = client;
+		byte qid = resultMSG.getQueryID();
+		QueryHandle qhand = queries.get(qid);
+		if (qhand != null) {
+			qhand.addPart(resultMSG);
 		}
+	}
+
+	private byte nextQID() {
+		return ++priorQID;
 	}
 
 	// /**

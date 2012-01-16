@@ -1,9 +1,8 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.testing;
+package de.tuberlin.dima.presslufthammer.transport;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
@@ -24,11 +23,16 @@ import de.tuberlin.dima.presslufthammer.pressluft.Type;
  */
 public class Leaf extends ChannelNode {
 	private static final Pressluft REGMSG = new Pressluft(Type.REGLEAF,
-			"Hello".getBytes());
+			(byte) 0, "Hello".getBytes());
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
+	
 	private Channel parentChannel;
 
+	/**
+	 * @param host
+	 * @param port
+	 */
 	public Leaf(String host, int port) {
 
 		if (connectNReg(host, port)) {
@@ -36,21 +40,10 @@ public class Leaf extends ChannelNode {
 		}
 	}
 
-	/**
-	 * see connectNReg( SocketAddress)
-	 * 
-	 * @param host
-	 * @param port
-	 * @return
+	/* (non-Javadoc)
+	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#connectNReg(java.net.SocketAddress)
 	 */
-	public boolean connectNReg(String host, int port) {
-		return connectNReg(new InetSocketAddress(host, port));
-	}
-
-	/**
-	 * @param address
-	 * @return true if connection was established successfully
-	 */
+	@Override
 	public boolean connectNReg(SocketAddress address) {
 		// TODO
 		ClientBootstrap bootstrap = new ClientBootstrap(
@@ -73,11 +66,15 @@ public class Leaf extends ChannelNode {
 		return true;
 	}
 
+	/* (non-Javadoc)
+	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#query(de.tuberlin.dima.presslufthammer.pressluft.Pressluft)
+	 */
+	@Override
 	public void query(Pressluft query) {
 		String queryString = new String(query.getPayload());
 		log.info("query: " + queryString);
 
-		Pressluft message = new Pressluft(Type.RESULT, queryString
+		Pressluft message = new Pressluft(Type.RESULT, query.getQueryID(), queryString
 				.toUpperCase().getBytes());
 
 		parentChannel.write(message);
@@ -100,29 +97,29 @@ public class Leaf extends ChannelNode {
 	// super.close();
 	// }
 
-//	/**
-//	 * Prints the usage to System.out.
-//	 */
-//	private static void printUsage() {
-//		System.out.println("Usage:");
-//		System.out.println("hostname port");
-//	}
-//
-//	/**
-//	 * @param args
-//	 * @throws InterruptedException
-//	 *             if interrupted
-//	 */
-//	public static void main(String[] args) throws InterruptedException {
-//		// Print usage if necessary.
-//		if (args.length < 2) {
-//			printUsage();
-//			return;
-//		}
-//		// Parse options.
-//		String host = args[0];
-//		int port = Integer.parseInt(args[1]);
-//
-//		Leaf leaf = new Leaf(host, port);
-//	}
+	// /**
+	// * Prints the usage to System.out.
+	// */
+	// private static void printUsage() {
+	// System.out.println("Usage:");
+	// System.out.println("hostname port");
+	// }
+	//
+	// /**
+	// * @param args
+	// * @throws InterruptedException
+	// * if interrupted
+	// */
+	// public static void main(String[] args) throws InterruptedException {
+	// // Print usage if necessary.
+	// if (args.length < 2) {
+	// printUsage();
+	// return;
+	// }
+	// // Parse options.
+	// String host = args[0];
+	// int port = Integer.parseInt(args[1]);
+	//
+	// Leaf leaf = new Leaf(host, port);
+	// }
 }

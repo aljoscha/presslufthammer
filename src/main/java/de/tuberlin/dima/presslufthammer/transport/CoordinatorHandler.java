@@ -1,9 +1,8 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.testing;
+package de.tuberlin.dima.presslufthammer.transport;
 
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -117,7 +116,7 @@ public class CoordinatorHandler extends SimpleChannelHandler {
 			e.getChannel()
 					.write(new Pressluft(
 							de.tuberlin.dima.presslufthammer.pressluft.Type.ACK,
-							new byte[] { (byte) 0 }));
+							(byte) 0, new byte[] { (byte) 0 }));
 		} else {
 			super.messageReceived(ctx, e);
 		}

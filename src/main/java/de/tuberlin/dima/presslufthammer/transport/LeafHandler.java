@@ -1,7 +1,9 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.testing;
+package de.tuberlin.dima.presslufthammer.transport;
+
+import java.net.InetSocketAddress;
 
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -19,18 +21,18 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  * @author feichh
  * 
  */
-public class InnerHandler extends SimpleChannelHandler {
+public class LeafHandler extends SimpleChannelHandler {
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	private final ChannelGroup openChannels;
-	private final Inner inner;
+	private final Leaf leaf;
 
 	/**
-	 * @param inner
+	 * @param leaf
+	 * @param channelGroup
 	 */
-	public InnerHandler(Inner inner) {
-		this.inner = inner;
-		this.openChannels = inner.openChannels;
-
+	public LeafHandler(Leaf leaf, ChannelGroup channelGroup) {
+		this.leaf = leaf;
+		this.openChannels = channelGroup;
 	}
 
 	/*
@@ -63,6 +65,7 @@ public class InnerHandler extends SimpleChannelHandler {
 	@Override
 	public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
+		// TODO difference between channelConnected / channelOpen ???
 		this.openChannels.add(e.getChannel());
 	}
 
@@ -79,40 +82,46 @@ public class InnerHandler extends SimpleChannelHandler {
 			throws Exception {
 		if (e.getMessage() instanceof Pressluft) {
 			Pressluft prsslft = (Pressluft) e.getMessage();
-			log.info(prsslft.getType() + " from "
-					+ e.getRemoteAddress().toString());
-
+			log.debug("received: " + prsslft.getType() + " from "
+					+ e.getRemoteAddress());
 			switch (prsslft.getType()) {
 			case ACK:
-				// not used yet
 				break;
 			case INFO:
-				// not used yet
+				InetSocketAddress innerAddress = getSockAddrFromBytes(prsslft
+						.getPayload());
+//				leaf.close();
+				leaf.connectNReg(innerAddress);
 				break;
 			case QUERY:
-				// TODO split query and hand parts over to children
-				inner.query( prsslft);
+				leaf.query( prsslft);
 				break;
 			case REGINNER:
-				// not used yet
-				break;
 			case REGLEAF:
-				// TODO handle new leaf connection
-				openChannels.add(e.getChannel());
-				inner.regChild(e.getChannel());
-				break;
 			case RESULT:
-				// TODO accumulate results; combine them; send them to parent;
-				inner.handleResult(prsslft);
-				break;
 			case UNKNOWN:
-				// not used yet
 				break;
 
 			}
+			// e.getChannel().write(e.getMessage());
 		} else {
 			super.messageReceived(ctx, e);
 		}
+	}
+
+	/**
+	 * @param payload
+	 * @return
+	 */
+	private InetSocketAddress getSockAddrFromBytes(byte[] payload) {
+		// TODO
+		String temp = new String(payload);
+		log.debug(temp);
+		String[] split = temp.split(":");
+		String ipaddr = split[0].replaceAll("/", "");
+		int port = Integer.parseInt(split[1]) + 1;
+		log.debug(ipaddr + " " + port);
+		return new InetSocketAddress(ipaddr, port);
 	}
 
 	/*

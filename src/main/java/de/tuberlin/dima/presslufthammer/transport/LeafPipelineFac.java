@@ -1,17 +1,13 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.testing;
+package de.tuberlin.dima.presslufthammer.transport;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
-import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
-import org.jboss.netty.handler.codec.protobuf.ProtobufDecoder;
-import org.jboss.netty.handler.codec.protobuf.ProtobufEncoder;
 
 import de.tuberlin.dima.presslufthammer.pressluft.Decoder;
 import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
@@ -20,15 +16,15 @@ import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
  * @author feichh
  * 
  */
-public class ClientPipelineFac implements ChannelPipelineFactory {
+public class LeafPipelineFac implements ChannelPipelineFactory {
 
-	private final CLIClient client;
+	private final Leaf leaf;
 
 	/**
-	 * @param client
+	 * @param leaf
 	 */
-	public ClientPipelineFac(CLIClient client) {
-		this.client = client;
+	public LeafPipelineFac(Leaf leaf) {
+		this.leaf = leaf;
 	}
 
 	/*
@@ -53,7 +49,7 @@ public class ClientPipelineFac implements ChannelPipelineFactory {
 
 		pipe.addLast("Encoder", Encoder.getInstance());
 		pipe.addLast("Decoder", new Decoder());
-		pipe.addLast("LeafHandler", new ClientHandler(client,
+		pipe.addLast("LeafHandler", new LeafHandler(leaf,
 				new DefaultChannelGroup()));
 		return pipe;
 	}

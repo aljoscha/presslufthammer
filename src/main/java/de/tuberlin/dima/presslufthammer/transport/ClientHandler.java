@@ -1,9 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.testing;
-
-import java.net.InetSocketAddress;
+package de.tuberlin.dima.presslufthammer.transport;
 
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -86,40 +84,19 @@ public class ClientHandler extends SimpleChannelHandler {
 					+ e.getRemoteAddress());
 			switch (prsslft.getType()) {
 			case ACK:
-				break;
 			case INFO:
-				// InetSocketAddress innerAddress =
-				// getSockAddrFromBytes(prsslft.getPayload());
-				// client.connectNReg( innerAddress);
-				break;
 			case QUERY:
 			case REGINNER:
 			case REGLEAF:
+				break;
 			case RESULT:
 				client.handleResult(prsslft);
 			case UNKNOWN:
 				break;
-
 			}
-			// e.getChannel().write(e.getMessage());
 		} else {
 			super.messageReceived(ctx, e);
 		}
-	}
-
-	/**
-	 * @param payload
-	 * @return
-	 */
-	private InetSocketAddress getSockAddrFromBytes(byte[] payload) {
-		// TODO
-		String temp = new String(payload);
-		log.debug(temp);
-		String[] split = temp.split(":");
-		String ipaddr = split[0].replaceAll("/", "");
-		int port = Integer.parseInt(split[1]) + 1;
-		log.debug(ipaddr + " " + port);
-		return new InetSocketAddress(ipaddr, port);
 	}
 
 	/*

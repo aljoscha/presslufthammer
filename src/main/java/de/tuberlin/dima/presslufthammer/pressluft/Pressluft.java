@@ -12,13 +12,23 @@ import java.io.Serializable;
 @SuppressWarnings("serial")
 public class Pressluft implements Serializable {
 	private Type type;
+	private byte queryID;
 	private byte[] payload;
 
+	/**
+	 * 
+	 */
 	public Pressluft() {
 	}
 
-	public Pressluft(Type t, byte[] load) {
+	/**
+	 * @param t
+	 * @param qid
+	 * @param load
+	 */
+	public Pressluft(Type t, byte qid, byte[] load) {
 		this.type = t;
+		this.queryID = qid;
 		this.payload = load;
 	}
 
@@ -53,21 +63,42 @@ public class Pressluft implements Serializable {
 	}
 
 	/**
+	 * @return
+	 */
+	public byte getQueryID() {
+		return queryID;
+	}
+
+	/**
+	 * @param queryID
+	 */
+	public void setQueryID(byte queryID) {
+		this.queryID = queryID;
+	}
+
+	/**
 	 * @param query
 	 * @return
 	 */
-	public static Pressluft getQueryMSG(String query) {
+	public static Pressluft getQueryMSG(byte qid, String query) {
 		// TODO
 		Type type = Type.QUERY;
 		byte[] payload = query.getBytes();
 
-		return new Pressluft(type, payload);
+		return new Pressluft(type, qid, payload);
+	}
+	
+	public static Pressluft getQueryMSG(String query) {
+		Type type = Type.QUERY;
+		byte[] payload = query.getBytes();
+
+		return new Pressluft(type, (byte) 0, payload);
 	}
 
 	@Override
 	public String toString() {
 		return new StringBuilder().append("Pressluft{").append(" type=")
-				.append(type).append(", payload=")
+				.append(type).append("qid=").append(queryID).append(", payload=")
 				.append(payload == null ? null : payload.length + "bytes")
 				.append('}').toString();
 	}

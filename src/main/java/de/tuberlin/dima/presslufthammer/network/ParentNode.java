@@ -2,6 +2,7 @@ package de.tuberlin.dima.presslufthammer.network;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,22 +10,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.netty.channel.Channel;
+
 import de.tuberlin.dima.presslufthammer.ontology.Result;
 import de.tuberlin.dima.presslufthammer.ontology.Query;
 import de.tuberlin.dima.presslufthammer.ontology.Task;
 import de.tuberlin.dima.presslufthammer.pressluft.old.Pressluft;
 import de.tuberlin.dima.presslufthammer.pressluft.old.Type;
 
-public class ParentNode extends Node {
+public abstract class ParentNode extends Node {
 	
-	protected Set<InetSocketAddress> childNodes;
+	protected Set<SocketAddress> childNodes;
+	protected Map<SocketAddress, Channel> connections;
 	protected Map<Long, Task[]> taskMap;
 	
-	public ParentNode(String name, int port) {
-		super(name, port);
+	public ParentNode(String name, String host, int port) {
+		super(name, host, port);
 		
-		childNodes = new HashSet<InetSocketAddress>();
+		childNodes = new HashSet<SocketAddress>();
 		taskMap = new HashMap<Long, Task[]>();
+		connections = new HashMap<SocketAddress, Channel>();
 	}
 	
 	protected synchronized void forwardTask(Task task) {
@@ -65,7 +70,7 @@ public class ParentNode extends Node {
 	protected synchronized Task[] factorQuery(Query query) {
 		// TODO replace with real method
 		Task[] res = new Task[childNodes.size()];
-		List<InetSocketAddress> tmp = new ArrayList<InetSocketAddress>(childNodes);
+		List<SocketAddress> tmp = new ArrayList<SocketAddress>(childNodes);
 		
 		for (int i = 0; i < res.length; i++) {
 			res[i] = new Task(query, tmp.get(i));
@@ -75,6 +80,15 @@ public class ParentNode extends Node {
 	}
 	
 	// --------------------------------------------------------------------------------------------
+	
+	protected synchronized void sendPressLuft(Pressluft p, SocketAddress addr) {
+		Channel ch = connections.get(addr);
+		if (ch != null) {
+			ch.write(p);
+		} else {
+			logger.error("could not send message \"" + p + "\" to \"" + addr + "\"");
+		}
+	}
 	
 	protected synchronized boolean isSolved(long id) {
 		Task[] tmp = taskMap.get(id);

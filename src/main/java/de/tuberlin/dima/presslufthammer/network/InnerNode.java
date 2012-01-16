@@ -5,36 +5,126 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
+import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.ServerChannelFactory;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import de.tuberlin.dima.presslufthammer.network.handler.ServerHandler;
 import de.tuberlin.dima.presslufthammer.ontology.Result;
 import de.tuberlin.dima.presslufthammer.ontology.Query;
 import de.tuberlin.dima.presslufthammer.ontology.Task;
 import de.tuberlin.dima.presslufthammer.pressluft.old.Decoder;
+import de.tuberlin.dima.presslufthammer.pressluft.old.Encoder;
 import de.tuberlin.dima.presslufthammer.pressluft.old.Pressluft;
 import de.tuberlin.dima.presslufthammer.pressluft.old.Type;
 
-public class InnerNode extends ParentNode {
+public final class InnerNode extends ParentNode {
 	
-	InetSocketAddress parentNode;
+	SocketAddress parentNode;
+	Channel parent;
+	private ServerChannelFactory serverFactory;
 	
-	public InnerNode(String name, int port) {
-		super(name, port);
+	private ChannelFactory clientFactory;
+	
+	public InnerNode(String name, String host, int port) {
+		super(name, host, port);
+	}
+	
+	private synchronized void sendAnswer(Result answer) {
+		// TODO replace with private void answer(Query q)
+		logger.debug("sending " + answer.getId() + " to " + parentNode);
 		
-		ChannelFactory factory;
+		Pressluft p;
+		try {
+			p = new Pressluft(Type.RESULT, Result.toByteArray(answer));
+			if (parent != null) {
+				parent.write(p);
+			} else {
+				logger.error("could not send message \"" + p + "\" to \"" + parentNode + "\"");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	// -- GETTERS AND SETTERS ---------------------------------------------------------------------
+	
+	public synchronized void setParentNode(String hostname, int port) {
+		parentNode = new InetSocketAddress(hostname, port);
+	}
+	
+	public SocketAddress getParentNode() {
+		return parentNode;
+	}
+	
+	// --------------------------------------------------------------------------------------------
+	
+	@Override
+	public boolean start() {
+		this.channelGroup = new DefaultChannelGroup(this + "-allChannels");
 		
-		// setup server
-		factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
-		this.serverBootstrap = new ServerBootstrap(factory);
-		this.serverBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+		// Server (Leaf) part
+		this.serverFactory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+		ChannelPipelineFactory pipelineFactory = new ChannelPipelineFactory() {
 			
 			public ChannelPipeline getPipeline() throws Exception {
-				return Channels.pipeline(new Decoder(), new ServerHandler(logger) {
+				ChannelPipeline pipeline = Channels.pipeline();
+				pipeline.addLast("encoder", Encoder.getInstance());
+				pipeline.addLast("decoder", new Decoder());
+				pipeline.addLast("handler", new ServerHandler(name, channelGroup) {
+					
+					@Override
+					public void handleResult(Result data, SocketAddress socketAddress) {
+					}
+					
+					@Override
+					public void handleQuery(Query query, Channel ch) {
+						logger.trace("recieved query " + query.getId());
+						
+						Task[] tasks = factorQuery(query);
+						taskMap.put(query.getId(), tasks);
+						for (Task task : tasks) {
+							forwardTask(task);
+						}
+					}
+					
+					@Override
+					public void handleConnection(Channel ch) {
+						parent = ch;
+					}
+				});
+				return pipeline;
+			}
+		};
+		
+		ServerBootstrap serverbootstrap = new ServerBootstrap(this.serverFactory);
+		serverbootstrap.setOption("reuseAddress", true);
+		serverbootstrap.setOption("child.tcpNoDelay", true);
+		serverbootstrap.setOption("child.keepAlive", true);
+		serverbootstrap.setPipelineFactory(pipelineFactory);
+		
+		Channel channel = serverbootstrap.bind(new InetSocketAddress(this.host, this.port));
+		if (!channel.isBound()) {
+			this.stop();
+			return false;
+		}
+		
+		// Client (Root) part
+		this.clientFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+		pipelineFactory = new ChannelPipelineFactory() {
+			
+			public ChannelPipeline getPipeline() throws Exception {
+				ChannelPipeline pipeline = Channels.pipeline();
+				pipeline.addLast("encoder", Encoder.getInstance());
+				pipeline.addLast("decoder", new Decoder());
+				pipeline.addLast("handler", new ServerHandler(name, channelGroup) {
 					
 					@Override
 					public void handleResult(Result data, SocketAddress socketAddress) {
@@ -57,40 +147,49 @@ public class InnerNode extends ParentNode {
 					}
 					
 					@Override
-					public void handleQuery(Query query) {
-						logger.trace("recieved query " + query.getId());
-						
-						Task[] tasks = factorQuery(query);
-						taskMap.put(query.getId(), tasks);
-						for (Task task : tasks) {
-							forwardTask(task);
-						}
+					public void handleQuery(Query query, Channel ch) {
+					}
+					
+					@Override
+					public void handleConnection(Channel ch) {
+						connections.put(ch.getRemoteAddress(), ch);
 					}
 				});
+				return pipeline;
 			}
-		});
+		};
 		
-		this.serverBootstrap.bind(new InetSocketAddress(port));
-	}
-	
-	private synchronized void sendAnswer(Result answer) {
-		Pressluft p;
-		try {
-			p = new Pressluft(Type.RESULT, Result.toByteArray(answer));
-			sendPressLuft(p, parentNode);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		ClientBootstrap clientbootstrap = new ClientBootstrap(this.clientFactory);
+		clientbootstrap.setOption("reuseAddress", true);
+		clientbootstrap.setOption("tcpNoDelay", true);
+		clientbootstrap.setOption("keepAlive", true);
+		clientbootstrap.setPipelineFactory(pipelineFactory);
+		
+		// connect to every child
+		for (SocketAddress addr : childNodes) {
+			boolean connected = clientbootstrap.connect(addr).awaitUninterruptibly().isSuccess();
+			if (!connected) {
+				this.stop();
+				return connected;
+			}
 		}
+		
+		return true;
 	}
 	
-	// -- GETTERS AND SETTERS ---------------------------------------------------------------------
-	
-	public synchronized void setParentNode(String hostname, int port) {
-		parentNode = new InetSocketAddress(hostname, port);
-	}
-	
-	public InetSocketAddress getParentNode() {
-		return parentNode;
+	@Override
+	public void stop() {
+		
+		if (this.channelGroup != null) {
+			this.channelGroup.close();
+		}
+		
+		if (this.serverFactory != null) {
+			this.serverFactory.releaseExternalResources();
+		}
+		
+		if (this.clientFactory != null) {
+			this.clientFactory.releaseExternalResources();
+		}
 	}
 }

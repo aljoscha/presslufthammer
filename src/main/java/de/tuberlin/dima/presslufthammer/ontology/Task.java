@@ -1,6 +1,7 @@
 package de.tuberlin.dima.presslufthammer.ontology;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 public class Task {
 	
@@ -11,9 +12,9 @@ public class Task {
 	private Result solution;
 	
 	// the client, that solves the task
-	private InetSocketAddress solver;
+	private SocketAddress solver;
 	
-	public Task(Query query, InetSocketAddress socketAddress) {
+	public Task(Query query, SocketAddress socketAddress) {
 		this.query = query;
 		this.solver = socketAddress;
 		this.solution = null;
@@ -31,7 +32,7 @@ public class Task {
 		return solution;
 	}
 	
-	public InetSocketAddress getSolver() {
+	public SocketAddress getSolver() {
 		return solver;
 	}
 	

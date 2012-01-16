@@ -15,9 +15,9 @@ import de.tuberlin.dima.presslufthammer.network.handler.ServerHandler;
 import de.tuberlin.dima.presslufthammer.ontology.Result;
 import de.tuberlin.dima.presslufthammer.ontology.Query;
 import de.tuberlin.dima.presslufthammer.ontology.Task;
-import de.tuberlin.dima.presslufthammer.pressluft.Decoder;
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
-import de.tuberlin.dima.presslufthammer.pressluft.Type;
+import de.tuberlin.dima.presslufthammer.pressluft.old.Decoder;
+import de.tuberlin.dima.presslufthammer.pressluft.old.Pressluft;
+import de.tuberlin.dima.presslufthammer.pressluft.old.Type;
 
 public class InnerNode extends ParentNode {
 	

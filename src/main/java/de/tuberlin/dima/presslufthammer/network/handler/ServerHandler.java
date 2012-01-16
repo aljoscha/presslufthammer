@@ -12,7 +12,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 
 import de.tuberlin.dima.presslufthammer.ontology.Result;
 import de.tuberlin.dima.presslufthammer.ontology.Query;
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.pressluft.old.Pressluft;
 
 public abstract class ServerHandler extends SimpleChannelHandler {
 	
@@ -33,10 +33,13 @@ public abstract class ServerHandler extends SimpleChannelHandler {
 			switch (prsslft.getType()) {
 				case QUERY:
 					handleQuery(Query.fromByteArray(prsslft.getPayload()));
+					break;
 				case RESULT:
 					handleResult(Result.fromByteArray(prsslft.getPayload()), e.getRemoteAddress());
+					break;
 				default:
 					logger.error("can not handle pressluft : " + prsslft.getType());
+					break;
 			}
 		}
 	}

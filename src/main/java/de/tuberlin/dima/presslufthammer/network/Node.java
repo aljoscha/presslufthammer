@@ -14,8 +14,8 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 
 import de.tuberlin.dima.presslufthammer.network.handler.ClientHandler;
-import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.pressluft.old.Encoder;
+import de.tuberlin.dima.presslufthammer.pressluft.old.Pressluft;
 
 public abstract class Node {
 	

@@ -1,5 +1,6 @@
-package de.tuberlin.dima.presslufthammer.data.columnar;
+package de.tuberlin.dima.presslufthammer.data.ondisk;
 
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
 
 public class DummyColumnWriter implements ColumnWriter {

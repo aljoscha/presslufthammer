@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.data.columnar;
+package de.tuberlin.dima.presslufthammer.data.ondisk;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,6 +14,11 @@ import com.google.common.collect.Maps;
 
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderImpl;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriterImpl;
+import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
 public class OnDiskTablet implements Tablet {
     private SchemaNode schema;

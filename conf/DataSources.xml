@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- XML file listing all available data sources -->
+<dataSource name="Document" proto="Document.proto">
+	<fields>
+		<field type="type" name="name"></field>
+	</fields>
+	<!-- list all existing tablets -->
+	<tablets>
+		<tablet path="tablet1"></tablet>
+		<tablet path="tablet2"></tablet>
+		<tablet path="tablet3"></tablet>
+	</tablets>
+</dataSource>

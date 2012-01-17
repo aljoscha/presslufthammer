@@ -18,6 +18,9 @@ import org.slf4j.LoggerFactory;
 
 import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 import de.tuberlin.dima.presslufthammer.pressluft.Type;
+import de.tuberlin.dima.presslufthammer.xml.DataSource;
+import de.tuberlin.dima.presslufthammer.xml.DataSourcesReader;
+import de.tuberlin.dima.presslufthammer.xml.DataSourcesReaderImpl;
 
 /**
  * @author feichh
@@ -32,14 +35,20 @@ public class Coordinator extends ChannelNode {
 	private final CoordinatorHandler handler = new CoordinatorHandler(this);
 	private Channel rootChan = null;
 	private final Map<Byte, QueryHandle> queries = new HashMap<Byte, QueryHandle>();
+	private final Map<String, DataSource> dsMap;
 
 	private static byte priorQID = 0;
 
 	/**
-	 * @param port
+	 * @param port the port this Coordinator shall serve on
+	 * @throws Exception if reading DataSources.xml fails
 	 */
-	public Coordinator(int port) {
+	public Coordinator(int port) throws Exception {
 		// TODO
+		DataSourcesReader dsReader = new DataSourcesReaderImpl();
+		dsMap = dsReader.readFromXML("conf/DataSources.xml");
+		log.debug(dsMap.toString());
+		
 		// Configure the server.
 		ServerBootstrap bootstrap = new ServerBootstrap(
 				new NioServerSocketChannelFactory(

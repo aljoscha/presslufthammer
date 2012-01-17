@@ -8,27 +8,88 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 
+import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 
 public class InMemoryReadonlyTablet implements Tablet {
     private SchemaNode schema;
     private Map<SchemaNode, byte[]> columns;
     private Map<SchemaNode, ColumnReaderImpl> columnReaders;
 
-    public InMemoryReadonlyTablet(SchemaNode schema, Map<SchemaNode, byte[]> columns) {
+    public InMemoryReadonlyTablet(SchemaNode schema,
+            Map<SchemaNode, byte[]> columns) {
         this.schema = schema;
         this.columns = columns;
         columnReaders = Maps.newHashMap();
-        createColumns(schema);
+        createColumnReaders(schema);
     }
-    
+
     public InMemoryReadonlyTablet(InMemoryWriteonlyTablet sourceTablet) {
         this(sourceTablet.getSchema(), sourceTablet.getColumnData());
     }
 
-    private void createColumns(SchemaNode schema) {
-        ByteArrayInputStream arrayStream = new ByteArrayInputStream(columns.get(schema));
-        DataInputStream in = new DataInputStream(new BufferedInputStream(arrayStream));
+    public InMemoryReadonlyTablet(Pressluft source) {
+        byte[] data = source.getPayload();
+        ByteArrayInputStream inArray = new ByteArrayInputStream(data);
+        DataInputStream in = new DataInputStream(inArray);
+        Map<String, byte[]> rawColumns = Maps.newHashMap();
+
+        try {
+            int magicNumber = in.readInt();
+            if (magicNumber != InMemoryWriteonlyTablet.PRESSLUFT_TABLET_MAGIC_NUMBER) {
+                // this should not happen, programming bug
+                throw new RuntimeException(
+                        "Pressluft handed to InMemoryReadonlyTablet with wrong magic number.");
+            }
+
+            String schemaString = in.readUTF();
+            this.schema = ProtobufSchemaHelper
+                    .readSchemaFromString(schemaString);
+
+            int numColumns = in.readInt();
+
+            for (int i = 0; i < numColumns; ++i) {
+                String qualifiedColumnName = in.readUTF();
+                int numBytes = in.readInt();
+                byte[] buffer = new byte[numBytes];
+                if (numBytes > 0) {
+                    int bytesRead = in.read(buffer, 0, numBytes);
+                    if (bytesRead != numBytes) {
+                        throw new RuntimeException(
+                                "Mismatch in number of bytes expected and actually read.\nField: "
+                                        + qualifiedColumnName + " " + bytesRead
+                                        + "/" + numBytes);
+                    }
+                }
+                rawColumns.put(qualifiedColumnName, buffer);
+            }
+
+        } catch (IOException e) {
+            // cannot happen
+            e.printStackTrace();
+        }
+        columns = Maps.newHashMap();
+        columnReaders = Maps.newHashMap();
+        fillColumns(schema, rawColumns);
+        createColumnReaders(schema);
+    }
+
+    private void fillColumns(SchemaNode schema, Map<String, byte[]> rawColumns) {
+        columns.put(schema, rawColumns.get(schema.getQualifiedName()));
+
+        if (schema.isRecord()) {
+            for (SchemaNode childSchema : schema.getFieldList()) {
+                fillColumns(childSchema, rawColumns);
+            }
+        }
+    }
+
+    private void createColumnReaders(SchemaNode schema) {
+        ByteArrayInputStream arrayStream = new ByteArrayInputStream(
+                columns.get(schema));
+        DataInputStream in = new DataInputStream(new BufferedInputStream(
+                arrayStream));
         try {
             ColumnReaderImpl reader = new ColumnReaderImpl(schema, in);
             columnReaders.put(schema, reader);
@@ -37,10 +98,10 @@ public class InMemoryReadonlyTablet implements Tablet {
             // output stream shenanigans inside InMemoryColumnReader
             e.printStackTrace();
         }
-        
+
         if (schema.isRecord()) {
             for (SchemaNode childSchema : schema.getFieldList()) {
-                createColumns(childSchema);
+                createColumnReaders(childSchema);
             }
         }
     }
@@ -48,13 +109,14 @@ public class InMemoryReadonlyTablet implements Tablet {
     public SchemaNode getSchema() {
         return schema;
     }
-    
+
     public boolean hasColumn(SchemaNode schema) {
         return columns.containsKey(schema);
     }
 
     public ColumnWriter getColumnWriter(SchemaNode schema) {
-        throw new RuntimeException("This is a read-only tablet, call to this should not happen. (getColumnWriter)");
+        throw new RuntimeException(
+                "This is a read-only tablet, call to this should not happen. (getColumnWriter)");
     }
 
     public ColumnReader getColumnReader(SchemaNode schema) {

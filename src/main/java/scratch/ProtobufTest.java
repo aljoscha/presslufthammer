@@ -8,8 +8,8 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 public class ProtobufTest {
 
     public static void main(String[] args) {
-        SchemaNode schema = ProtobufSchemaHelper.readSchema(Resources
-                .getResource("Document.proto").getFile(), "Document");
+        SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(Resources
+                .getResource("Document.proto").getFile());
         
         System.out.println(schema);
     }

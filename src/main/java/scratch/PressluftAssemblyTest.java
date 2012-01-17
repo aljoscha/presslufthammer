@@ -12,8 +12,9 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryReadonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordFile;
+import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
 
-public class AssemblyTest {
+public class PressluftAssemblyTest {
 
     public static void main(String[] args) throws FileNotFoundException,
             IOException {
@@ -30,7 +31,9 @@ public class AssemblyTest {
 
         inMemoryTablet.printColumns();
         
-        InMemoryReadonlyTablet tablet = new InMemoryReadonlyTablet(inMemoryTablet);
+        Pressluft resultTablet = inMemoryTablet.toPressluft();
+        
+        InMemoryReadonlyTablet tablet = new InMemoryReadonlyTablet(resultTablet);
 
         AssemblyFSM fsm = new AssemblyFSM(schema);
         System.out.println(fsm.toString());

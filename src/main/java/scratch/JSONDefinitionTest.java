@@ -16,8 +16,8 @@ public class JSONDefinitionTest {
     public static void main(String[] args) throws FileNotFoundException,
             IOException {
         
-        SchemaNode schema = ProtobufSchemaHelper.readSchema(Resources
-                .getResource("Document.proto").getFile(), "Document");
+        SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(Resources
+                .getResource("Document.proto").getFile());
 
         System.out.println(schema.toString());
         JSONRecordFile records = new JSONRecordFile(schema,

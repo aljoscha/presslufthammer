@@ -28,7 +28,7 @@ public class OnDiskTablet implements Tablet {
         columnFiles = Maps.newHashMap();
     }
 
-    public static OnDiskTablet openTablet(File directory, String messageName)
+    public static OnDiskTablet openTablet(File directory)
             throws IOException {
         if (!directory.exists() && directory.isDirectory()) {
             throw new IOException(
@@ -39,8 +39,8 @@ public class OnDiskTablet implements Tablet {
             throw new IOException("No schema file in tablet directory "
                     + directory);
         }
-        SchemaNode schema = ProtobufSchemaHelper.readSchema(
-                schemaFile.getAbsolutePath(), messageName);
+        SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(
+                schemaFile.getAbsolutePath());
         OnDiskTablet tablet = new OnDiskTablet(schema, directory);
         tablet.createOrOpenColumnFiles(directory, schema);
 

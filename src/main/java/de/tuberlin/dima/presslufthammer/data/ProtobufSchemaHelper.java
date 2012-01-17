@@ -1,9 +1,11 @@
 package de.tuberlin.dima.presslufthammer.data;
 
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 import com.dyuproject.protostuff.parser.Field;
 import com.dyuproject.protostuff.parser.Message;
@@ -12,10 +14,25 @@ import com.dyuproject.protostuff.parser.Proto;
 import com.dyuproject.protostuff.parser.ProtoUtil;
 
 public class ProtobufSchemaHelper {
-    public static SchemaNode readSchema(String filename, String messageName) {
+    public static SchemaNode readSchemaFromFile(String filename) {
         Proto proto = ProtoUtil.parseProto(new File(filename));
-        Message message = proto.getMessage(messageName);
+        // all .proto files must contain exactly one message
+        Message message = proto.getMessages().iterator().next();
         return createRecordSchema(message);
+    }
+    
+    public static SchemaNode readSchemaFromString(String schemaString) {
+        byte[] bytes = schemaString.getBytes(Charset.defaultCharset());
+        ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
+        Proto proto = new Proto();
+        try {
+        ProtoUtil.loadFrom(stream, proto);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        Message message = proto.getMessages().iterator().next();
+        return createRecordSchema(message);
+        
     }
 
     private static SchemaNode createRecordSchema(Message message) {

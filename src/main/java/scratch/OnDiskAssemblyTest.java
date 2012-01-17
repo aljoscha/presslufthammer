@@ -17,8 +17,8 @@ public class OnDiskAssemblyTest {
 
     public static void main(String[] args) throws FileNotFoundException,
             IOException {
-        SchemaNode schema = ProtobufSchemaHelper.readSchema(Resources
-                .getResource("Document.proto").getFile(), "Document");
+        SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(Resources
+                .getResource("Document.proto").getFile());
         System.out.println(schema.toString());
         
         JSONRecordFile records = new JSONRecordFile(schema, Resources
@@ -44,7 +44,7 @@ public class OnDiskAssemblyTest {
         
         // Now reopen the tablet ...
         
-        OnDiskTablet reopenedTablet = OnDiskTablet.openTablet(new File("documents.tablet"), "Document");
+        OnDiskTablet reopenedTablet = OnDiskTablet.openTablet(new File("documents.tablet"));
         SchemaNode reopenedSchema = reopenedTablet.getSchema();
         
         AssemblyFSM reopenedFsm = new AssemblyFSM(reopenedSchema);

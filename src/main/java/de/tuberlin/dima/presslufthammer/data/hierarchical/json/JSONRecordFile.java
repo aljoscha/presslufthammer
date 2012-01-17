@@ -1,7 +1,6 @@
 package de.tuberlin.dima.presslufthammer.data.hierarchical.json;
 
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -14,8 +13,7 @@ public class JSONRecordFile implements RecordStore {
     private SchemaNode schema;
     private String filename;
 
-    public JSONRecordFile(SchemaNode schema, String filename)
-            throws FileNotFoundException, IOException {
+    public JSONRecordFile(SchemaNode schema, String filename) {
         this.schema = schema;
         this.filename = filename;
     }

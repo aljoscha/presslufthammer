@@ -13,7 +13,7 @@ public class ColumnWriterImpl implements ColumnWriter {
     private SchemaNode schema;
     private DataOutputStream out;
 
-    public ColumnWriterImpl(SchemaNode schema, OutputStream outputStream)
+    protected ColumnWriterImpl(SchemaNode schema, OutputStream outputStream)
             throws IOException {
         this.schema = schema;
         out = new DataOutputStream(new BufferedOutputStream(outputStream));

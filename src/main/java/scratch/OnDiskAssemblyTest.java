@@ -10,7 +10,7 @@ import de.tuberlin.dima.presslufthammer.data.AssemblyFSM;
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.columnar.ondisk.OnDiskTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.OnDiskTablet;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordFile;
 
 public class OnDiskAssemblyTest {

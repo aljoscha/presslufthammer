@@ -8,7 +8,7 @@ import com.google.common.io.Resources;
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordFile;
 
 public class JSONDefinitionTest {

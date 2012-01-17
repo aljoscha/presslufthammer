@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.data.columnar.inmemory;
+package de.tuberlin.dima.presslufthammer.data.columnar;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -10,11 +10,6 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderImpl;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriterImpl;
-import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
 public class InMemoryWriteonlyTablet implements Tablet {
     private SchemaNode schema;

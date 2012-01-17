@@ -15,7 +15,7 @@ public class ColumnReaderImpl implements ColumnReader {
     private int nextRepetition;
     private int nextDefinition;
 
-    public ColumnReaderImpl(SchemaNode schema, InputStream inputStream)
+    protected ColumnReaderImpl(SchemaNode schema, InputStream inputStream)
             throws IOException {
         this.schema = schema;
         in = new DataInputStream(new BufferedInputStream(inputStream));

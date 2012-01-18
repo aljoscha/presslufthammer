@@ -15,6 +15,7 @@ import javax.xml.parsers.SAXParserFactory;
 import org.apache.log4j.Logger;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -26,7 +27,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		DataSourcesReader {
 
 	public enum ParseState {
-		START, DS, FIELD, TABLET,
+		START, DS,
 	}
 
 	private Logger log = Logger.getLogger(getClass());
@@ -60,7 +61,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 			throws ParserConfigurationException, SAXException, IOException {
 
 		log.debug("attempting to parse " + path);
-		
+
 		SAXParserFactory spf = SAXParserFactory.newInstance();
 		spf.setNamespaceAware(true);
 		SAXParser saxParser = spf.newSAXParser();
@@ -78,7 +79,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 	 */
 	@Override
 	public void startDocument() throws SAXException {
-		
+
 		log.debug("document started");
 		dataSourceMap = new HashMap<String, DataSource>();
 		parseState = ParseState.START;
@@ -99,38 +100,25 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		switch (parseState) {
 		case START: {
 			assert (localName == "dataSource");
-			String name = attributes.getValue(0);
-			String proto = attributes.getValue(1);
-			currentSource = new DataSource(name, proto);
-			dataSourceMap.put(name, currentSource);
-			parseState = ParseState.DS;
+			try {
+				String name = attributes.getValue(0);
+				String path = attributes.getValue(1);
+				int parts = Integer.valueOf(attributes.getValue(2));
+				currentSource = new DataSource(name, path, parts);
+				dataSourceMap.put(name, currentSource);
+				parseState = ParseState.DS;
+			} catch (Exception e) {
+				throw new SAXException(e);
+			}
 			break;
 		}
 		case DS: {
-			if (localName == "fields") {
-				parseState = ParseState.FIELD;
-			} else if( localName == "tablets") {
-				parseState = ParseState.TABLET;
-			}
-			break;
-		}
-		case FIELD: {
-			if (localName == "field") {
-				String type = attributes.getValue(1);
-				String name = attributes.getValue(0);
-				currentSource.addField(name, type);
-			}
-			break;
-		}
-		case TABLET: {
-			if( localName == "tablet") {
-				String tablet = attributes.getValue(0);
-				currentSource.addTablet(tablet);
-			}
-			break;
+			// could be considered irrelevant
+			throw new SAXParseException("XML Structure: nested <dataSource>s",
+					null);
 		}
 		}
-		super.startElement(uri, localName, qName, attributes);
+		// super.startElement(uri, localName, qName, attributes);
 	}
 
 	/*
@@ -151,18 +139,8 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 				parseState = ParseState.START;
 			}
 			break;
-		case FIELD:
-			if (localName == "fields") {
-				parseState = ParseState.DS;
-			}
-			break;
-		case TABLET:
-			if (localName == "tablets") {
-				parseState = ParseState.DS;
-			}
-			break;
 		}
-		super.endElement(uri, localName, qName);
+		// super.endElement(uri, localName, qName);
 	}
 
 	/*
@@ -172,7 +150,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 	 */
 	@Override
 	public void endDocument() throws SAXException {
-		
+
 		log.debug("document ended");
 		super.endDocument();
 	}

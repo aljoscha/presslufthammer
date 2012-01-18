@@ -1,69 +1,33 @@
 package de.tuberlin.dima.presslufthammer.xml;
 
-import java.util.ArrayList;
-import java.util.List;
+import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
+import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+
 
 public class DataSource {
+	private final int partitions;
 	private final String name;
-	private final String protopath;
-	private List<Field> fields;
-	private List<String> tablets;
+	private final String schemapath;
+	private final SchemaNode schema;
 	
-	public DataSource(String name, String ppath) {
+	public DataSource(String name, String path, int parts) {
+		this.partitions = parts;
 		this.name = name;
-		this.protopath = ppath;
-		this.fields = new ArrayList<Field>();
-		this.tablets = new ArrayList<String>();
-	}
-	
-	public String getProtopath() {
-		return protopath;
-	}
-
-	public String getName() {
-		return name;
-	}
-	
-	public int getNumFields() {
-		return fields.size();
-	}
-	
-	public int getNumTablets() {
-		return tablets.size();
-	}
-	
-	public Field getField(int i) {
-		return fields.get(i);
-	}
-	
-	public String getTablet(int i) {
-		return tablets.get(i);
-	}
-	
-	public void addField(String name, String type) {
-		assert(fields != null);
-		fields.add(new Field(name, type));
-	}
-	
-	public void addTablet(String tablet) {
-		assert(tablets != null);
-		tablets.add(tablet);
+		this.schemapath = path;
+		this.schema = ProtobufSchemaHelper.readSchema(path, name);
 	}
 
 	@Override
 	public String toString() {
-		String string = "DataSource: " + name + "@" + protopath;
-		string += "::fields:" + getNumFields() + "::tablets:" + getNumTablets();
+		String string = "DataSource: " + name + "@" + schemapath;
 		return string;
 	}
 
-	public class Field {
-		public String name;
-		public String type;
-		
-		public Field(String name, String type) {
-			this.name = name;
-			this.type = type;
-		}
+	public SchemaNode getSchema() {
+		return schema;
+	}
+
+	public int getPartitions() {
+		return partitions;
 	}
 }

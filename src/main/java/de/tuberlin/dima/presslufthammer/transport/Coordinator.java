@@ -28,6 +28,7 @@ import de.tuberlin.dima.presslufthammer.xml.DataSourcesReaderImpl;
  */
 public class Coordinator extends ChannelNode {
 
+	private static final String DSXML_PATH = "src/main/resources/DataSources.xml";
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	ChannelGroup innerChans = new DefaultChannelGroup();
 	ChannelGroup leafChans = new DefaultChannelGroup();
@@ -36,8 +37,8 @@ public class Coordinator extends ChannelNode {
 	private Channel rootChan = null;
 	private final Map<Byte, QueryHandle> queries = new HashMap<Byte, QueryHandle>();
 	private final Map<String, DataSource> dsMap;
+	private byte priorQID = 0;
 
-	private static byte priorQID = 0;
 
 	/**
 	 * @param port the port this Coordinator shall serve on
@@ -46,7 +47,7 @@ public class Coordinator extends ChannelNode {
 	public Coordinator(int port) throws Exception {
 		// TODO
 		DataSourcesReader dsReader = new DataSourcesReaderImpl();
-		dsMap = dsReader.readFromXML("conf/DataSources.xml");
+		dsMap = dsReader.readFromXML(DSXML_PATH);
 		log.debug(dsMap.toString());
 		
 		// Configure the server.

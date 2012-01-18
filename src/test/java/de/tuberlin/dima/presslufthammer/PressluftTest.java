@@ -39,11 +39,9 @@ public class PressluftTest extends TestCase {
 
 	/**
 	 * Rigorous Test :-)
-	 * 
-	 * @throws IOException
-	 * @throws InterruptedException 
+	 * @throws Exception 
 	 */
-	public void testOneOfEach() throws IOException, InterruptedException {
+	public void testOneOfEach() throws Exception {
 		BasicConfigurator.configure();
 
 		Coordinator coord = new Coordinator(HOSTPORT);
@@ -59,11 +57,9 @@ public class PressluftTest extends TestCase {
 	
 	/**
 	 * Rigorous Test :-)
-	 * 
-	 * @throws IOException
-	 * @throws InterruptedException 
+	 * @throws Exception 
 	 */
-	public void testThreeLeafs() throws IOException, InterruptedException {
+	public void testThreeLeafs() throws Exception {
 		BasicConfigurator.configure();
 		
 		Coordinator coord = new Coordinator(HOSTPORT);

@@ -28,9 +28,9 @@ public class ClientHandler extends SimpleChannelHandler {
 	 * @param client
 	 * @param channelGroup
 	 */
-	public ClientHandler(CLIClient client, ChannelGroup channelGroup) {
+	public ClientHandler(CLIClient client) {
 		this.client = client;
-		this.openChannels = channelGroup;
+		this.openChannels = client.openChannels;
 	}
 
 	/*

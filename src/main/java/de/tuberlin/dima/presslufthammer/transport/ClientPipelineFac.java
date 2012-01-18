@@ -49,8 +49,7 @@ public class ClientPipelineFac implements ChannelPipelineFactory {
 
 		pipe.addLast("Encoder", Encoder.getInstance());
 		pipe.addLast("Decoder", new Decoder());
-		pipe.addLast("LeafHandler", new ClientHandler(client,
-				new DefaultChannelGroup()));
+		pipe.addLast("LeafHandler", new ClientHandler(client));
 		return pipe;
 	}
 

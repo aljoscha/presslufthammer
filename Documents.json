@@ -1,0 +1,2 @@
+{"Name":[{"Url":"http:\/\/A","Language":[{"Country":"us","Code":"en-us"},{"Code":"en"}]},{"Url":"http:\/\/B"},{"Language":[{"Country":"gb","Code":"en-gb"}]}],"Links":{"Forward":[20,40,60]},"DocId":10}
+{"Name":[{"Url":"http:\/\/C"}],"Links":{"Backward":[10,30],"Forward":[80]},"DocId":20}

@@ -5,21 +5,19 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 
 
 public class DataSource {
-	private final int partitions;
-	private final String name;
+	private final int numPartitions;
 	private final String schemapath;
 	private final SchemaNode schema;
 	
-	public DataSource(String name, String path, int parts) {
-		this.partitions = parts;
-		this.name = name;
-		this.schemapath = path;
-		this.schema = ProtobufSchemaHelper.readSchema(path, name);
+	public DataSource(String schemaPath, int parts) {
+		this.numPartitions = parts;
+		this.schemapath = schemaPath;
+		this.schema = ProtobufSchemaHelper.readSchemaFromFile(schemaPath);
 	}
 
 	@Override
 	public String toString() {
-		String string = "DataSource: " + name + "@" + schemapath;
+		String string = "DataSource: " + schema.getName() + "@" + schemapath;
 		return string;
 	}
 
@@ -27,7 +25,7 @@ public class DataSource {
 		return schema;
 	}
 
-	public int getPartitions() {
-		return partitions;
+	public int getNumPartitions() {
+		return numPartitions;
 	}
 }

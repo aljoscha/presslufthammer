@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- XML file listing all available data sources -->
+
+<dataSource name="Document" schema="Document.proto" partitions="4"></dataSource>

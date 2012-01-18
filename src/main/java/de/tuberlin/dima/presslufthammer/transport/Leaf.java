@@ -6,6 +6,7 @@ package de.tuberlin.dima.presslufthammer.transport;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
+import org.apache.log4j.BasicConfigurator;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -97,29 +98,22 @@ public class Leaf extends ChannelNode {
 	// super.close();
 	// }
 
-	// /**
-	// * Prints the usage to System.out.
-	// */
-	// private static void printUsage() {
-	// System.out.println("Usage:");
-	// System.out.println("hostname port");
-	// }
-	//
-	// /**
-	// * @param args
-	// * @throws InterruptedException
-	// * if interrupted
-	// */
-	// public static void main(String[] args) throws InterruptedException {
-	// // Print usage if necessary.
-	// if (args.length < 2) {
-	// printUsage();
-	// return;
-	// }
-	// // Parse options.
-	// String host = args[0];
-	// int port = Integer.parseInt(args[1]);
-	//
-	// Leaf leaf = new Leaf(host, port);
-	// }
+    private static void printUsage() {
+        System.out.println("Usage:");
+        System.out.println("hostname port");
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        BasicConfigurator.configure();
+        // Print usage if necessary.
+        if (args.length < 2) {
+            printUsage();
+            return;
+        }
+        // Parse options.
+        String host = args[0];
+        int port = Integer.parseInt(args[1]);
+
+        Leaf leaf = new Leaf(host, port);
+    }
 }

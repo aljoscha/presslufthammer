@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
+import org.apache.log4j.BasicConfigurator;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.group.ChannelGroup;
@@ -28,7 +29,6 @@ import de.tuberlin.dima.presslufthammer.xml.DataSourcesReaderImpl;
  */
 public class Coordinator extends ChannelNode {
 
-	private static final String DSXML_PATH = "src/main/resources/DataSources.xml";
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	ChannelGroup innerChans = new DefaultChannelGroup();
 	ChannelGroup leafChans = new DefaultChannelGroup();
@@ -44,10 +44,10 @@ public class Coordinator extends ChannelNode {
 	 * @param port the port this Coordinator shall serve on
 	 * @throws Exception if reading DataSources.xml fails
 	 */
-	public Coordinator(int port) throws Exception {
+	public Coordinator(int port, String dataSources) throws Exception {
 		// TODO
 		DataSourcesReader dsReader = new DataSourcesReaderImpl();
-		dsMap = dsReader.readFromXML(DSXML_PATH);
+		dsMap = dsReader.readFromXML(dataSources);
 		log.debug(dsMap.toString());
 		
 		// Configure the server.
@@ -187,25 +187,31 @@ public class Coordinator extends ChannelNode {
 		return ++priorQID;
 	}
 
-	// /**
-	// * Prints the usage to System.out.
-	// */
-	// private static void printUsage() {
-	// // TODO Auto-generated method stub
-	// System.out.println("Parameters:");
-	// System.out.println("port");
-	// }
-	//
-	// public static void main(String[] args) {
-	// // System.out.println( "Hello World!" );
-	// // Print usage if necessary.
-	// if (args.length < 1) {
-	// printUsage();
-	// return;
-	// }
-	//
-	// int port = Integer.parseInt(args[0]);
-	//
-	// Coordinator coord = new Coordinator(port);
-	// }
+    /**
+     * Prints the usage to System.out.
+     */
+    private static void printUsage() {
+        // TODO Auto-generated method stub
+        System.out.println("Parameters:");
+        System.out.println("port datasources");
+    }
+
+    public static void main(String[] args) {
+        BasicConfigurator.configure();
+        // System.out.println( "Hello World!" );
+        // Print usage if necessary.
+        if (args.length < 2) {
+            printUsage();
+            return;
+        }
+
+        int port = Integer.parseInt(args[0]);
+        String datasources = args[1];
+
+        try {
+            Coordinator coord = new Coordinator(port, datasources);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -35,10 +35,6 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 	private ParseState parseState = ParseState.DS;
 	private DataSource currentSource = null;
 
-	/**
-	 * @param filename
-	 * @return
-	 */
 	private static String convertToFileURL(String filename) {
 		String path = new File(filename).getAbsolutePath();
 		if (File.separatorChar != '/') {
@@ -50,13 +46,6 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		return "file:" + path;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * de.tuberlin.dima.presslufthammer.xml.DataSourcesReader#readFromXML(java
-	 * .lang.String)
-	 */
 	public Map<String, DataSource> readFromXML(String path)
 			throws ParserConfigurationException, SAXException, IOException {
 
@@ -72,11 +61,6 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		return dataSourceMap;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.xml.sax.helpers.DefaultHandler#startDocument()
-	 */
 	@Override
 	public void startDocument() throws SAXException {
 
@@ -87,12 +71,6 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		// super.startDocument();
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.xml.sax.helpers.DefaultHandler#startElement(java.lang.String,
-	 * java.lang.String, java.lang.String, org.xml.sax.Attributes)
-	 */
 	@Override
 	public void startElement(String uri, String localName, String qName,
 			Attributes attributes) throws SAXException {
@@ -104,7 +82,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 				String name = attributes.getValue(0);
 				String path = attributes.getValue(1);
 				int parts = Integer.valueOf(attributes.getValue(2));
-				currentSource = new DataSource(name, path, parts);
+				currentSource = new DataSource(path, parts);
 				dataSourceMap.put(name, currentSource);
 				parseState = ParseState.DS;
 			} catch (Exception e) {
@@ -121,12 +99,6 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		// super.startElement(uri, localName, qName, attributes);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.xml.sax.helpers.DefaultHandler#endElement(java.lang.String,
-	 * java.lang.String, java.lang.String)
-	 */
 	@Override
 	public void endElement(String uri, String localName, String qName)
 			throws SAXException {
@@ -143,11 +115,6 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		// super.endElement(uri, localName, qName);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.xml.sax.helpers.DefaultHandler#endDocument()
-	 */
 	@Override
 	public void endDocument() throws SAXException {
 

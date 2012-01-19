@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.BasicConfigurator;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.group.ChannelGroup;
@@ -197,7 +196,7 @@ public class Coordinator extends ChannelNode {
     }
 
     public static void main(String[] args) {
-        BasicConfigurator.configure();
+//        BasicConfigurator.configure();
         // System.out.println( "Hello World!" );
         // Print usage if necessary.
         if (args.length < 2) {

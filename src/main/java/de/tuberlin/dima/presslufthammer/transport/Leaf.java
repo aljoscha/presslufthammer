@@ -6,7 +6,6 @@ package de.tuberlin.dima.presslufthammer.transport;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.BasicConfigurator;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -104,7 +103,6 @@ public class Leaf extends ChannelNode {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        BasicConfigurator.configure();
         // Print usage if necessary.
         if (args.length < 2) {
             printUsage();

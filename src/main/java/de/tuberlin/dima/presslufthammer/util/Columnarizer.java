@@ -3,8 +3,6 @@ package de.tuberlin.dima.presslufthammer.util;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.log4j.BasicConfigurator;
-
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
@@ -24,7 +22,6 @@ public class Columnarizer {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        BasicConfigurator.configure();
         if (args.length < 4) {
             printUsage();
             return;

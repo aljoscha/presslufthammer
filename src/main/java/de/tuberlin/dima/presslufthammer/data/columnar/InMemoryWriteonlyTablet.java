@@ -11,8 +11,8 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
-import de.tuberlin.dima.presslufthammer.pressluft.Type;
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
+import de.tuberlin.dima.presslufthammer.transport.messages.Type;
 
 public class InMemoryWriteonlyTablet implements Tablet {
     public static int PRESSLUFT_TABLET_MAGIC_NUMBER = 0xCAFEBABE;
@@ -27,7 +27,7 @@ public class InMemoryWriteonlyTablet implements Tablet {
         createColumns(schema);
     }
 
-    public Pressluft toPressluft() {
+    public SimpleMessage toPressluft() {
         try {
             flush();
         } catch (IOException e) {
@@ -52,7 +52,7 @@ public class InMemoryWriteonlyTablet implements Tablet {
             // cannot happen
         }
 
-        return new Pressluft(Type.RESULT, (byte) -1, arrayOut.toByteArray());
+        return new SimpleMessage(Type.RESULT, (byte) -1, arrayOut.toByteArray());
     }
 
     private void createColumns(SchemaNode schema) {

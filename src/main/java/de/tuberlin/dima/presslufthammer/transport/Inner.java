@@ -19,15 +19,15 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
-import de.tuberlin.dima.presslufthammer.pressluft.Type;
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
+import de.tuberlin.dima.presslufthammer.transport.messages.Type;
 
 /**
  * @author feichh
  * 
  */
 public class Inner extends ChannelNode {
-	private static final Pressluft REGMSG = new Pressluft(Type.REGINNER, (byte) 0,
+	private static final SimpleMessage REGMSG = new SimpleMessage(Type.REGINNER, (byte) 0,
 			"Hello".getBytes());
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -126,14 +126,14 @@ public class Inner extends ChannelNode {
 	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#query(de.tuberlin.dima.presslufthammer.pressluft.Pressluft)
 	 */
 	@Override
-	public void query(Pressluft query) {
+	public void query(SimpleMessage query) {
 		for (Channel c : childChannels) {
 			log.debug("querying: " + c.getRemoteAddress());
 			c.write(query);
 		}
 	}
 
-	public void handleResult(Pressluft prsslft) {
+	public void handleResult(SimpleMessage prsslft) {
 		// TODO
 		coordChan.write(prsslft);
 	}

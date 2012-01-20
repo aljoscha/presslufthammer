@@ -1,7 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.pressluft;
+package de.tuberlin.dima.presslufthammer.transport.messages;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
@@ -16,7 +16,7 @@ public class Decoder extends ReplayingDecoder<Decoder.DecodingState> {
 	// internal vars
 	// --------------------------------------------------------------------------------------------------
 
-	private Pressluft message;
+	private SimpleMessage message;
 
 	// constructors
 	// ---------------------------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ public class Decoder extends ReplayingDecoder<Decoder.DecodingState> {
 
 	private void reset() {
 		checkpoint(DecodingState.TYPE);
-		this.message = new Pressluft();
+		this.message = new SimpleMessage();
 	}
 
 	// private classes

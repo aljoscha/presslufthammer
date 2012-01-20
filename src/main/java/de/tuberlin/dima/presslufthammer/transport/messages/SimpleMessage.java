@@ -1,98 +1,57 @@
-/**
- * 
- */
-package de.tuberlin.dima.presslufthammer.pressluft;
+package de.tuberlin.dima.presslufthammer.transport.messages;
 
-import java.io.Serializable;
 
-/**
- * based on: https://github.com/brunodecarvalho/netty-tutorials/
- * 
- */
-@SuppressWarnings("serial")
-public class Pressluft implements Serializable {
+public class SimpleMessage {
 	private Type type;
 	private byte queryID;
 	private byte[] payload;
 
-	/**
-	 * 
-	 */
-	public Pressluft() {
+	public SimpleMessage() {
 	}
 
-	/**
-	 * @param t
-	 * @param qid
-	 * @param load
-	 */
-	public Pressluft(Type t, byte qid, byte[] load) {
+	public SimpleMessage(Type t, byte qid, byte[] load) {
 		this.type = t;
 		this.queryID = qid;
 		this.payload = load;
 	}
 
-	/**
-	 * @return the type
-	 */
 	public Type getType() {
 		return type;
 	}
 
-	/**
-	 * @param type
-	 *            the type to set
-	 */
 	public void setType(Type type) {
 		this.type = type;
 	}
 
-	/**
-	 * @return the payload
-	 */
 	public byte[] getPayload() {
 		return payload;
 	}
 
-	/**
-	 * @param payload
-	 *            the payload to set
-	 */
 	public void setPayload(byte[] payload) {
 		this.payload = payload;
 	}
 
-	/**
-	 * @return
-	 */
 	public byte getQueryID() {
 		return queryID;
 	}
 
-	/**
-	 * @param queryID
-	 */
 	public void setQueryID(byte queryID) {
 		this.queryID = queryID;
 	}
 
-	/**
-	 * @param query
-	 * @return
-	 */
-	public static Pressluft getQueryMSG(byte qid, String query) {
+	public static SimpleMessage getQueryMSG(byte qid, String query) {
 		// TODO
 		Type type = Type.QUERY;
 		byte[] payload = query.getBytes();
 
-		return new Pressluft(type, qid, payload);
+		return new SimpleMessage(type, qid, payload);
 	}
 	
-	public static Pressluft getQueryMSG(String query) {
+	public static SimpleMessage getQueryMSG(String query) {
 		Type type = Type.QUERY;
 		byte[] payload = query.getBytes();
 
-		return new Pressluft(type, (byte) 0, payload);
+		return new SimpleMessage(type, (byte) 0, payload);
 	}
 
 	@Override

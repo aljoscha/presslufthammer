@@ -1,101 +1,89 @@
-/**
- * 
- */
 package de.tuberlin.dima.presslufthammer.transport;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
-import de.tuberlin.dima.presslufthammer.pressluft.Type;
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
+import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
+import de.tuberlin.dima.presslufthammer.util.Stoppable;
 
 /**
  * @author feichh
+ * @author Aljoscha Krettek
  * 
  */
-public class Leaf extends ChannelNode {
-	private static final Pressluft REGMSG = new Pressluft(Type.REGLEAF,
-			(byte) 0, "Hello".getBytes());
+public class Leaf implements Stoppable {
+    private static final SimpleMessage REGMSG = new SimpleMessage(Type.REGLEAF,
+            (byte) 0, "Hello".getBytes());
+    private static int CONNECT_TIMEOUT = 10000;
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
-	private final Logger log = LoggerFactory.getLogger(getClass());
-	
-	private Channel parentChannel;
+    private Channel coordinatorChannel;
+    private ClientBootstrap bootstrap;
+    private String serverHost;
+    private int serverPort;
 
-	/**
-	 * @param host
-	 * @param port
-	 */
-	public Leaf(String host, int port) {
+    public Leaf(String serverHost, int serverPort) {
+        this.serverHost = serverHost;
+        this.serverPort = serverPort;
+    }
 
-		if (connectNReg(host, port)) {
-			log.info("registered with coordinator");
-		}
-	}
+    public void start() {
+        ChannelFactory factory = new NioClientSocketChannelFactory(
+                Executors.newCachedThreadPool(),
+                Executors.newCachedThreadPool());
+        bootstrap = new ClientBootstrap(factory);
 
-	/* (non-Javadoc)
-	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#connectNReg(java.net.SocketAddress)
-	 */
-	@Override
-	public boolean connectNReg(SocketAddress address) {
-		// TODO
-		ClientBootstrap bootstrap = new ClientBootstrap(
-				new NioClientSocketChannelFactory(
-						Executors.newCachedThreadPool(),
-						Executors.newCachedThreadPool()));
+        bootstrap.setPipelineFactory(new LeafPipelineFac(this));
+        bootstrap.setOption("connectTimeoutMillis", CONNECT_TIMEOUT);
 
-		bootstrap.setPipelineFactory(new LeafPipelineFac(this));
-		ChannelFuture connectFuture = bootstrap.connect(address);
+        SocketAddress address = new InetSocketAddress(serverHost, serverPort);
 
-		connectFuture.addListener(new ChannelFutureListener() {
-			public void operationComplete(ChannelFuture future)
-					throws Exception {
-				parentChannel = future.getChannel();
-				openChannels.add(parentChannel);
-				parentChannel.write(REGMSG);
-			}
-		});
+        ChannelFuture connectFuture = bootstrap.connect(address);
 
-		return true;
-	}
+        if (connectFuture.awaitUninterruptibly().isSuccess()) {
+            coordinatorChannel = connectFuture.getChannel();
+            coordinatorChannel.write(REGMSG);
+            log.info("Connected to coordinator at {}:{}", serverHost,
+                    serverPort);
+            Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
+        } else {
+            bootstrap.releaseExternalResources();
+            log.info("Failed to conncet to coordinator at {}:{}", serverHost,
+                    serverPort);
+        }
 
-	/* (non-Javadoc)
-	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#query(de.tuberlin.dima.presslufthammer.pressluft.Pressluft)
-	 */
-	@Override
-	public void query(Pressluft query) {
-		String queryString = new String(query.getPayload());
-		log.info("query: " + queryString);
+    }
 
-		Pressluft message = new Pressluft(Type.RESULT, query.getQueryID(), queryString
-				.toUpperCase().getBytes());
+    public void query(SimpleMessage query) {
+        String queryString = new String(query.getPayload());
+        log.info("Received query: " + queryString);
 
-		parentChannel.write(message);
-	}
+        SimpleMessage message = new SimpleMessage(Type.RESULT, query.getQueryID(),
+                queryString.toUpperCase().getBytes());
 
-	//
-	// /*
-	// * (non-Javadoc)
-	// *
-	// * @see de.tuberlin.dima.presslufthammer.testing.ChannelNode#close()
-	// */
-	// @Override
-	// public void close() throws IOException
-	// {
-	// // TODO
-	// //
-	// // channel.close().awaitUninterruptibly();
-	// // bootstrap.releaseExternalResources();
-	// // parentChannel.close();
-	// super.close();
-	// }
+        coordinatorChannel.write(message);
+    }
+
+    @Override
+    public void stop() {
+        log.info("Stopping leaf.");
+        if (coordinatorChannel != null) {
+            coordinatorChannel.close().awaitUninterruptibly();
+        }
+        bootstrap.releaseExternalResources();
+        log.info("Leaf stopped.");
+    }
 
     private static void printUsage() {
         System.out.println("Usage:");
@@ -113,5 +101,6 @@ public class Leaf extends ChannelNode {
         int port = Integer.parseInt(args[1]);
 
         Leaf leaf = new Leaf(host, port);
+        leaf.start();
     }
 }

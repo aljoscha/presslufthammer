@@ -8,8 +8,8 @@ import static org.jboss.netty.channel.Channels.pipeline;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 
-import de.tuberlin.dima.presslufthammer.pressluft.Decoder;
-import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
+import de.tuberlin.dima.presslufthammer.transport.messages.Decoder;
+import de.tuberlin.dima.presslufthammer.transport.messages.Encoder;
 
 /**
  * @author feichh

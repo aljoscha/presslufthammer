@@ -1,7 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.pressluft;
+package de.tuberlin.dima.presslufthammer.transport.messages;
 
 /**
  * 

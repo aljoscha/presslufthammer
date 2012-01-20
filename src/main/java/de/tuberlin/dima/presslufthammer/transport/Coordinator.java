@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 
+import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.Type;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
@@ -105,6 +106,8 @@ public class Coordinator extends ChannelNode implements Stoppable {
 		log.info("Received query({}) from client {}.", query,
 				client.getLocalAddress());
 
+		query.setPayload(getQueryBytes(query));
+
 		if (isServing()) {
 			if (rootChannel != null) {
 				log.debug("Handing query to root node of our node tree.");
@@ -129,6 +132,42 @@ public class Coordinator extends ChannelNode implements Stoppable {
 			log.info("Query cannot be processed because we have no leafs.");
 		}
 	}
+
+	private byte[] getQueryBytes(SimpleMessage query) {
+		// TODO
+		Query test = new Query("0:ALL:Document:0:ANYTHING:NOTHING");
+		return test.toString().getBytes();
+	}
+
+	//
+	// public void query(Query query, Channel client) {
+	// log.info("Received query({}) from client {}.", query,
+	// client.getLocalAddress());
+	//
+	// if (isServing()) {
+	// if (rootChannel != null) {
+	// log.debug("Handing query to root node of our node tree.");
+	// // clientChans.add(client);// optional
+	// byte qid = nextQID();
+	// query.setId(qid);
+	// queries.put(qid, new QueryHandler(1, query, client));
+	// rootChannel.write(query);
+	//
+	// } else {
+	// log.debug("Querying leafs directly.");
+	// byte qid = nextQID();
+	// query.setId(qid);
+	// queries.put(qid, new QueryHandler(leafChannels.size(), query,
+	// client));
+	// for (Channel c : leafChannels) {
+	// c.write(query);
+	// }
+	// }
+	//
+	// } else {
+	// log.info("Query cannot be processed because we have no leafs.");
+	// }
+	// }
 
 	/**
 	 * Returns {@code true} if this coordinator is connected to at least one

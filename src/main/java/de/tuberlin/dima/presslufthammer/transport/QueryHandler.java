@@ -2,6 +2,7 @@ package de.tuberlin.dima.presslufthammer.transport;
 
 import org.jboss.netty.channel.Channel;
 
+import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.Type;
 
@@ -18,7 +19,8 @@ public class QueryHandler {
 
 	final byte queryID;
 	final Channel client;
-	final SimpleMessage query;
+	final SimpleMessage queryMSG;
+	final Query query;
 	final int parts;
 	private int parts_received;
 	QueryStatus status;
@@ -27,8 +29,20 @@ public class QueryHandler {
 	public QueryHandler(int parts, SimpleMessage query, Channel client) {
 		assert (query.getQueryID() > 0);
 		this.parts = parts;
-		this.query = query;
+		this.queryMSG = query;
+		this.query = null;
 		this.queryID = query.getQueryID();
+		this.client = client;
+		this.data = new byte[parts][];
+		this.status = QueryStatus.OPEN;
+	}
+	
+	public QueryHandler(int parts, Query query, Channel client) {
+		assert (query.getId() > 0);
+		this.parts = parts;
+		this.queryMSG = null;
+		this.query = query;
+		this.queryID = query.getId();
 		this.client = client;
 		this.data = new byte[parts][];
 		this.status = QueryStatus.OPEN;

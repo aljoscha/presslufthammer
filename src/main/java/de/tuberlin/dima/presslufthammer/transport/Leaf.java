@@ -12,6 +12,7 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.Type;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
@@ -65,15 +66,25 @@ public class Leaf extends ChannelNode implements Stoppable {
 
     }
 
-    public void query(SimpleMessage query) {
+    @Override
+	public void query(SimpleMessage query) {
         String queryString = new String(query.getPayload());
         log.info("Received query: " + queryString);
-
+        try {
+        Query test = new Query(query.getPayload());
+        } catch(Exception e) {
+        	log.error("fail", e);
+        }
         SimpleMessage message = new SimpleMessage(Type.RESULT, query.getQueryID(),
                 queryString.toUpperCase().getBytes());
 
         coordinatorChannel.write(message);
     }
+
+	public void query(Query query) {
+		// TODO
+		log.debug("Query received: " + query);
+	}
 
     @Override
     public void stop() {

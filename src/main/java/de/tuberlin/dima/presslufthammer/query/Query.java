@@ -19,18 +19,20 @@ public class Query {
 	private String[] groupBy;
 
 	/**
-	 * 
+	 * empty constructor
 	 */
 	public Query() {
 	}
 
 	/**
-	 * @param id
-	 * @param select
-	 * @param from
-	 * @param part
-	 * @param where
-	 * @param groupBy
+	 * Constructor with fields
+	 * 
+	 * @param id query ID
+	 * @param select projection clause
+	 * @param from targeted data source (table)
+	 * @param part partition of the source
+	 * @param where selection clause
+	 * @param groupBy grouping clause
 	 */
 	public Query(byte id, Projection[] select, String from, byte part,
 			Selection where, String[] groupBy) {
@@ -44,10 +46,20 @@ public class Query {
 		this.groupBy = groupBy;
 	}
 
+	/**
+	 * expects Query.toString().getBytes() as input
+	 * 
+	 * @param bytes bytes of a String representing a Query
+	 */
 	public Query(byte[] bytes) {
 		new Query(new String(bytes));
 	}
 
+	/**
+	 * expects Query.toString() as input
+	 * 
+	 * @param query String representation of a Query
+	 */
 	public Query(String query) {
 		String[] split = query.split(SEPERATOR);
 		assert (split.length != 6);
@@ -181,6 +193,6 @@ public class Query {
 		for (String g : groupBy) {
 			string += g + SUBSEPERATOR;
 		}
-		return super.toString();
+		return string;
 	}
 }

@@ -17,11 +17,11 @@ public class Selection {
 		assert (equivalent != null && equivalent.length() > 0);
 		String[] split = equivalent.split(SEPERATOR);
 		column = split[0];
-		
+
 		if (split.length > 1) {
 			op = Operand.valueOf(split[1]);
 		}
-		
+
 		if (split.length > 2) {
 			filter = split[2];
 		}
@@ -58,7 +58,10 @@ public class Selection {
 	 */
 	@Override
 	public String toString() {
-
-		return column + SEPERATOR + op.name() + SEPERATOR + filter;
+		if (op != null) {
+			return column + SEPERATOR + op.name() + SEPERATOR + filter;
+		} else {
+			return column;
+		}
 	}
 }

@@ -15,6 +15,7 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 
 /**
@@ -62,19 +63,19 @@ public class LeafHandler extends SimpleChannelHandler {
             throws Exception {
 		log.debug("Message received from {}.", e.getRemoteAddress());
 		if (e.getMessage() instanceof SimpleMessage) {
-			SimpleMessage pressluft = ((SimpleMessage) e.getMessage());
-			log.debug("Message: {}", pressluft.toString());
-            switch (pressluft.getType()) {
+			SimpleMessage simpleMsg = ((SimpleMessage) e.getMessage());
+			log.debug("Message: {}", simpleMsg.toString());
+            switch (simpleMsg.getType()) {
             case ACK:
                 break;
             case INFO:
-                // InetSocketAddress innerAddress = getSockAddrFromBytes(prsslft
+                // InetSocketAddress innerAddress = getSockAddrFromBytes(pressluft
                 // .getPayload());
                 // // leaf.close();
                 // leaf.connectNReg(innerAddress);
                 break;
             case QUERY:
-                leaf.query(pressluft);
+                leaf.query(simpleMsg);
                 break;
             case REGINNER:
             case REGLEAF:
@@ -84,6 +85,9 @@ public class LeafHandler extends SimpleChannelHandler {
 
             }
             // e.getChannel().write(e.getMessage());
+//        } else if(e.getMessage() instanceof Query) {
+//        	Query query = (Query) e.getMessage();
+//        	leaf.query(query);
         } else {
             super.messageReceived(ctx, e);
         }

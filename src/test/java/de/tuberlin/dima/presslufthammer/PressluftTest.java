@@ -1,13 +1,8 @@
 package de.tuberlin.dima.presslufthammer;
 
-import java.io.IOException;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
-import org.apache.log4j.BasicConfigurator;
-
 import de.tuberlin.dima.presslufthammer.transport.CLIClient;
 import de.tuberlin.dima.presslufthammer.transport.Coordinator;
 import de.tuberlin.dima.presslufthammer.transport.Inner;
@@ -42,15 +37,14 @@ public class PressluftTest extends TestCase {
 	 * @throws Exception 
 	 */
 	public void testOneOfEach() throws Exception {
-		BasicConfigurator.configure();
 
-		Coordinator coord = new Coordinator(HOSTPORT);
+		Coordinator coord = new Coordinator(HOSTPORT, "DataSources.xml");
 		Inner inner = new Inner(HOST, HOSTPORT);
 		Leaf leaf = new Leaf(HOST, HOSTPORT);
 		
 		CLIClient.main(new String[] { HOST, String.valueOf( HOSTPORT)});
 		
-		leaf.close();
+		leaf.stop();
 		inner.close();
 		coord.close();
 	}
@@ -60,18 +54,17 @@ public class PressluftTest extends TestCase {
 	 * @throws Exception 
 	 */
 	public void testThreeLeafs() throws Exception {
-		BasicConfigurator.configure();
 		
-		Coordinator coord = new Coordinator(HOSTPORT);
+		Coordinator coord = new Coordinator(HOSTPORT, "DataSources.xml");
 		Leaf leaf1 = new Leaf(HOST, HOSTPORT);
 		Leaf leaf2 = new Leaf(HOST, HOSTPORT);
 		Leaf leaf3 = new Leaf(HOST, HOSTPORT);
 		
 		CLIClient.main(new String[] { HOST, String.valueOf( HOSTPORT)});
 		
-		leaf1.close();
-		leaf2.close();
-		leaf3.close();
+		leaf1.stop();
+		leaf2.stop();
+		leaf3.stop();
 		coord.close();
 	}
 }

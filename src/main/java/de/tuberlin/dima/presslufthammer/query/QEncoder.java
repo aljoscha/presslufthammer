@@ -44,16 +44,13 @@ public class QEncoder extends OneToOneEncoder {
 		if (message.getId() < 0) {
 			throw new IllegalArgumentException("Invalid query ID");
 		}
-
+		String string = message.toString();
 		// qid(1b) + select length(4b) + select(nb)
-		int size = 5 + message.getFrom().getBytes().length;
-
-		byte[][] select = new byte[message.getSelect().length][];
-		for (int i = 0; i < message.getSelect().length; i++) {
-			select[i] = message.getSelect()[i].getBytes();
-		}
+		int size = 5 + string.getBytes().length;
 
 		ChannelBuffer buffer = ChannelBuffers.buffer(size);
+		buffer.writeInt(string.getBytes().length);
+		buffer.writeBytes(string.getBytes());
 		// buffer.writeByte(message.getType().getByteValue());
 		// buffer.writeByte(message.getQueryID());
 		// buffer.writeInt(message.getPayload().length);

@@ -23,6 +23,7 @@ import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
  * 
  */
 public class CLIClient extends ChannelNode {
+	
 	private static final Pressluft REGMSG = new Pressluft(
 			de.tuberlin.dima.presslufthammer.pressluft.Type.REGCLIENT,
 			(byte) 0, new byte[] { (byte) 7 });

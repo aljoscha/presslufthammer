@@ -76,8 +76,8 @@ public final class InnerNode extends ParentNode {
 			
 			public ChannelPipeline getPipeline() throws Exception {
 				ChannelPipeline pipeline = Channels.pipeline();
-				pipeline.addLast("encoder", Encoder.getInstance());
-				pipeline.addLast("decoder", new Decoder());
+				pipeline.addLast("encoder", QEncoder.getInstance());
+				pipeline.addLast("decoder", new QDecoder());
 				pipeline.addLast("handler", new ServerHandler(name, channelGroup) {
 					
 					@Override
@@ -122,8 +122,8 @@ public final class InnerNode extends ParentNode {
 			
 			public ChannelPipeline getPipeline() throws Exception {
 				ChannelPipeline pipeline = Channels.pipeline();
-				pipeline.addLast("encoder", Encoder.getInstance());
-				pipeline.addLast("decoder", new Decoder());
+				pipeline.addLast("encoder", QEncoder.getInstance());
+				pipeline.addLast("decoder", new QDecoder());
 				pipeline.addLast("handler", new ServerHandler(name, channelGroup) {
 					
 					@Override

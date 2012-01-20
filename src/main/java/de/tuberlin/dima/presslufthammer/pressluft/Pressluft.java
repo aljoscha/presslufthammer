@@ -80,7 +80,7 @@ public class Pressluft implements Serializable {
 	 * @param query
 	 * @return
 	 */
-	public static Pressluft getQueryMSG(byte qid, String query) {
+	public static Pressluft createQueryMSG(byte qid, String query) {
 		// TODO
 		Type type = Type.QUERY;
 		byte[] payload = query.getBytes();
@@ -88,7 +88,7 @@ public class Pressluft implements Serializable {
 		return new Pressluft(type, qid, payload);
 	}
 	
-	public static Pressluft getQueryMSG(String query) {
+	public static Pressluft createQueryMSG(String query) {
 		Type type = Type.QUERY;
 		byte[] payload = query.getBytes();
 

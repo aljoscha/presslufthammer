@@ -48,7 +48,7 @@ public abstract class ChannelNode implements Closeable {
 	 */
 	public void query(String query) {
 		if (query != null && query.length() > 0) {
-			query(Pressluft.getQueryMSG(query));
+			query(Pressluft.createQueryMSG(query));
 		}
 	}
 

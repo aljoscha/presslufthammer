@@ -30,9 +30,9 @@ public class LeafHandler extends SimpleChannelHandler {
 	 * @param leaf
 	 * @param channelGroup
 	 */
-	public LeafHandler(Leaf leaf, ChannelGroup channelGroup) {
+	public LeafHandler(Leaf leaf) {
 		this.leaf = leaf;
-		this.openChannels = channelGroup;
+		this.openChannels = leaf.openChannels;
 	}
 
 	/*

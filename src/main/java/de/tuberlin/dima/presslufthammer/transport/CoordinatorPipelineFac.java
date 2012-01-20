@@ -10,6 +10,8 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 
 import de.tuberlin.dima.presslufthammer.pressluft.Decoder;
 import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
+import de.tuberlin.dima.presslufthammer.query.QDecoder;
+import de.tuberlin.dima.presslufthammer.query.QEncoder;
 
 /**
  * @author feichh
@@ -34,6 +36,8 @@ public class CoordinatorPipelineFac implements ChannelPipelineFactory {
 		ChannelPipeline pipe = pipeline();
 		pipe.addLast("Encoder", Encoder.getInstance());
 		pipe.addLast("Decoder", new Decoder());
+		pipe.addLast("QueryEncoder", QEncoder.getInstance());
+		pipe.addLast("QueryDecoder", new QDecoder());
 		pipe.addLast("CoordinatorHandler", handler);
 
 		return pipe;

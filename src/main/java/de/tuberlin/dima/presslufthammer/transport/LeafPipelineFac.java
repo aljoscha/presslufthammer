@@ -11,6 +11,8 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 
 import de.tuberlin.dima.presslufthammer.pressluft.Decoder;
 import de.tuberlin.dima.presslufthammer.pressluft.Encoder;
+import de.tuberlin.dima.presslufthammer.query.QDecoder;
+import de.tuberlin.dima.presslufthammer.query.QEncoder;
 
 /**
  * @author feichh
@@ -36,21 +38,11 @@ public class LeafPipelineFac implements ChannelPipelineFactory {
 		// TODO add required ChannelHandlers
 		ChannelPipeline pipe = pipeline();
 
-		// // Decoders
-		// pipe.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder(
-		// 1048576, 0,
-		// 4, 0, 4));
-		// pipe.addLast( "protobufDecoder", new ProtobufDecoder( null));
-		// // MyMessage.getDefaultInstance()));// TODO
-		//
-		// // Encoder
-		// pipe.addLast( "frameEncoder", new LengthFieldPrepender( 4));
-		// pipe.addLast( "protobufEncoder", new ProtobufEncoder());
-
 		pipe.addLast("Encoder", Encoder.getInstance());
 		pipe.addLast("Decoder", new Decoder());
-		pipe.addLast("LeafHandler", new LeafHandler(leaf,
-				new DefaultChannelGroup()));
+		pipe.addLast("QueryEncoder", QEncoder.getInstance());
+		pipe.addLast("QueryDecoder", new QDecoder());
+		pipe.addLast("LeafHandler", new LeafHandler(leaf));
 		return pipe;
 	}
 

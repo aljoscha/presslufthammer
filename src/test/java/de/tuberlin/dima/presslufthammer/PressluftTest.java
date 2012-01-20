@@ -19,6 +19,7 @@ import de.tuberlin.dima.presslufthammer.transport.Leaf;
 public class PressluftTest extends TestCase {
 	private static final String HOST = "localhost";
 	private static final int HOSTPORT = 44444;
+	private static final String DATASRCS = "DataSources.xml";
 	
 	/**
 	 * Create the test case
@@ -44,7 +45,7 @@ public class PressluftTest extends TestCase {
 	public void testOneOfEach() throws Exception {
 		BasicConfigurator.configure();
 
-		Coordinator coord = new Coordinator(HOSTPORT);
+		Coordinator coord = new Coordinator(HOSTPORT, DATASRCS);
 		Inner inner = new Inner(HOST, HOSTPORT);
 		Leaf leaf = new Leaf(HOST, HOSTPORT);
 		
@@ -62,7 +63,7 @@ public class PressluftTest extends TestCase {
 	public void testThreeLeafs() throws Exception {
 		BasicConfigurator.configure();
 		
-		Coordinator coord = new Coordinator(HOSTPORT);
+		Coordinator coord = new Coordinator(HOSTPORT, DATASRCS);
 		Leaf leaf1 = new Leaf(HOST, HOSTPORT);
 		Leaf leaf2 = new Leaf(HOST, HOSTPORT);
 		Leaf leaf3 = new Leaf(HOST, HOSTPORT);

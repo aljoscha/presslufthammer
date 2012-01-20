@@ -45,8 +45,8 @@ public class QEncoder extends OneToOneEncoder {
 			throw new IllegalArgumentException("Invalid query ID");
 		}
 		String string = message.toString();
-		// qid(1b) + select length(4b) + select(nb)
-		int size = 5 + string.getBytes().length;
+		// length(4b) + message.toString(nb)
+		int size = 4 + string.getBytes().length;
 
 		ChannelBuffer buffer = ChannelBuffers.buffer(size);
 		buffer.writeInt(string.getBytes().length);

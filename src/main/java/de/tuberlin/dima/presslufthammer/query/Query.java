@@ -44,6 +44,35 @@ public class Query {
 		this.groupBy = groupBy;
 	}
 
+	public Query(byte[] bytes) {
+		new Query(new String(bytes));
+	}
+
+	public Query(String query) {
+		String[] split = query.split(SEPERATOR);
+		assert (split.length != 6);
+		// ID
+		this.id = Byte.parseByte(split[0]);
+		// SELECT
+		String[] selects = split[1].split(SUBSEPERATOR);
+		this.select = new Projection[selects.length];
+		for (int i = 0; i < selects.length; i++) {
+			this.select[i] = new Projection(selects[i]);
+		}
+		// FROM
+		this.from = split[2];
+		// PART
+		this.part = Byte.parseByte(split[3]);
+		// WHERE
+		this.where = new Selection(split[4]);
+		// GROUP BY
+		String[] groups = split[5].split(SUBSEPERATOR);
+		this.groupBy = new String[groups.length];
+		for (int i = 0; i < groups.length; i++) {
+			this.groupBy[i] = groups[i];
+		}
+	}
+
 	/**
 	 * @return the id
 	 */

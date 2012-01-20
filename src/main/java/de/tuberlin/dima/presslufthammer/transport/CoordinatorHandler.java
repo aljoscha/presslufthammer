@@ -1,6 +1,3 @@
-/**
- * 
- */
 package de.tuberlin.dima.presslufthammer.transport;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -12,110 +9,85 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 
 /**
  * @author feichh
+ * @author Aljoscha Krettek
  * 
  */
 public class CoordinatorHandler extends SimpleChannelHandler {
-	/**
-	 * Logger
-	 */
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
-	private final Coordinator coord;
+	private final Coordinator coordinator;
 	private final ChannelGroup openChannels;
 
-	/**
-	 * @param coord
-	 */
-	public CoordinatorHandler(Coordinator coord) {
-		this.coord = coord;
-		openChannels = coord.openChannels;
+	public CoordinatorHandler(Coordinator coordinator) {
+		this.coordinator = coordinator;
+		openChannels = coordinator.openChannels;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.jboss.netty.channel.SimpleChannelHandler#exceptionCaught(org.jboss.
-	 * netty.channel.ChannelHandlerContext,
-	 * org.jboss.netty.channel.ExceptionEvent)
-	 */
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 			throws Exception {
 		// TODO
 		Throwable cause = e.getCause();
-		log.error("caught an exception", cause);
+		log.error("Caught an exception: {}", cause);
 
-		coord.removeChannel(ctx.getChannel());
+		coordinator.removeChannel(ctx.getChannel());
 		// super.exceptionCaught( ctx, e);
 		ctx.sendUpstream(e);
 	}
+	
+	public ChannelGroup getOpenChannels() {
+	    return openChannels;
+	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.jboss.netty.channel.SimpleChannelHandler#channelOpen(org.jboss.netty
-	 * .channel.ChannelHandlerContext,
-	 * org.jboss.netty.channel.ChannelStateEvent)
-	 */
 	@Override
 	public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
-		log.debug("channelOpen " + e.getChannel().getRemoteAddress());
+		log.debug("Channel opened: " + e.getChannel().getRemoteAddress());
 		openChannels.add(e.getChannel());
 		super.channelOpen(ctx, e);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.jboss.netty.channel.SimpleChannelUpstreamHandler#messageReceived(org
-	 * .jboss.netty.channel.ChannelHandlerContext,
-	 * org.jboss.netty.channel.MessageEvent)
-	 */
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
 			throws Exception {
-		log.debug("messageReceived " + e.getRemoteAddress());
-		if (e.getMessage() instanceof Pressluft) {
-			Pressluft prsslft = ((Pressluft) e.getMessage());
-			log.debug(prsslft.toString());
+		log.debug("Message received from {}.", e.getRemoteAddress());
+		if (e.getMessage() instanceof SimpleMessage) {
+			SimpleMessage pressluft = ((SimpleMessage) e.getMessage());
+			log.debug("Message: {}", pressluft.toString());
 
-			switch (prsslft.getType()) {
+			switch (pressluft.getType()) {
 			case ACK:
 				break;
 			case REGINNER:
-				coord.addInner(e.getChannel());
+				coordinator.addInner(e.getChannel());
 				break;
 			case REGLEAF:
-				coord.addLeaf(e.getChannel());
+				coordinator.addLeaf(e.getChannel());
 				break;
 			case RESULT:
-				// TODO get the result to the client
-				coord.handleResult(prsslft);
+			    // Send the result to the coordinator so it can be assembled
+				coordinator.handleResult(pressluft);
 				break;
 			case QUERY:
 				// TODO get the query to the root node
-				coord.query(prsslft, e.getChannel());
+				coordinator.query(pressluft, e.getChannel());
 				break;
 			case UNKNOWN:
 				break;
 			case INFO:
 				break;
 			case REGCLIENT:
-				coord.addClient(e.getChannel());
+				coordinator.addClient(e.getChannel());
 				break;
 			}
 
 			e.getChannel()
-					.write(new Pressluft(
-							de.tuberlin.dima.presslufthammer.pressluft.Type.ACK,
+					.write(new SimpleMessage(
+							de.tuberlin.dima.presslufthammer.transport.messages.Type.ACK,
 							(byte) 0, new byte[] { (byte) 0 }));
 		} else {
 			super.messageReceived(ctx, e);

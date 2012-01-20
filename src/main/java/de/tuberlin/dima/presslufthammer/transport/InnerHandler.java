@@ -13,7 +13,7 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 
 /**
  * @author feichh
@@ -77,8 +77,8 @@ public class InnerHandler extends SimpleChannelHandler {
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
 			throws Exception {
-		if (e.getMessage() instanceof Pressluft) {
-			Pressluft prsslft = (Pressluft) e.getMessage();
+		if (e.getMessage() instanceof SimpleMessage) {
+			SimpleMessage prsslft = (SimpleMessage) e.getMessage();
 			log.info(prsslft.getType() + " from "
 					+ e.getRemoteAddress().toString());
 

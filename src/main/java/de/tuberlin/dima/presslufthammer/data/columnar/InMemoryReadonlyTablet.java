@@ -10,7 +10,7 @@ import com.google.common.collect.Maps;
 
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 
 public class InMemoryReadonlyTablet implements Tablet {
     private SchemaNode schema;
@@ -29,7 +29,7 @@ public class InMemoryReadonlyTablet implements Tablet {
         this(sourceTablet.getSchema(), sourceTablet.getColumnData());
     }
 
-    public InMemoryReadonlyTablet(Pressluft source) {
+    public InMemoryReadonlyTablet(SimpleMessage source) {
         byte[] data = source.getPayload();
         ByteArrayInputStream inArray = new ByteArrayInputStream(data);
         DataInputStream in = new DataInputStream(inArray);

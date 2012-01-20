@@ -1,96 +1,93 @@
-/**
- * 
- */
 package de.tuberlin.dima.presslufthammer.transport;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 
 /**
  * @author feichh
+ * @author Aljoscha Krettek
  * 
  */
-public class CLIClient extends ChannelNode {
-	
-	private static final Pressluft REGMSG = new Pressluft(
-			de.tuberlin.dima.presslufthammer.pressluft.Type.REGCLIENT,
+
+public class CLIClient {
+
+	private static final SimpleMessage REGMSG = new SimpleMessage(
+			de.tuberlin.dima.presslufthammer.transport.messages.Type.REGCLIENT,
 			(byte) 0, new byte[] { (byte) 7 });
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
-	private Channel parentChannel;
 
-	public CLIClient(String host, int port) {
+	private String coordinatorHost;
+	private int coordinatorPort;
+	private Channel coordinatorChannel;
+	private ClientBootstrap bootstrap;
 
-		if (connectNReg(host, port)) {
-			log.info("registered with coordinator");
-		}
+	public CLIClient(String coordinatorHost, int coordinatorPort) {
+		this.coordinatorHost = coordinatorHost;
+		this.coordinatorPort = coordinatorPort;
 	}
 
-	/* (non-Javadoc)
-	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#connectNReg(java.net.SocketAddress)
-	 */
-	@Override
-	public boolean connectNReg(SocketAddress address) {
-		// TODO
-		ClientBootstrap bootstrap = new ClientBootstrap(
-				new NioClientSocketChannelFactory(
-						Executors.newCachedThreadPool(),
-						Executors.newCachedThreadPool()));
+	public boolean start() {
+		ChannelFactory factory = new NioClientSocketChannelFactory(
+				Executors.newCachedThreadPool(),
+				Executors.newCachedThreadPool());
+		bootstrap = new ClientBootstrap(factory);
 
 		bootstrap.setPipelineFactory(new ClientPipelineFac(this));
 
+		SocketAddress address = new InetSocketAddress(coordinatorHost,
+				coordinatorPort);
+
 		ChannelFuture connectFuture = bootstrap.connect(address);
 
-		parentChannel = connectFuture.awaitUninterruptibly().getChannel();
-		ChannelFuture writeFuture = parentChannel.write(REGMSG);
-
-		return writeFuture.awaitUninterruptibly().isSuccess();
-	}
-
-	/* (non-Javadoc)
-	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#query(de.tuberlin.dima.presslufthammer.pressluft.Pressluft)
-	 */
-	@Override
-	public void query(Pressluft query) {
-
-		if (query != null && parentChannel != null
-				&& parentChannel.isConnected() && parentChannel.isWritable()) {
-			parentChannel.write(query);
+		if (connectFuture.awaitUninterruptibly().isSuccess()) {
+			coordinatorChannel = connectFuture.getChannel();
+			ChannelFuture writeFuture = coordinatorChannel.write(REGMSG);
+			writeFuture.awaitUninterruptibly();
+			log.info("Connected to coordinator at {}:{}", coordinatorHost,
+					coordinatorPort);
+			return true;
+		} else {
+			bootstrap.releaseExternalResources();
+			log.info("Failed to conncet to coordinator at {}:{}",
+					coordinatorHost, coordinatorPort);
+			return false;
 		}
 	}
 
-	/**
-	 * @param prsslft
-	 */
-	public void handleResult(Pressluft prsslft) {
-		// TODO
-		log.info("Result received: " + new String(prsslft.getPayload()));
+	public void query(SimpleMessage query) {
+
+		if (query != null && coordinatorChannel != null
+				&& coordinatorChannel.isConnected()
+				&& coordinatorChannel.isWritable()) {
+			coordinatorChannel.write(query);
+		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see de.tuberlin.dima.presslufthammer.testing.ChannelNode#close()
-	 */
-	@Override
-	public void close() throws IOException {
+	public void handleResult(SimpleMessage pressluft) {
 		// TODO
-		// channel.close().awaitUninterruptibly();
-		// bootstrap.releaseExternalResources();
-		parentChannel.disconnect();
-		super.close();
+		log.info("Result received: " + new String(pressluft.getPayload()));
+	}
+
+	public void close() throws IOException {
+		if (coordinatorChannel != null) {
+			coordinatorChannel.disconnect().awaitUninterruptibly();
+		}
+		bootstrap.releaseExternalResources();
 	}
 
 	/**
@@ -101,13 +98,6 @@ public class CLIClient extends ChannelNode {
 		System.out.println("hostname port");
 	}
 
-	/**
-	 * @param args
-	 * @throws InterruptedException
-	 *             if interrupted
-	 * @throws IOException
-	 *             if IO goes awry
-	 */
 	public static void main(String[] args) throws InterruptedException,
 			IOException {
 		// Print usage if necessary.
@@ -120,16 +110,17 @@ public class CLIClient extends ChannelNode {
 		int port = Integer.parseInt(args[1]);
 
 		CLIClient client = new CLIClient(host, port);
-		boolean assange = true;
-		// Console console = System.console();
+		boolean running = client.start();
+
 		BufferedReader bufferedReader = new BufferedReader(
 				new InputStreamReader(System.in));
-		while (assange) {
+
+		while (running) {
 			String line = bufferedReader.readLine();
 			if (line.startsWith("x")) {
-				assange = false;
+				running = false;
 			} else {
-				client.query(line);
+				client.query(SimpleMessage.getQueryMSG(line));
 			}
 		}
 

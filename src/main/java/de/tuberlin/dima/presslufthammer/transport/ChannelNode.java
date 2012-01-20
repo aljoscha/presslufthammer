@@ -11,7 +11,7 @@ import java.net.SocketAddress;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 
 /**
  * @author feichh
@@ -48,14 +48,14 @@ public abstract class ChannelNode implements Closeable {
 	 */
 	public void query(String query) {
 		if (query != null && query.length() > 0) {
-			query(Pressluft.createQueryMSG(query));
+			query(SimpleMessage.getQueryMSG(query));
 		}
 	}
 
 	/**
 	 * @param query
 	 */
-	public void query(Pressluft query) {
+	public void query(SimpleMessage query) {
 		return;
 	}
 

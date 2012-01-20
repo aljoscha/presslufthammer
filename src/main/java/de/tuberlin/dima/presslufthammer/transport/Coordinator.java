@@ -1,6 +1,3 @@
-/**
- * 
- */
 package de.tuberlin.dima.presslufthammer.transport;
 
 import java.net.InetSocketAddress;
@@ -8,176 +5,188 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.BasicConfigurator;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelException;
+import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
-import de.tuberlin.dima.presslufthammer.pressluft.Type;
+import com.google.common.collect.Maps;
+
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
+import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
+import de.tuberlin.dima.presslufthammer.util.Stoppable;
 import de.tuberlin.dima.presslufthammer.xml.DataSource;
 import de.tuberlin.dima.presslufthammer.xml.DataSourcesReader;
 import de.tuberlin.dima.presslufthammer.xml.DataSourcesReaderImpl;
 
 /**
  * @author feichh
+ * @author Aljoscha Krettek
  * 
  */
-public class Coordinator extends ChannelNode {
-
+public class Coordinator extends ChannelNode implements Stoppable {
 	private final Logger log = LoggerFactory.getLogger(getClass());
-	ChannelGroup innerChans = new DefaultChannelGroup();
-	ChannelGroup leafChans = new DefaultChannelGroup();
-	ChannelGroup clientChans = new DefaultChannelGroup();
+
+	private int port;
+	private ServerBootstrap bootstrap;
+	private Channel acceptChannel;
+	private ChannelGroup innerChannels = new DefaultChannelGroup();
+	private ChannelGroup leafChannels = new DefaultChannelGroup();
+	private ChannelGroup clientChannels = new DefaultChannelGroup();
 	private final CoordinatorHandler handler = new CoordinatorHandler(this);
-	private Channel rootChan = null;
-	private final Map<Byte, QueryHandle> queries = new HashMap<Byte, QueryHandle>();
-	private final Map<String, DataSource> dsMap;
+	private Channel rootChannel = null;
+	private final Map<Byte, QueryHandler> queries = new HashMap<Byte, QueryHandler>();
+	private Map<String, DataSource> dsMap;
 	private byte priorQID = 0;
 
-
-	/**
-	 * @param port the port this Coordinator shall serve on
-	 * @throws Exception if reading DataSources.xml fails
-	 */
-	public Coordinator(int port, String dataSources) throws Exception {
-		// TODO
+	public Coordinator(int port, String dataSources) {
+		this.port = port;
 		DataSourcesReader dsReader = new DataSourcesReaderImpl();
-		dsMap = dsReader.readFromXML(dataSources);
-		log.debug(dsMap.toString());
-		
-		// Configure the server.
-		ServerBootstrap bootstrap = new ServerBootstrap(
-				new NioServerSocketChannelFactory(
-						Executors.newCachedThreadPool(),
-						Executors.newCachedThreadPool()));
+		try {
+			dsMap = dsReader.readFromXML(dataSources);
+			log.info("Read datasources from {}.", dataSources);
+			log.info(dsMap.toString());
+		} catch (Exception e) {
+			log.warn("Error reading datasources from {}.", dataSources);
+			if (dsMap == null) {
+				dsMap = Maps.newHashMap();
+			}
+		}
+	}
 
-		// Set up the event pipeline factory.
+	public void start() {
+		ChannelFactory factory = new NioServerSocketChannelFactory(
+				Executors.newCachedThreadPool(),
+				Executors.newCachedThreadPool());
+		bootstrap = new ServerBootstrap(factory);
+
 		bootstrap.setPipelineFactory(new CoordinatorPipelineFac(this.handler));
 
-		// Bind and start to accept incoming connections.
-		bootstrap.bind(new InetSocketAddress(port));
-		log.debug("Coordinator launched at: " + port);
+		try {
+			acceptChannel = bootstrap.bind(new InetSocketAddress(port));
+		} catch (ChannelException ce) {
+			Throwable cause = ce.getCause();
+			log.error("Failed to start coordinator at port {}: {}.", port,
+					cause.getMessage());
+			return;
+		}
+
+		if (acceptChannel.isBound()) {
+			Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
+			log.info("Coordinator launched at: " + port);
+		} else {
+			bootstrap.releaseExternalResources();
+			log.error("Failed to start coordinator at port {}.", port);
+		}
 
 	}
 
 	@Override
-	public void query(Pressluft query) {
+	public void stop() {
+		log.info("Stopping coordinator.");
+		handler.getOpenChannels().close().awaitUninterruptibly();
+		bootstrap.releaseExternalResources();
+		log.info("Coordinator stopped.");
+	}
+
+	@Override
+	public void query(SimpleMessage query) {
 		// TODO
 		query(query, null);
 	}
 
-	/**
-	 * @param query
-	 */
-	public void query(Pressluft query, Channel client) {
-		// TODO
-		log.debug("query(" + query + ")");
-		
+	public void query(SimpleMessage query, Channel client) {
+		log.info("Received query({}) from client {}.", query,
+				client.getLocalAddress());
+
 		if (isServing()) {
-			
-			if (rootChan != null) {
-				log.debug("handing query to root");
+			if (rootChannel != null) {
+				log.debug("Handing query to root node of our node tree.");
 				// clientChans.add(client);// optional
 				byte qid = nextQID();
 				query.setQueryID(qid);
-				queries.put(qid, new QueryHandle(1, query, client));
-				rootChan.write(query);
+				queries.put(qid, new QueryHandler(1, query, client));
+				rootChannel.write(query);
 
 			} else {
-				log.debug("querying leafs directly");
+				log.debug("Querying leafs directly.");
 				byte qid = nextQID();
 				query.setQueryID(qid);
-				queries.put(qid, new QueryHandle(leafChans.size(), query,
+				queries.put(qid, new QueryHandler(leafChannels.size(), query,
 						client));
-				for (Channel c : leafChans) {
+				for (Channel c : leafChannels) {
 					c.write(query);
 				}
 			}
-			
+
 		} else {
-			log.debug("Query cannot be processed.");
+			log.info("Query cannot be processed because we have no leafs.");
 		}
 	}
 
 	/**
-	 * @return true if this coordinator is connected to at least 1 Inner and 1
-	 *         Leaf
+	 * Returns {@code true} if this coordinator is connected to at least one
+	 * leaf.
 	 */
 	public boolean isServing() {
-		return handler != null && !leafChans.isEmpty();
+		return handler != null && !leafChannels.isEmpty();
 	}
 
-	/**
-	 * @param channel
-	 */
 	public void addClient(Channel channel) {
 		// TODO
-		log.info("adding client channel: " + channel.getRemoteAddress());
-		clientChans.add(channel);
+		log.debug("Adding client channel: {}.", channel.getRemoteAddress());
+		clientChannels.add(channel);
 	}
 
-	/**
-	 * @param channel
-	 * @param address
-	 */
 	public void addInner(Channel channel) {
 		// TODO
-		log.info("adding inner channel: " + channel.getRemoteAddress());
-		innerChans.add(channel);
-		if (rootChan == null) {
+		log.info("Adding inner node: {}", channel.getRemoteAddress());
+		innerChannels.add(channel);
+		if (rootChannel == null) {
 			log.debug("new root node connected.");
-			rootChan = channel;
-			Pressluft rootInfo = getRootInfo();
-			for (Channel chan : leafChans) {
+			rootChannel = channel;
+			SimpleMessage rootInfo = getRootInfo();
+			for (Channel chan : leafChannels) {
 				chan.write(rootInfo);
 			}
 		}
 	}
 
-	/**
-	 * @param channel
-	 * @param address
-	 */
 	public void addLeaf(Channel channel) {
 		// TODO
-		log.debug("adding leaf channel: " + channel.getRemoteAddress());
-		leafChans.add(channel);
-		if (rootChan != null) {
+		log.info("Adding leaf node: {}", channel.getRemoteAddress());
+		leafChannels.add(channel);
+		if (rootChannel != null) {
 			channel.write(getRootInfo());
 		}
 	}
 
-	/**
-	 * @return
-	 */
-	private Pressluft getRootInfo() {
+	private SimpleMessage getRootInfo() {
 		// TODO
 		Type type = Type.INFO;
-		byte[] payload = rootChan.getRemoteAddress().toString().getBytes();
-		return new Pressluft(type, (byte) 0, payload);
+		byte[] payload = rootChannel.getRemoteAddress().toString().getBytes();
+		return new SimpleMessage(type, (byte) 0, payload);
 	}
 
-	/**
-	 * @param channel
-	 */
 	public void removeChannel(Channel channel) {
 		// TODO
-		if (rootChan == channel) {
-			rootChan = null;
+		if (rootChannel == channel) {
+			rootChannel = null;
 		}
 		channel.close();
 		// log.debug( "" + openChannels.remove( channel));
 	}
 
-	public void handleResult(Pressluft resultMSG) {
+	public void handleResult(SimpleMessage resultMSG) {
 		// TODO
 		byte qid = resultMSG.getQueryID();
-		QueryHandle qhand = queries.get(qid);
+		QueryHandler qhand = queries.get(qid);
 		if (qhand != null) {
 			qhand.addPart(resultMSG);
 		}
@@ -187,31 +196,22 @@ public class Coordinator extends ChannelNode {
 		return ++priorQID;
 	}
 
-    /**
-     * Prints the usage to System.out.
-     */
-    private static void printUsage() {
-        // TODO Auto-generated method stub
-        System.out.println("Parameters:");
-        System.out.println("port datasources");
-    }
+	private static void printUsage() {
+		System.out.println("Parameters:");
+		System.out.println("port datasources");
+	}
 
-    public static void main(String[] args) {
-        BasicConfigurator.configure();
-        // System.out.println( "Hello World!" );
-        // Print usage if necessary.
-        if (args.length < 2) {
-            printUsage();
-            return;
-        }
+	public static void main(String[] args) {
+		// Print usage if necessary.
+		if (args.length < 2) {
+			printUsage();
+			return;
+		}
 
-        int port = Integer.parseInt(args[0]);
-        String datasources = args[1];
+		int port = Integer.parseInt(args[0]);
+		String datasources = args[1];
 
-        try {
-            Coordinator coord = new Coordinator(port, datasources);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+		Coordinator coordinator = new Coordinator(port, datasources);
+		coordinator.start();
+	}
 }

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.pressluft;
+package de.tuberlin.dima.presslufthammer.transport.messages;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -35,7 +35,7 @@ public class Encoder extends OneToOneEncoder {
 		return InstanceHolder.INSTANCE;
 	}
 
-	public static ChannelBuffer encodeMessage(Pressluft message)
+	public static ChannelBuffer encodeMessage(SimpleMessage message)
 			throws IllegalArgumentException {
 		// you can move these verifications "upper" (before writing to the
 		// channel) in order not to cause a
@@ -70,8 +70,8 @@ public class Encoder extends OneToOneEncoder {
 	@Override
 	protected Object encode(ChannelHandlerContext channelHandlerContext,
 			Channel channel, Object msg) throws Exception {
-		if (msg instanceof Pressluft) {
-			return encodeMessage((Pressluft) msg);
+		if (msg instanceof SimpleMessage) {
+			return encodeMessage((SimpleMessage) msg);
 		} else {
 			return msg;
 		}

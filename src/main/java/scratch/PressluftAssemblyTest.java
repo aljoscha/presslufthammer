@@ -12,7 +12,7 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryReadonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordFile;
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 
 public class PressluftAssemblyTest {
 
@@ -31,7 +31,7 @@ public class PressluftAssemblyTest {
 
         inMemoryTablet.printColumns();
         
-        Pressluft resultTablet = inMemoryTablet.toPressluft();
+        SimpleMessage resultTablet = inMemoryTablet.toPressluft();
         
         InMemoryReadonlyTablet tablet = new InMemoryReadonlyTablet(resultTablet);
 

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package de.tuberlin.dima.presslufthammer.transport;
 
 import org.jboss.netty.channel.ChannelEvent;
@@ -9,19 +6,18 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.tuberlin.dima.presslufthammer.pressluft.Pressluft;
+import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 
 /**
  * @author feichh
+ * @author Aljoscha Krettek
  * 
  */
 public class ClientHandler extends SimpleChannelHandler {
 	private final Logger log = LoggerFactory.getLogger(getClass());
-	private final ChannelGroup openChannels;
 	private final CLIClient client;
 
 	/**
@@ -30,59 +26,26 @@ public class ClientHandler extends SimpleChannelHandler {
 	 */
 	public ClientHandler(CLIClient client) {
 		this.client = client;
-		this.openChannels = client.openChannels;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.jboss.netty.channel.SimpleChannelHandler#exceptionCaught(org.jboss.
-	 * netty.channel.ChannelHandlerContext,
-	 * org.jboss.netty.channel.ExceptionEvent)
-	 */
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 			throws Exception {
-		// TODO
 		Throwable cause = e.getCause();
-		log.error("caught an exception", cause);
+		log.error("Caught exception: {}", cause);
 		ctx.getChannel().close();
 		// super.exceptionCaught( ctx, e);
 		ctx.sendUpstream(e);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.jboss.netty.channel.SimpleChannelHandler#channelConnected(org.jboss
-	 * .netty.channel.ChannelHandlerContext,
-	 * org.jboss.netty.channel.ChannelStateEvent)
-	 */
-	@Override
-	public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e)
-			throws Exception {
-		// TODO difference between channelConnected / channelOpen ???
-		this.openChannels.add(e.getChannel());
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.jboss.netty.channel.SimpleChannelHandler#messageReceived(org.jboss
-	 * .netty.channel.ChannelHandlerContext,
-	 * org.jboss.netty.channel.MessageEvent)
-	 */
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
 			throws Exception {
-		if (e.getMessage() instanceof Pressluft) {
-			Pressluft prsslft = (Pressluft) e.getMessage();
-			log.debug("received: " + prsslft.getType() + " from "
-					+ e.getRemoteAddress());
-			switch (prsslft.getType()) {
+		log.debug("Message received from {}.", e.getRemoteAddress());
+		if (e.getMessage() instanceof SimpleMessage) {
+			SimpleMessage pressluft = ((SimpleMessage) e.getMessage());
+			log.debug("Message: {}", pressluft.toString());
+			switch (pressluft.getType()) {
 			case ACK:
 			case INFO:
 			case QUERY:
@@ -90,7 +53,7 @@ public class ClientHandler extends SimpleChannelHandler {
 			case REGLEAF:
 				break;
 			case RESULT:
-				client.handleResult(prsslft);
+				client.handleResult(pressluft);
 			case UNKNOWN:
 				break;
 			}
@@ -99,36 +62,13 @@ public class ClientHandler extends SimpleChannelHandler {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.jboss.netty.channel.SimpleChannelHandler#handleDownstream(org.jboss
-	 * .netty.channel.ChannelHandlerContext,
-	 * org.jboss.netty.channel.ChannelEvent)
-	 */
-	@Override
-	public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent e)
-			throws Exception {
-		// Sending the event downstream (outbound)
-		ctx.sendDownstream(e);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.jboss.netty.channel.SimpleChannelHandler#handleUpstream(org.jboss
-	 * .netty.channel.ChannelHandlerContext,
-	 * org.jboss.netty.channel.ChannelEvent)
-	 */
 	@Override
 	public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e)
 			throws Exception {
 
 		// Log all channel state changes.
 		if (e instanceof ChannelStateEvent) {
-			log.info("Channel state changed: " + e);
+			log.debug("Channel state changed: {}", e);
 		}
 
 		super.handleUpstream(ctx, e);

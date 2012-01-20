@@ -12,7 +12,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -30,7 +31,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		START, DS,
 	}
 
-	private Logger log = Logger.getLogger(getClass());
+	private Logger log = LoggerFactory.getLogger(getClass());
 	private Map<String, DataSource> dataSourceMap = null;
 	private ParseState parseState = ParseState.DS;
 	private DataSource currentSource = null;

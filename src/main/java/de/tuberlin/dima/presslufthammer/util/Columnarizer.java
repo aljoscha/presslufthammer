@@ -44,7 +44,7 @@ public class Columnarizer {
 
         JSONRecordFile jsonRecords = new JSONRecordFile(schema, jsonFile);
 
-        Tablet tablet = dataStore.getTablet(schema, partitionNum);
+        Tablet tablet = dataStore.createOrGetTablet(schema, partitionNum);
 
         FieldStriper striper = new FieldStriper(schema);
         

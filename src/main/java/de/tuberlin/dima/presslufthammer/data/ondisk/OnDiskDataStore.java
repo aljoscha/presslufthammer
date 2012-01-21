@@ -57,6 +57,7 @@ public class OnDiskDataStore implements DataStore {
     }
 
     private void openTablets() throws IOException {
+        log.debug("Reading tablets from {}.", rootDirectory);
         for (File tabletDir : rootDirectory.listFiles()) {
             if (!tabletDir.isDirectory()) {
                 continue;
@@ -65,43 +66,59 @@ public class OnDiskDataStore implements DataStore {
             String[] splitted = dirname.split("\\.");
             int partitionNum = Integer.parseInt(splitted[1]);
             OnDiskTablet tablet = OnDiskTablet.openTablet(tabletDir);
-            tablets.put(new TabletKey(tablet.getSchema(), partitionNum), tablet);
-            log.info("Opened tablet " + tablet.getSchema().getName() + ":"
+            tablets.put(new TabletKey(tablet.getSchema().getName(), partitionNum), tablet);
+            log.debug("Opened tablet " + tablet.getSchema().getName() + ":"
                     + partitionNum);
         }
     }
-    
+
     public void flush() throws IOException {
         for (OnDiskTablet tablet : tablets.values()) {
-            log.info("Flushing data of tablet " + tablet.getSchema().getName() + ".");
+            log.info("Flushing data of tablet " + tablet.getSchema().getName()
+                    + ".");
             tablet.flush();
         }
     }
 
     @Override
-    public Tablet getTablet(SchemaNode schema, int partition)
-            throws IOException {
-        TabletKey key = new TabletKey(schema, partition);
+    public boolean hasTablet(String tableName, int partition) {
+        TabletKey key = new TabletKey(tableName, partition);
+        return tablets.containsKey(key);
+    }
+
+    @Override
+    public Tablet createOrGetTablet(SchemaNode schema, int partition) throws IOException {
+        TabletKey key = new TabletKey(schema.getName(), partition);
         if (tablets.containsKey(key)) {
             return tablets.get(key);
         } else {
-            File tablePath = new File(rootDirectory, schema.getName() + "." + partition);
-            log.info("Creating new tablet " + schema.getName() + ":"
+            File tablePath = new File(rootDirectory, schema.getName() + "."
                     + partition);
+            log.info("Creating new tablet " + schema.getName() + ":" + partition);
             OnDiskTablet newTablet = OnDiskTablet.createTablet(schema,
                     tablePath);
             tablets.put(key, newTablet);
             return newTablet;
         }
     }
+
+    @Override
+    public Tablet getTablet(String tableName, int partition) throws IOException {
+        TabletKey key = new TabletKey(tableName, partition);
+        if (tablets.containsKey(key)) {
+            return tablets.get(key);
+        } else {
+            return null;
+        }
+    }
 }
 
 class TabletKey {
-    private SchemaNode schema;
+    private String tableName;
     private int partition;
 
-    public TabletKey(SchemaNode schema, int partition) {
-        this.schema = schema;
+    public TabletKey(String tableName, int partition) {
+        this.tableName = tableName;
         this.partition = partition;
     }
 
@@ -111,7 +128,7 @@ class TabletKey {
             return false;
         }
         TabletKey oKey = (TabletKey) other;
-        if (!schema.equals(oKey.schema)) {
+        if (!tableName.equals(oKey.tableName)) {
             return false;
         }
         if (!(partition == oKey.partition)) {
@@ -122,6 +139,6 @@ class TabletKey {
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(schema, partition);
+        return Objects.hashCode(tableName, partition);
     }
 }

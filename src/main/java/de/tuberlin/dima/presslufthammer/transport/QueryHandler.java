@@ -63,7 +63,7 @@ public class QueryHandler {
 		close();
 		String r = getResult();
 		if (client != null) {
-			client.write(new SimpleMessage(Type.RESULT, queryID, r.getBytes()));
+			client.write(new SimpleMessage(Type.CLIENT_RESULT, queryID, r.getBytes()));
 		} else {
 			System.out.println(r);
 		}

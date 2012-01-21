@@ -1,43 +1,30 @@
-/**
- * 
- */
 package de.tuberlin.dima.presslufthammer.transport.messages;
 
 /**
  * 
- * based on https://github.com/brunodecarvalho/netty-tutorials
+ * @author Aljoscha Krettek
+ * @author feich
  * 
  */
 public enum Type {
-
-	// constants
-	// ------------------------------------------------------------------------------------------------------
-
-	QUERY((byte) 0x01),
-	RESULT((byte) 0x02),
-	REGINNER((byte) 0x03),
-	REGLEAF((byte) 0x04),
-	INFO((byte) 0x05),
-	REGCLIENT((byte) 0x07),
-	ACK((byte) 0x06),
+	INTERNAL_QUERY((byte) 0x01), // This used when communicating between coordinator and leafs
+	CLIENT_QUERY((byte) 0x02), // This is send from client to coordinator
+	INTERNAL_RESULT((byte) 0x03), // Again, leafs to coordinator (contains a tablet)
+	CLIENT_RESULT((byte) 0x04), // Result in record from to client
+	REGINNER((byte) 0x05),
+	REGLEAF((byte) 0x06),
+	INFO((byte) 0x07),
+	REGCLIENT((byte) 0x08),
+	ACK((byte) 0x09),
 	// put last since it's the least likely one to be encountered in the
 	// fromByte() function
 	UNKNOWN((byte) 0x00);
 
-	// internal vars
-	// --------------------------------------------------------------------------------------------------
-
 	private final byte b;
-
-	// constructors
-	// ---------------------------------------------------------------------------------------------------
 
 	private Type(byte b) {
 		this.b = b;
 	}
-
-	// public static methods
-	// ------------------------------------------------------------------------------------------
 
 	public static Type fromByte(byte b) {
 		for (Type code : values()) {
@@ -48,9 +35,6 @@ public enum Type {
 
 		return UNKNOWN;
 	}
-
-	// getters & setters
-	// ----------------------------------------------------------------------------------------------
 
 	public byte getByteValue() {
 		return b;

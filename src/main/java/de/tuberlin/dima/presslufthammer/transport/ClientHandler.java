@@ -43,17 +43,17 @@ public class ClientHandler extends SimpleChannelHandler {
 			throws Exception {
 		log.debug("Message received from {}.", e.getRemoteAddress());
 		if (e.getMessage() instanceof SimpleMessage) {
-			SimpleMessage pressluft = ((SimpleMessage) e.getMessage());
-			log.debug("Message: {}", pressluft.toString());
-			switch (pressluft.getType()) {
+			SimpleMessage message = ((SimpleMessage) e.getMessage());
+			log.debug("Message: {}", message.toString());
+			switch (message.getType()) {
 			case ACK:
 			case INFO:
-			case QUERY:
+			case INTERNAL_QUERY:
 			case REGINNER:
 			case REGLEAF:
 				break;
-			case RESULT:
-				client.handleResult(pressluft);
+			case CLIENT_RESULT:
+				client.handleResult(message);
 			case UNKNOWN:
 				break;
 			}

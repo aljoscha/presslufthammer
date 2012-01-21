@@ -75,7 +75,7 @@ public class Leaf extends ChannelNode implements Stoppable {
         } catch(Exception e) {
         	log.error("fail", e);
         }
-        SimpleMessage message = new SimpleMessage(Type.RESULT, query.getQueryID(),
+        SimpleMessage message = new SimpleMessage(Type.INTERNAL_RESULT, query.getQueryID(),
                 queryString.toUpperCase().getBytes());
 
         coordinatorChannel.write(message);

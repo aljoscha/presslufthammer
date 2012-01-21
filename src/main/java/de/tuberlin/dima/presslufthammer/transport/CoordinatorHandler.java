@@ -56,10 +56,10 @@ public class CoordinatorHandler extends SimpleChannelHandler {
 			throws Exception {
 		log.debug("Message received from {}.", e.getRemoteAddress());
 		if (e.getMessage() instanceof SimpleMessage) {
-			SimpleMessage pressluft = ((SimpleMessage) e.getMessage());
-			log.debug("Message: {}", pressluft.toString());
+			SimpleMessage message = ((SimpleMessage) e.getMessage());
+			log.debug("Message: {}", message.toString());
 
-			switch (pressluft.getType()) {
+			switch (message.getType()) {
 			case ACK:
 				break;
 			case REGINNER:
@@ -68,13 +68,13 @@ public class CoordinatorHandler extends SimpleChannelHandler {
 			case REGLEAF:
 				coordinator.addLeaf(e.getChannel());
 				break;
-			case RESULT:
+			case INTERNAL_RESULT:
 			    // Send the result to the coordinator so it can be assembled
-				coordinator.handleResult(pressluft);
+				coordinator.handleResult(message);
 				break;
-			case QUERY:
+			case INTERNAL_QUERY:
 				// TODO get the query to the root node
-				coordinator.query(pressluft, e.getChannel());
+				coordinator.query(message, e.getChannel());
 				break;
 			case UNKNOWN:
 				break;

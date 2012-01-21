@@ -15,7 +15,6 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 
 /**
@@ -74,12 +73,12 @@ public class LeafHandler extends SimpleChannelHandler {
                 // // leaf.close();
                 // leaf.connectNReg(innerAddress);
                 break;
-            case QUERY:
+            case INTERNAL_QUERY:
                 leaf.query(simpleMsg);
                 break;
             case REGINNER:
             case REGLEAF:
-            case RESULT:
+            case INTERNAL_RESULT:
             case UNKNOWN:
                 break;
 

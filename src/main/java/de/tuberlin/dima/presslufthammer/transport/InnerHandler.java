@@ -78,20 +78,20 @@ public class InnerHandler extends SimpleChannelHandler {
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
 			throws Exception {
 		if (e.getMessage() instanceof SimpleMessage) {
-			SimpleMessage prsslft = (SimpleMessage) e.getMessage();
-			log.info(prsslft.getType() + " from "
+			SimpleMessage message = (SimpleMessage) e.getMessage();
+			log.info(message.getType() + " from "
 					+ e.getRemoteAddress().toString());
 
-			switch (prsslft.getType()) {
+			switch (message.getType()) {
 			case ACK:
 				// not used yet
 				break;
 			case INFO:
 				// not used yet
 				break;
-			case QUERY:
+			case INTERNAL_QUERY:
 				// TODO split query and hand parts over to children
-				inner.query( prsslft);
+				inner.query( message);
 				break;
 			case REGINNER:
 				// not used yet
@@ -101,9 +101,9 @@ public class InnerHandler extends SimpleChannelHandler {
 				openChannels.add(e.getChannel());
 				inner.regChild(e.getChannel());
 				break;
-			case RESULT:
+			case INTERNAL_RESULT:
 				// TODO accumulate results; combine them; send them to parent;
-				inner.handleResult(prsslft);
+				inner.handleResult(message);
 				break;
 			case UNKNOWN:
 				// not used yet

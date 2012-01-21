@@ -115,4 +115,9 @@ public class JSONRecordEncoder implements RecordEncoder {
             e.printStackTrace();
         }
     }
+    
+    @Override
+    public String toString() {
+        return rootJob.toString();
+    }
 }

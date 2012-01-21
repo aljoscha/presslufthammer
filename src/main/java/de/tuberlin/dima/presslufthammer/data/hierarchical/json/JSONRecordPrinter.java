@@ -1,14 +1,17 @@
 package de.tuberlin.dima.presslufthammer.data.hierarchical.json;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordIterator;
 
 public class JSONRecordPrinter extends JSONRecordFile {
-
-    public JSONRecordPrinter(SchemaNode schema) {
+    private PrintWriter out;
+    
+    public JSONRecordPrinter(SchemaNode schema, PrintWriter out) {
         super(schema, null);
+        this.out = out;
     }
 
     @Override
@@ -18,6 +21,6 @@ public class JSONRecordPrinter extends JSONRecordFile {
 
     @Override
     public void writeRecord(JSONRecordEncoder record) throws IOException {
-        System.out.println(record.getJob().toJSONString());
+        out.println(record.getJob().toJSONString());
     }
 }

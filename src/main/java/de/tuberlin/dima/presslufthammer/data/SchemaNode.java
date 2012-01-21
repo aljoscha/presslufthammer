@@ -2,6 +2,7 @@ package de.tuberlin.dima.presslufthammer.data;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
@@ -97,6 +98,15 @@ public class SchemaNode {
     public String getName() {
         return name;
     }
+    
+    public String getQualifiedName() {
+        if (hasParent()) {
+            return parent.getQualifiedName() + "." + name;
+        } else {
+            return name;
+        }
+    }
+
 
     public Type getType() {
         return type;
@@ -208,7 +218,33 @@ public class SchemaNode {
     public SchemaNode getParent() {
         return parent;
     }
-
+    
+    public SchemaNode project(Set<String> projectedFields) {
+        return internalProject(this.parent, projectedFields);
+    }
+    
+    private SchemaNode internalProject(SchemaNode parent, Set<String> projectedFields) {
+        assert(!isPrimitive());
+        
+        SchemaNode result = createRecord(this.getName());
+        result.modifier = this.modifier;
+        result.parent = parent;
+        
+        for (SchemaNode field : fieldList) {
+            // first project out primitive fields
+            if (field.isPrimitive() && projectedFields.contains(field.getQualifiedName())) {
+                result.addField(field);
+            } else if (!field.isPrimitive()) {
+                SchemaNode projectedField = field.internalProject(result, projectedFields);
+                if (projectedField.fieldList.size() > 0 || projectedFields.contains(projectedField.getQualifiedName())) {
+                    result.addField(projectedField);
+                }
+            }
+        }
+        
+        return result;
+    }
+    
     public boolean equals(Object other) {
         if (!(other instanceof SchemaNode)) {
             return false;
@@ -252,19 +288,11 @@ public class SchemaNode {
                 type, modifier);
     }
 
-    public String getQualifiedName() {
-        if (hasParent()) {
-            return parent.getQualifiedName() + "." + name;
-        } else {
-            return name;
-        }
-    }
-
     public String toString() {
-        return "package " + getName() + ";\n" + toStringRecursive(0);
+        return "package " + getName() + ";\n" + internalToStringRecursive(0);
     }
 
-    private String toStringRecursive(int indentation) {
+    private String internalToStringRecursive(int indentation) {
         StringBuffer identBuffer = new StringBuffer();
         for (int i = 0; i < indentation; i++) {
             identBuffer.append("      ");
@@ -294,7 +322,7 @@ public class SchemaNode {
             int count = 1;
             for (SchemaNode schema : fieldList) {
                 childStrings.add(fieldMap.get(schema.getName())
-                        .toStringRecursive(indentation) + " = " + count + ";");
+                        .internalToStringRecursive(indentation) + " = " + count + ";");
                 ++count;
             }
             Joiner join = Joiner.on('\n');

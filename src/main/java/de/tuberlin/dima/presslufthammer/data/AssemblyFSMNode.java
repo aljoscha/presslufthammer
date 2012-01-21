@@ -75,7 +75,9 @@ public class AssemblyFSMNode {
      */
     public AssemblyFSMNode getTransition(int level) {
         if (!transitions.containsKey(level)) {
-            throw new RuntimeException("This should not happen, bug in code.");
+            throw new RuntimeException(
+                    "This should not happen, bug in code. Schema: "
+                            + schema.getQualifiedName() + " level: " + level);
         }
         return transitions.get(level);
     }

@@ -89,13 +89,17 @@ public class AssemblyFSM {
         SchemaNode currentSchema = currentNode.getSchema();
         ColumnReader reader = currentNode.getReader();
 
+        // System.out.println("START OF ASSEMBLE -----------------------");
         while (reader != null && reader.hasNext()) {
             // System.out.println("READER: " +
             // currentSchema.getQualifiedName());
             adjustRecordStructure(reader, record, currentSchema, lastSchema);
+            // System.out.println(record);
             Object value = reader.getNextValue();
             if (value != null) {
+                // System.out.println("APPENDING VALUE: " + value);
                 record.appendValue(currentSchema, value);
+                // System.out.println(record);
             }
             lastNode = currentNode;
             lastSchema = lastNode.getSchema();
@@ -158,6 +162,15 @@ public class AssemblyFSM {
                 }
                 int backLevel = commonRepetitionLevel(field, preField);
                 fsmNode.setTransition(backLevel, nodes.get(j));
+                // this seems necessary for some corner cases, not in the
+                // algorithm from the dremel paper though
+                for (int level = backLevel; level >= 0; --level) {
+                    fsmNode.setTransition(level, nodes.get(j));
+                }
+            }
+
+            for (int level = 0; level <= barrierLevel; ++level) {
+                fsmNode.setTransition(level, barrier);
             }
 
             for (int level = barrierLevel + 1; level <= maxLevel; ++level) {
@@ -168,10 +181,6 @@ public class AssemblyFSM {
                     }
                 }
             }
-
-            for (int level = 0; level <= barrierLevel; ++level) {
-                fsmNode.setTransition(level, barrier);
-            }
         }
     }
 
@@ -181,6 +190,10 @@ public class AssemblyFSM {
     private SchemaNode commonAncestor(SchemaNode field1, SchemaNode field2) {
         SchemaNode parent1 = field1;
         SchemaNode parent2 = field2;
+
+        if (field1.equals(field2)) {
+            return field1.getParent();
+        }
 
         while (parent1 != null && parent2 != null && !parent1.equals(parent2)) {
             if (parent1.getFullDefinition() >= parent2.getFullDefinition()) {
@@ -202,6 +215,11 @@ public class AssemblyFSM {
      * {@link SchemaNode}S. This is used by the FSM construction algorithm.
      */
     private int commonRepetitionLevel(SchemaNode field1, SchemaNode field2) {
+        // this one is easy ... :D
+        if (field1.equals(field2)) {
+            return field1.getRepetition();
+        }
+
         SchemaNode commonAncestor = commonAncestor(field1, field2);
         if (commonAncestor == null) {
             return 0;

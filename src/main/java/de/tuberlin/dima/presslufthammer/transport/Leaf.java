@@ -1,5 +1,7 @@
 package de.tuberlin.dima.presslufthammer.transport;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executors;
@@ -12,6 +14,10 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryWriteonlyTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
+import de.tuberlin.dima.presslufthammer.data.ondisk.OnDiskDataStore;
+import de.tuberlin.dima.presslufthammer.qexec.TabletCopier;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.Type;
@@ -34,9 +40,17 @@ public class Leaf extends ChannelNode implements Stoppable {
     private String serverHost;
     private int serverPort;
 
-    public Leaf(String serverHost, int serverPort) {
+    private OnDiskDataStore dataStore;
+
+    public Leaf(String serverHost, int serverPort, File dataDirectory) {
         this.serverHost = serverHost;
         this.serverPort = serverPort;
+
+        try {
+            dataStore = OnDiskDataStore.openDataStore(dataDirectory);
+        } catch (IOException e) {
+            log.warn("Exception caught while while loading datastore: {}", e.getCause().getMessage());
+        }
     }
 
     public void start() {
@@ -67,24 +81,36 @@ public class Leaf extends ChannelNode implements Stoppable {
     }
 
     @Override
-	public void query(SimpleMessage query) {
-        String queryString = new String(query.getPayload());
-        log.info("Received query: " + queryString);
-        try {
-        Query test = new Query(query.getPayload());
-        } catch(Exception e) {
-        	log.error("fail", e);
-        }
-        SimpleMessage message = new SimpleMessage(Type.INTERNAL_RESULT, query.getQueryID(),
-                queryString.toUpperCase().getBytes());
+    public void query(SimpleMessage message) {
+        Query query = new Query(message.getPayload());
+        log.info("Received query: " + query);
 
-        coordinatorChannel.write(message);
+        String table = query.getFrom();
+
+        try {
+            Tablet tablet = dataStore.getTablet(table, query.getPart());
+            log.debug("Tablet: {}", tablet);
+
+            InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
+                    tablet.getSchema());
+
+            TabletCopier copier = new TabletCopier();
+            copier.copyTablet(tablet.getSchema(), tablet, resultTablet);
+
+            SimpleMessage response = new SimpleMessage(Type.INTERNAL_RESULT,
+                    message.getQueryID(), resultTablet.serialize());
+
+            coordinatorChannel.write(response);
+        } catch (IOException e) {
+            log.warn("Caught exception while creating result: {}",
+                    e.getMessage());
+        }
     }
 
-	public void query(Query query) {
-		// TODO
-		log.debug("Query received: " + query);
-	}
+    public void query(Query query) {
+        // TODO
+        log.debug("Query received: " + query);
+    }
 
     @Override
     public void stop() {
@@ -98,20 +124,21 @@ public class Leaf extends ChannelNode implements Stoppable {
 
     private static void printUsage() {
         System.out.println("Usage:");
-        System.out.println("hostname port");
+        System.out.println("hostname port data-dir");
     }
 
     public static void main(String[] args) throws InterruptedException {
         // Print usage if necessary.
-        if (args.length < 2) {
+        if (args.length < 3) {
             printUsage();
             return;
         }
         // Parse options.
         String host = args[0];
         int port = Integer.parseInt(args[1]);
+        File dataDirectory = new File(args[2]);
 
-        Leaf leaf = new Leaf(host, port);
+        Leaf leaf = new Leaf(host, port, dataDirectory);
         leaf.start();
     }
 }

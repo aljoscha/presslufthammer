@@ -6,6 +6,7 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,7 @@ public class CoordinatorHandler extends SimpleChannelHandler {
 
 	public CoordinatorHandler(Coordinator coordinator) {
 		this.coordinator = coordinator;
-		openChannels = coordinator.openChannels;
+		openChannels = new DefaultChannelGroup("coordinator channels");
 	}
 
 	@Override
@@ -72,8 +73,8 @@ public class CoordinatorHandler extends SimpleChannelHandler {
 			    // Send the result to the coordinator so it can be assembled
 				coordinator.handleResult(message);
 				break;
-			case INTERNAL_QUERY:
-				// TODO get the query to the root node
+			case CLIENT_QUERY:
+				// handle the query from the client
 				coordinator.query(message, e.getChannel());
 				break;
 			case UNKNOWN:

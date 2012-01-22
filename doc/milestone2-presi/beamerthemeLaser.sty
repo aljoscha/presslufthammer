@@ -1,0 +1,56 @@
+\ProvidesPackageRCS $Header: /home/vedranm/bitbucket/beamer/base/themes/inner/beamerthemeLaser.sty,v d02a7cf4d8ae 2010/06/17 09:11:41 rivanvx $
+
+
+\setbeamertemplate{items}[circle]
+
+\defbeamertemplate*{frametitle}{laser}[1][left]
+{
+  %\ifbeamercolorempty[bg]{frametitle}{}{\nointerlineskip}%
+  %\@tempdima=\textwidth%
+  %\advance\@tempdima by\beamer@leftmargin%
+  %\advance\@tempdima by\beamer@rightmargin%
+  %\begin{beamercolorbox}[sep=0.3cm,#1,wd=\the\@tempdima]{frametitle}
+  %  \usebeamerfont{frametitle}%
+  %  \vbox{}\vskip-1ex%
+  %  \if@tempswa\else\csname beamer@fte#1\endcsname\fi%
+    \vspace{0.9em}
+    \strut\insertframetitle\strut\par%
+  %  {%
+  %    \ifx\insertframesubtitle\@empty%
+  %    \else%
+  %    {\usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\insertframesubtitle\strut\par}%
+  %    \fi
+  %  }%
+  %  \vskip-1ex%
+  %  \if@tempswa\else\vskip-.3cm\fi% set inside beamercolorbox... evil here...
+  %\end{beamercolorbox}%
+}
+
+\defbeamertemplate*{title page}{laser}[1][]
+{
+  \vbox{}
+  \vfill
+  \begin{centering}
+    \begin{beamercolorbox}[sep=8pt,center,#1]{title}
+      \usebeamerfont{title}\inserttitle\par%
+      \ifx\insertsubtitle\@empty%
+      \else%
+        \vskip0.25em%
+        {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}%
+      \fi%     
+    \end{beamercolorbox}%
+    \vskip1em\par
+    \begin{beamercolorbox}[sep=8pt,center,#1]{author}
+      \usebeamerfont{author}\insertauthor
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[sep=8pt,center,#1]{institute}
+      \usebeamerfont{institute}\insertinstitute
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[sep=8pt,center,#1]{date}
+      \usebeamerfont{date}\insertdate
+    \end{beamercolorbox}\vskip0.5em
+    {\usebeamercolor[fg]{titlegraphic}\inserttitlegraphic\par}
+  \end{centering}
+}
+
+\usecolortheme{orchid}

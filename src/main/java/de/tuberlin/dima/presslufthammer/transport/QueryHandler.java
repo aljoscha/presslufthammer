@@ -34,20 +34,20 @@ public class QueryHandler {
 
 	final byte queryID;
 	final Channel client;
-	final SimpleMessage queryMSG;
+	final SimpleMessage queryMsg;
 	final Query query;
 	private int numPartsExpected;
 	QueryStatus status;
 	SchemaNode schema;
 	List<InMemoryReadonlyTablet> parts;
 
-	public QueryHandler(int parts, SimpleMessage query, SchemaNode schema, Channel client) {
-		assert (query.getQueryID() > 0);
+	public QueryHandler(int parts, SimpleMessage queryMsg, SchemaNode schema, Channel client) {
+		assert (queryMsg.getQueryID() > 0);
 		this.parts = Lists.newLinkedList();
 		this.numPartsExpected = parts;
-		this.queryMSG = query;
+		this.queryMsg = queryMsg;
 		this.query = null;
-		this.queryID = query.getQueryID();
+		this.queryID = queryMsg.getQueryID();
 		this.client = client;
 		this.status = QueryStatus.OPEN;
 		this.schema = schema;

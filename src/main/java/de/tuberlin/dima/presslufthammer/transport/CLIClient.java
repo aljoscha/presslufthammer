@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Iterator;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -14,6 +15,8 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Splitter;
 
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
@@ -116,17 +119,25 @@ public class CLIClient {
         BufferedReader bufferedReader = new BufferedReader(
                 new InputStreamReader(System.in));
 
+        Splitter querySplitter = Splitter.on(" from ");
+
         while (running) {
             String line = bufferedReader.readLine();
             if (line.startsWith("x")) {
                 running = false;
             } else {
-                Query query = new Query(
-                        "0:Document.DocId,Document.Name.Language.Code,Document.Name.Language.Country:Document:-1::");
+                // for debugging we take a fixed query:
+                // line =
+                // "Document.DocId,Document.Name.Language.Code,Document.Name.Language.Country from Document";
+                Iterable<String> split = querySplitter.split(line);
+                Iterator<String> splitIt = split.iterator();
+                String projection = splitIt.next();
+                String table = splitIt.next();
+                Query query = new Query("0:" + projection + ":" + table
+                        + ":-1::");
                 SimpleMessage queryMsg = new SimpleMessage(Type.CLIENT_QUERY,
                         (byte) -1, query.toString().getBytes());
                 client.query(queryMsg);
-                // client.query(SimpleMessage.getQueryMSG(line));
             }
         }
 

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -14,10 +15,14 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Sets;
+
+import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.ondisk.OnDiskDataStore;
 import de.tuberlin.dima.presslufthammer.qexec.TabletCopier;
+import de.tuberlin.dima.presslufthammer.query.Projection;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.Type;
@@ -49,7 +54,8 @@ public class Leaf extends ChannelNode implements Stoppable {
         try {
             dataStore = OnDiskDataStore.openDataStore(dataDirectory);
         } catch (IOException e) {
-            log.warn("Exception caught while while loading datastore: {}", e.getCause().getMessage());
+            log.warn("Exception caught while while loading datastore: {}", e
+                    .getCause().getMessage());
         }
     }
 
@@ -89,13 +95,27 @@ public class Leaf extends ChannelNode implements Stoppable {
 
         try {
             Tablet tablet = dataStore.getTablet(table, query.getPart());
-            log.debug("Tablet: {}", tablet);
+            log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
+                    query.getPart());
+
+            Set<String> projectedFields = Sets.newHashSet();
+            for (Projection project : query.getSelect()) {
+                projectedFields.add(project.getColumn());
+            }
+            SchemaNode projectedSchema = null;
+            if (projectedFields.contains("*")) {
+                log.debug("Query is a 'select * ...' query.");
+                projectedSchema = tablet.getSchema();
+            } else {
+
+                projectedSchema = tablet.getSchema().project(projectedFields);
+            }
 
             InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
-                    tablet.getSchema());
+                    projectedSchema);
 
             TabletCopier copier = new TabletCopier();
-            copier.copyTablet(tablet.getSchema(), tablet, resultTablet);
+            copier.copyTablet(projectedSchema, tablet, resultTablet);
 
             SimpleMessage response = new SimpleMessage(Type.INTERNAL_RESULT,
                     message.getQueryID(), resultTablet.serialize());

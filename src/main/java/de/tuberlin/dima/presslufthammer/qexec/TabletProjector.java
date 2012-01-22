@@ -7,19 +7,19 @@ import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
-public class TabletCopier {
+public class TabletProjector {
 
-    public void copyTablet(SchemaNode schema, Tablet src, Tablet dest)
+    public void project(SchemaNode schema, Tablet src, Tablet dest)
             throws IOException {
-        copyColumns(schema, src, dest);
+        projectColumns(schema, src, dest);
     }
 
-    private void copyColumns(SchemaNode schema, Tablet src, Tablet dest)
+    private void projectColumns(SchemaNode schema, Tablet src, Tablet dest)
             throws IOException {
 
         if (schema.isRecord()) {
             for (SchemaNode childSchema : schema.getFieldList()) {
-                copyColumns(childSchema, src, dest);
+                projectColumns(childSchema, src, dest);
             }
         } else {
             ColumnReader reader = src.getColumnReader(schema);

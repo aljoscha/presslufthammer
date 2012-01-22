@@ -21,7 +21,7 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.ondisk.OnDiskDataStore;
-import de.tuberlin.dima.presslufthammer.qexec.TabletCopier;
+import de.tuberlin.dima.presslufthammer.qexec.TabletProjector;
 import de.tuberlin.dima.presslufthammer.query.Projection;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
@@ -114,8 +114,8 @@ public class Leaf extends ChannelNode implements Stoppable {
             InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
                     projectedSchema);
 
-            TabletCopier copier = new TabletCopier();
-            copier.copyTablet(projectedSchema, tablet, resultTablet);
+            TabletProjector copier = new TabletProjector();
+            copier.project(projectedSchema, tablet, resultTablet);
 
             SimpleMessage response = new SimpleMessage(Type.INTERNAL_RESULT,
                     message.getQueryID(), resultTablet.serialize());

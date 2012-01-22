@@ -10,6 +10,19 @@ import com.google.common.collect.Maps;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
 
+/**
+ * This is used to construct the tree of field writers in the column striping
+ * algorithm ({@link FieldStriper}).
+ * 
+ * <p>
+ * Objects of this class store the parent field writer, the schema of the field
+ * represented by this writer the actual {@link ColumnWriter} for writing out
+ * the columnar data of this field and a list of child writers (implemented as a
+ * map from SchemaNode).
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public final class FieldWriter {
     private final FieldWriter parent;
     private final SchemaNode schema;
@@ -22,6 +35,12 @@ public final class FieldWriter {
     int lastParentStateVersion;
     int parentStateInsertPoint;
 
+    /**
+     * Constructs aa field writer for the given schema and sets its parent and
+     * column writer accordingly. Intitially a field writer has no children and
+     * it contains no level states and has not synced to states from a parent
+     * (see dremel paper for explanation).
+     */
     public FieldWriter(FieldWriter parent, SchemaNode schema,
             ColumnWriter writer) {
         this.parent = parent;
@@ -37,6 +56,15 @@ public final class FieldWriter {
         parentStateInsertPoint = 0;
     }
 
+    /**
+     * Writes one field value using this writer. This method takes care of
+     * syncing the state of this writer to the parent states and writing
+     * eventual repetition/definition levels before writing the field and
+     * repetition level that are given as argument. One can also pass null as
+     * the field argument, in that case this field writer will only sync to the
+     * parent states.
+     * 
+     */
     public final void writeField(Field field, int repetitionLevel)
             throws IOException {
         if (field != null) {
@@ -106,6 +134,12 @@ public final class FieldWriter {
         return maxDefinition;
     }
 
+    /**
+     * This method and the next two are responsible for the syncing of states
+     * from parents to child field writers. This is still a bit of a hack and
+     * does not work the same as in the paper (it works correctly though, only
+     * possibly not as efficient), should probably fix this at some point.
+     */
     private void fetchParentStates() {
         if (parent != null) {
             int parentStateVersion = parent.getStateVersion();
@@ -120,6 +154,9 @@ public final class FieldWriter {
         }
     }
 
+    /**
+     * {@see fetchParentStates}
+     */
     private List<LevelState> getLevelStates(int version) {
         fetchParentStates();
         if (version + 1 > levelStates.size()) {
@@ -128,11 +165,22 @@ public final class FieldWriter {
         return levelStates.subList(version + 1, levelStates.size());
     }
 
+    /**
+     * {@see fetchParentStates}
+     */
     private int getStateVersion() {
         fetchParentStates();
         return levelStates.size() - 1;
     }
 
+    /**
+     * This method is called at the end of the striping process to flush
+     * eventual parent states that have not yet been synced by child field
+     * writers. If the schema of this field writer is a primitive field the
+     * state is synced, otherwise the method is called recursively on all child
+     * fields.
+     * 
+     */
     public void finalizeLevels() throws IOException {
         if (schema.isPrimitive()) {
             if (parent != null) {

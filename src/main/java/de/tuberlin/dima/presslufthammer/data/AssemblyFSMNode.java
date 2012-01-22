@@ -98,7 +98,7 @@ public class AssemblyFSMNode {
     }
 
     /**
-     * Reuturns the {@link SchemaNode} that is attached to this node.
+     * Returns the {@link SchemaNode} that is attached to this node.
      */
     public SchemaNode getSchema() {
         return schema;

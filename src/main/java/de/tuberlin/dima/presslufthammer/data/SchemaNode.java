@@ -9,6 +9,31 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+/**
+ * Objects of this class are used to represent a hierarchical schema. This
+ * representation can express most of the things that can be expressed in
+ * protobuf format definitions (.proto files) and using
+ * {@link ProtobufSchemaHelper} one can convert between the two. The schema is
+ * expressed as a tree of SchemaNodeS, each schema but the root SchemaNode
+ * therefore has a parent != null.
+ * 
+ * <p>
+ * A SchemaNode can either represent a primitive field with a
+ * {@link PrimitiveType} or a record field that contains zero or more other
+ * fields (SchemaNodeS).
+ * 
+ * <p>
+ * The name of a SchemaNode is the local name of that field, not a fully
+ * qualified name. Though using {@code getQualifiedName} the qualified name can
+ * be retrieved.
+ * 
+ * <p>
+ * A SchemaNode can be one of required, optional or repeated. (check google
+ * protobuf documentation).
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public class SchemaNode {
     public enum Type {
         RECORD, PRIMITIVE
@@ -18,6 +43,12 @@ public class SchemaNode {
         REQUIRED, OPTIONAL, REPEATED
     }
 
+    // valid for all types (record, primitive)
+    private String name;
+    private Type type;
+    private Modifier modifier;
+    private SchemaNode parent = null;
+
     // only valid for records (groups)
     private List<SchemaNode> fieldList = null;
     private Map<String, SchemaNode> fieldMap = null;
@@ -25,17 +56,20 @@ public class SchemaNode {
     // valid if type is primitive
     private PrimitiveType primitiveType = null;
 
-    private String name;
-    private Type type;
-
-    private Modifier modifier = Modifier.REQUIRED;
-
-    private SchemaNode parent = null;
-
+    /**
+     * Constructs a schema of either primitive or record type and sets the
+     * modified to required.
+     */
     private SchemaNode(Type nodeType) {
         type = nodeType;
+        this.modifier = Modifier.REQUIRED;
     }
 
+    /**
+     * Constructs a SchemaNode that representes a primitive field of the given
+     * {@link PrimitiveType} and has the given name. Initially the field will be
+     * "required".
+     */
     public static SchemaNode createPrimitive(String name, PrimitiveType type) {
         SchemaNode newSchema = new SchemaNode(Type.PRIMITIVE);
         newSchema.name = name;
@@ -43,6 +77,11 @@ public class SchemaNode {
         return newSchema;
     }
 
+    /**
+     * Constructs a SchemaNode that representes a record field and has the given
+     * name. Initially the field will be "required" and the it will have no
+     * child fields.
+     */
     public static SchemaNode createRecord(String name) {
         SchemaNode newSchema = new SchemaNode(Type.RECORD);
         newSchema.name = name;
@@ -51,6 +90,11 @@ public class SchemaNode {
         return newSchema;
     }
 
+    /**
+     * Recursively calculates the "repetition" of the field represented by this
+     * SchemaNode. (see dremel paper for definition of repetition and definition
+     * levels)
+     */
     public int getRepetition() {
         int parentRepetition = 0;
         if (this.parent != null) {
@@ -64,6 +108,11 @@ public class SchemaNode {
 
     }
 
+    /**
+     * Recursively calculates the "max definition" of the field represented by
+     * this SchemaNode. (see dremel paper for definition of repetition and
+     * definition levels)
+     */
     public int getMaxDefinition() {
         int parentMaxDefinition = 0;
         if (this.parent != null) {
@@ -76,6 +125,11 @@ public class SchemaNode {
         }
     }
 
+    /**
+     * Recursively calculates the "full definition" of the field represented by
+     * this SchemaNode. (see dremel paper for definition of repetition and
+     * definition levels)
+     */
     public int getFullDefinition() {
         int parentFullDefinition = 0;
         if (this.parent != null) {
@@ -84,6 +138,11 @@ public class SchemaNode {
         return parentFullDefinition + 1;
     }
 
+    /**
+     * Recursively constructs a {@link List} of SchemaNodeS that represents the
+     * path that one has to take to reach this SchemaNode from the root record
+     * of the schema.
+     */
     public List<SchemaNode> getPath() {
         if (parent == null) {
             List<SchemaNode> result = Lists.newArrayList(this);
@@ -95,10 +154,17 @@ public class SchemaNode {
         }
     }
 
+    /**
+     * Returns the "local" name of this schema.
+     */
     public String getName() {
         return name;
     }
-    
+
+    /**
+     * Returns the fully qualified name of this schema, it includes the names of
+     * all parent schemas and looks like: foo.bar.baz.
+     */
     public String getQualifiedName() {
         if (hasParent()) {
             return parent.getQualifiedName() + "." + name;
@@ -107,11 +173,19 @@ public class SchemaNode {
         }
     }
 
-
+    /**
+     * Returns the type of the field represented by this SchemaNode, either
+     * RECORD or PRIMITIVE.
+     */
     public Type getType() {
         return type;
     }
 
+    /**
+     * Returns true if this field (SchemaNode) is the first in the child list of
+     * the parent SchemaNode or if the SchemaNode has no parent, i.e. it is the
+     * root node of the schema.
+     */
     public boolean isFirstField() {
         if (parent == null) {
             return true;
@@ -120,14 +194,32 @@ public class SchemaNode {
         }
     }
 
+    /**
+     * Returns true when the given SchemaNode is the first in the list of child
+     * schemas. Used internally by {@code isFirstChild}.
+     */
     private boolean isFirstField(SchemaNode child) {
         return fieldList.indexOf(child) == 0;
     }
 
+    /**
+     * Returns true when this schema represents a primitive field.
+     */
     public boolean isPrimitive() {
         return type == Type.PRIMITIVE;
     }
 
+    /**
+     * Returns true when this schema represents a record field.
+     */
+    public boolean isRecord() {
+        return type == Type.RECORD;
+    }
+
+    /**
+     * Returns the primitive type of this schema. Must only be called when the
+     * field is a primitive field.
+     */
     public PrimitiveType getPrimitiveType() {
         if (type != Type.PRIMITIVE) {
             throw new RuntimeException("SchemaTree " + name
@@ -136,6 +228,12 @@ public class SchemaNode {
         return primitiveType;
     }
 
+    /**
+     * Returns the SchemaNode in the path from schema root to this schema that
+     * has a "max definition level" smaller or equal than the requested
+     * definition level. This is used by the record assembly algorithm to adjust
+     * the record structure when null fields are encountered.
+     */
     public SchemaNode getSchemaForDefinitionLevel(int definitionLevel) {
         if (getMaxDefinition() <= definitionLevel) {
             return this;
@@ -169,14 +267,18 @@ public class SchemaNode {
         modifier = Modifier.REPEATED;
     }
 
+    /**
+     * Returns the modified if the field represented by this schema, one of
+     * REQUIRED, OPTIONAL or REPEATED.
+     */
     public Modifier getModifier() {
         return modifier;
     }
 
-    public boolean isRecord() {
-        return type == Type.RECORD;
-    }
-
+    /**
+     * Returns the list of child SchemaNodes of this schema. Must only be called
+     * on a SchemaNode that represents a record field.
+     */
     public List<SchemaNode> getFieldList() {
         if (type != Type.RECORD) {
             throw new RuntimeException("SchemaTree " + name
@@ -185,11 +287,12 @@ public class SchemaNode {
         return fieldList;
     }
 
+    /**
+     * Adds the given SchemaNode to the list of children of this schema. Must
+     * only be called on a SchemaNode that represents a record field.
+     */
     public void addField(SchemaNode newField) {
-        addField(newField, newField.getName());
-    }
-
-    public void addField(SchemaNode newField, String name) {
+        String name = newField.getName();
         if (type != Type.RECORD) {
             throw new RuntimeException("Adding a field to SchemaTree " + name
                     + " is not possible because it is not a record.");
@@ -203,48 +306,82 @@ public class SchemaNode {
         newField.parent = this;
     }
 
+    /**
+     * Returns true when this SchemaNode has a child schema with the given name.
+     */
     public boolean hasField(String fieldName) {
         return fieldMap.containsKey(fieldName);
     }
 
+    /**
+     * Returns the child SchemaNode with the given name.
+     */
     public SchemaNode getField(String fieldName) {
         return fieldMap.get(fieldName);
     }
 
+    /**
+     * Returns true when this SchemaNode has a parent.
+     */
     public boolean hasParent() {
         return parent != null;
     }
 
+    /**
+     * Returns the parent SchemaNode of this schema.
+     */
     public SchemaNode getParent() {
         return parent;
     }
-    
+
+    /**
+     * Returns a "projection" of this schema. That is a new tree of SchemaNodeS
+     * that only contains those fields that are specified in projectedFields.
+     * The fields need to be specified as fully qualified field names.
+     * 
+     * <p>
+     * The projection is performed recursively to process all SchemaNodes in the
+     * tree.
+     */
     public SchemaNode project(Set<String> projectedFields) {
         return internalProject(this.parent, projectedFields);
     }
-    
-    private SchemaNode internalProject(SchemaNode parent, Set<String> projectedFields) {
-        assert(!isPrimitive());
-        
+
+    /**
+     * Used internally by {@code project} to correctly set the parent of newly
+     * created SchemaNodesS.
+     */
+    private SchemaNode internalProject(SchemaNode parent,
+            Set<String> projectedFields) {
+        assert (!isPrimitive());
+
         SchemaNode result = createRecord(this.getName());
         result.modifier = this.modifier;
         result.parent = parent;
-        
+
         for (SchemaNode field : fieldList) {
             // first project out primitive fields
-            if (field.isPrimitive() && projectedFields.contains(field.getQualifiedName())) {
+            if (field.isPrimitive()
+                    && projectedFields.contains(field.getQualifiedName())) {
                 result.addField(field);
             } else if (!field.isPrimitive()) {
-                SchemaNode projectedField = field.internalProject(result, projectedFields);
-                if (projectedField.fieldList.size() > 0 || projectedFields.contains(projectedField.getQualifiedName())) {
+                SchemaNode projectedField = field.internalProject(result,
+                        projectedFields);
+                if (projectedField.fieldList.size() > 0
+                        || projectedFields.contains(projectedField
+                                .getQualifiedName())) {
                     result.addField(projectedField);
                 }
             }
         }
-        
+
         return result;
     }
-    
+
+    /**
+     * Checks whether this SchemaNode represents the same schema as the given
+     * object. Returns true if the schemas are equal.
+     */
     public boolean equals(Object other) {
         if (!(other instanceof SchemaNode)) {
             return false;
@@ -283,15 +420,27 @@ public class SchemaNode {
         return true;
     }
 
+    /**
+     * Returns the hash code of this schema. This is required to store
+     * SchemaNodeS in hash maps, for example in the fieldMap of a SchemaNode.
+     */
     public int hashCode() {
         return Objects.hashCode(fieldMap, primitiveType, getQualifiedName(),
                 type, modifier);
     }
 
+    /**
+     * Returns a textual representation of the schema that is represented by the
+     * tree of SchemaNodesS. This textual representation is compatible with
+     * protobuf schema definitions.
+     */
     public String toString() {
         return "package " + getName() + ";\n" + internalToStringRecursive(0);
     }
 
+    /**
+     * Used internally by {@code toString}.
+     */
     private String internalToStringRecursive(int indentation) {
         StringBuffer identBuffer = new StringBuffer();
         for (int i = 0; i < indentation; i++) {
@@ -322,7 +471,10 @@ public class SchemaNode {
             int count = 1;
             for (SchemaNode schema : fieldList) {
                 childStrings.add(fieldMap.get(schema.getName())
-                        .internalToStringRecursive(indentation) + " = " + count + ";");
+                        .internalToStringRecursive(indentation)
+                        + " = "
+                        + count
+                        + ";");
                 ++count;
             }
             Joiner join = Joiner.on('\n');

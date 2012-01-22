@@ -20,21 +20,34 @@ import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriterImpl;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
+/**
+ * {@link Tablet} implementation that stores the column data in files on disk.
+ * The data is stored in one directory on disk, this directory has one file
+ * called "schema.proto" that contains the schema of the tablet and one binary
+ * file per column that stores the columnar data (at the beginning this file
+ * might be empty).
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public class OnDiskTablet implements Tablet {
     private SchemaNode schema;
-    private File directory;
     private Map<SchemaNode, File> columnFiles;
     private Map<SchemaNode, ColumnWriterImpl> columnWriters;
 
+    /**
+     * Internal constructor.
+     */
     private OnDiskTablet(SchemaNode schema, File directory) {
         this.schema = schema;
-        this.directory = directory;
         columnWriters = Maps.newHashMap();
         columnFiles = Maps.newHashMap();
     }
 
-    public static OnDiskTablet openTablet(File directory)
-            throws IOException {
+    /**
+     * Opens an existing tablet from the specified directory.
+     */
+    public static OnDiskTablet openTablet(File directory) throws IOException {
         if (!directory.exists() && directory.isDirectory()) {
             throw new IOException(
                     "Directory given in openTablet does not exist or is not a directory.");
@@ -44,20 +57,17 @@ public class OnDiskTablet implements Tablet {
             throw new IOException("No schema file in tablet directory "
                     + directory);
         }
-        SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(
-                schemaFile.getAbsolutePath());
+        SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(schemaFile
+                .getAbsolutePath());
         OnDiskTablet tablet = new OnDiskTablet(schema, directory);
         tablet.createOrOpenColumnFiles(directory, schema);
 
         return tablet;
     }
 
-    public static void removeTablet(File directory) throws IOException {
-        if (directory.exists()) {
-            FileUtils.deleteDirectory(directory);
-        }
-    }
-
+    /**
+     * Creates a new tablet in the given directory for the given schema.
+     */
     public static OnDiskTablet createTablet(SchemaNode schema, File directory)
             throws IOException {
         OnDiskTablet tablet = new OnDiskTablet(schema, directory);
@@ -75,6 +85,19 @@ public class OnDiskTablet implements Tablet {
         return tablet;
     }
 
+    /**
+     * Removes the tablet, ie. removes the directory.
+     */
+    public static void removeTablet(File directory) throws IOException {
+        if (directory.exists()) {
+            FileUtils.deleteDirectory(directory);
+        }
+    }
+
+    /**
+     * Internal methods that creates or opens the files that contain the column
+     * data. The internal map of ColumnReaderImpls is also filled here.
+     */
     private void createOrOpenColumnFiles(File directory, SchemaNode schema)
             throws IOException {
         if (schema.isRecord()) {
@@ -93,26 +116,30 @@ public class OnDiskTablet implements Tablet {
         }
     }
 
-    public File getDirectory() {
-        return directory;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public SchemaNode getSchema() {
         return schema;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean hasColumn(SchemaNode schema) {
         return columnFiles.containsKey(schema);
     }
-    
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ColumnWriter getColumnWriter(SchemaNode schema) {
         if (schema.isRecord()) {
-            // return a dummy writer so that the FieldStriper is happy,
-            // he creates FieldWriters for records also ...
-            return new DummyColumnWriter();
+            throw new RuntimeException(
+                    "Should not happen: getColumnWriter called for schema that is RECORD.");
         }
         if (!columnWriters.containsKey(schema)) {
             System.out.println("OnDisk column writer requested but not there: "
@@ -127,6 +154,9 @@ public class OnDiskTablet implements Tablet {
         return columnWriters.get(schema);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ColumnReader getColumnReader(SchemaNode schema) {
         if (schema.isRecord()) {
@@ -153,12 +183,19 @@ public class OnDiskTablet implements Tablet {
         }
     }
 
+    /**
+     * Calls {@code close} on all column writers. Should be called on shutdown.
+     */
     public void close() throws IOException {
         for (ColumnWriterImpl writer : columnWriters.values()) {
             writer.close();
         }
     }
 
+    /**
+     * Calls {@code flush} on all column writers. Should be called before
+     * reading from the tablet columns.
+     */
     public void flush() throws IOException {
         for (ColumnWriterImpl writer : columnWriters.values()) {
             writer.flush();

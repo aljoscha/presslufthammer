@@ -15,11 +15,28 @@ import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderImpl;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
+/**
+ * Implementation of the {@link Tablet} interface that stores the column data
+ * in-memory. As the name implies this tablet can only be used to read column
+ * data, writing is not supported. This class provides constructors for
+ * constructing the tablet from a given {@link InMemoryWriteonlyTablet}, for
+ * constructing the tablet from a map of {@link SchemaNode} to byte arrays (the
+ * byte arrays contain the column data) and for constructing the tablet from a
+ * byte array. This last method is used while sending tablets over network since
+ * {@link InMemoryWriteonlyTablet} provides a method to serialize the tablet to
+ * a byte array.
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public class InMemoryReadonlyTablet implements Tablet {
     private SchemaNode schema;
     private Map<SchemaNode, byte[]> columns;
     private Map<SchemaNode, ColumnReaderImpl> columnReaders;
 
+    /**
+     * Constructs the tablet from the given column data.
+     */
     public InMemoryReadonlyTablet(SchemaNode schema,
             Map<SchemaNode, byte[]> columns) {
         this.schema = schema;
@@ -28,10 +45,19 @@ public class InMemoryReadonlyTablet implements Tablet {
         createColumnReaders(schema);
     }
 
+    /**
+     * Constructs the tablet from the column data of the given
+     * {@link InMemoryWriteonlyTablet}.
+     */
     public InMemoryReadonlyTablet(InMemoryWriteonlyTablet sourceTablet) {
         this(sourceTablet.getSchema(), sourceTablet.getColumnData());
     }
 
+    /**
+     * Deserializes the tablet from the given byte array. The byte array must be
+     * in a compatible format, {@link InMemoryWriteonlyTablet} provides the
+     * {@code serialize} method for writing such data.
+     */
     public InMemoryReadonlyTablet(byte[] data) {
         ByteArrayInputStream inArray = new ByteArrayInputStream(data);
         DataInputStream in = new DataInputStream(inArray);
@@ -39,7 +65,7 @@ public class InMemoryReadonlyTablet implements Tablet {
 
         try {
             int magicNumber = in.readInt();
-            if (magicNumber != InMemoryWriteonlyTablet.PRESSLUFT_TABLET_MAGIC_NUMBER) {
+            if (magicNumber != InMemoryWriteonlyTablet.TABLET_MAGIC_NUMBER) {
                 // this should not happen, programming bug
                 throw new RuntimeException(
                         "Pressluft handed to InMemoryReadonlyTablet with wrong magic number.");
@@ -77,6 +103,10 @@ public class InMemoryReadonlyTablet implements Tablet {
         createColumnReaders(schema);
     }
 
+    /**
+     * Fills the colum data from the provided {@link Map} by recursing on the
+     * given schema.
+     */
     private void fillColumns(SchemaNode schema, Map<String, byte[]> rawColumns) {
         columns.put(schema, rawColumns.get(schema.getQualifiedName()));
 
@@ -87,6 +117,11 @@ public class InMemoryReadonlyTablet implements Tablet {
         }
     }
 
+    /**
+     * Creates column readers that read from the byte arrays that contain the
+     * columnar data by creating {@link ColumnReaderImpl} instances that read
+     * from a {@link ByteArrayInputStream}.
+     */
     private void createColumnReaders(SchemaNode schema) {
         ByteArrayInputStream arrayStream = new ByteArrayInputStream(
                 columns.get(schema));
@@ -145,6 +180,9 @@ public class InMemoryReadonlyTablet implements Tablet {
         return columnReaders.get(schema);
     }
 
+    /**
+     * Prints the data contained in the columns to stdout.
+     */
     public void printColumns() {
         for (SchemaNode schema : columns.keySet()) {
             System.out.println("COLUMN: " + schema.getQualifiedName());

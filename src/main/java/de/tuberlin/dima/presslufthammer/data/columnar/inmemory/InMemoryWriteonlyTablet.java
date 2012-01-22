@@ -17,12 +17,27 @@ import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriterImpl;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
+/**
+ * Implementation of the {@link Tablet} interface that stores the column data
+ * in-memory. As the name implies this tablet can only be used to write column
+ * data, reading is not supported. This class has a {@code serialize} method for
+ * serializing the tablet to a byte array for sending over a network.
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public class InMemoryWriteonlyTablet implements Tablet {
-    public static int PRESSLUFT_TABLET_MAGIC_NUMBER = 0xCAFEBABE;
+    public static int TABLET_MAGIC_NUMBER = 0xCAFEBABE;
     private SchemaNode schema;
     private Map<SchemaNode, ByteArrayOutputStream> columns;
     private Map<SchemaNode, ColumnWriterImpl> columnWriters;
 
+    /**
+     * Constructs the tablet by creating empty byte arrays for all the columns
+     * (fields) in the schema.
+     * 
+     * @param schema
+     */
     public InMemoryWriteonlyTablet(SchemaNode schema) {
         this.schema = schema;
         columns = Maps.newHashMap();
@@ -30,6 +45,19 @@ public class InMemoryWriteonlyTablet implements Tablet {
         createColumns(schema);
     }
 
+    /**
+     * Calls flush on the column writers to flush eventual buffers to the
+     * underlying byte arrays.
+     */
+    public void flush() throws IOException {
+        for (SchemaNode schema : columns.keySet()) {
+            columnWriters.get(schema).flush();
+        }
+    }
+
+    /**
+     * Serializes this tablet to a byte array and returns it.
+     */
     public byte[] serialize() {
         try {
             flush();
@@ -41,7 +69,7 @@ public class InMemoryWriteonlyTablet implements Tablet {
         DataOutputStream out = new DataOutputStream(arrayOut);
 
         try {
-            out.writeInt(PRESSLUFT_TABLET_MAGIC_NUMBER);
+            out.writeInt(TABLET_MAGIC_NUMBER);
             out.writeUTF(schema.toString());
             out.writeInt(columns.size());
             for (SchemaNode schema : columns.keySet()) {
@@ -58,6 +86,10 @@ public class InMemoryWriteonlyTablet implements Tablet {
         return arrayOut.toByteArray();
     }
 
+    /**
+     * Recurses on the schema and creates column writers for all fields of the
+     * schema. The column writers write to a {@link ByteArrayOutputStream}.
+     */
     private void createColumns(SchemaNode schema) {
         ByteArrayOutputStream column = new ByteArrayOutputStream();
         try {
@@ -77,6 +109,9 @@ public class InMemoryWriteonlyTablet implements Tablet {
         }
     }
 
+    /**
+     * Returns the underlying byte array for all columns.
+     */
     public Map<SchemaNode, byte[]> getColumnData() {
         Map<SchemaNode, byte[]> result = Maps.newHashMap();
 
@@ -87,14 +122,26 @@ public class InMemoryWriteonlyTablet implements Tablet {
         return result;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public SchemaNode getSchema() {
         return schema;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean hasColumn(SchemaNode schema) {
         return columns.containsKey(schema);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ColumnWriter getColumnWriter(SchemaNode schema) {
         if (!columns.containsKey(schema)) {
             throw new RuntimeException(
@@ -103,17 +150,18 @@ public class InMemoryWriteonlyTablet implements Tablet {
         return columnWriters.get(schema);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ColumnReader getColumnReader(SchemaNode schema) {
         throw new RuntimeException(
                 "This is a write-only tablet, call to this should not happen. (getColumnReader)");
     }
 
-    public void flush() throws IOException {
-        for (SchemaNode schema : columns.keySet()) {
-            columnWriters.get(schema).flush();
-        }
-    }
-
+    /**
+     * Prints the data contained in the columns to stdout.
+     */
     public void printColumns() {
         try {
             flush();

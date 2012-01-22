@@ -15,6 +15,10 @@ import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordStore;
  * columnar storage. The FSM is constructed from a given {@link SchemaNode} and
  * the records can be assembled from a {@link Tablet} to a {@link RecordStore}.
  * 
+ * The algorithm is more or less taken from the dremel paper but a few additions
+ * were necessary to handle corner cases. The algorithm does not work if taken
+ * one-to-one from the paper.
+ * 
  * @author Aljoscha Krettek
  * 
  */
@@ -58,12 +62,9 @@ public class AssemblyFSM {
             SchemaNode lastSchema) throws IOException {
         // "moveTo"
         SchemaNode commonAncestor = commonAncestor(currentSchema, lastSchema);
-        if (commonAncestor.equals(currentSchema)) {
-            // No need to to anything
-        }
 
         record.returnToLevel(commonAncestor);
-        if (currentSchema.isFirstField() && commonAncestor.hasParent()) {
+        if (currentSchema.isFirstField() && !currentSchema.isRepeated() && commonAncestor.hasParent()) {
             record.returnToLevel(commonAncestor.getParent());
         }
 

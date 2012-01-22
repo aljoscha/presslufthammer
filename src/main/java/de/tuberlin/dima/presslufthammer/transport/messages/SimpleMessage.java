@@ -56,9 +56,14 @@ public class SimpleMessage {
 
 	@Override
 	public String toString() {
-		return new StringBuilder().append("Pressluft{").append(" type=")
-				.append(type).append("qid=").append(queryID).append(", payload=")
-				.append(payload == null ? null : payload.length + "bytes")
-				.append('}').toString();
+	    StringBuilder result = new StringBuilder();
+	    result.append("SimpleMessage{");
+	    result.append("type=" + type);
+	    result.append(", ");
+	    result.append("qid=" + queryID);
+	    result.append(", ");
+	    result.append("payload=" + (payload == null ? null : payload.length + " bytes"));
+	    result.append("}");
+	    return result.toString();
 	}
 }

@@ -28,7 +28,7 @@ public class OnDiskDataStore implements DataStore {
 
     public static OnDiskDataStore openDataStore(File directory)
             throws IOException {
-        if (!directory.exists() && directory.isDirectory()) {
+        if (!directory.exists() || !directory.isDirectory()) {
             throw new IOException(
                     "Directory given in openDataStore does not exist or is not a directory.");
         }

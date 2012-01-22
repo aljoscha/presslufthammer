@@ -54,8 +54,8 @@ public class Leaf extends ChannelNode implements Stoppable {
         try {
             dataStore = OnDiskDataStore.openDataStore(dataDirectory);
         } catch (IOException e) {
-            log.warn("Exception caught while while loading datastore: {}", e
-                    .getCause().getMessage());
+            log.warn("Exception caught while while loading datastore: {}",
+                    e.getMessage());
         }
     }
 

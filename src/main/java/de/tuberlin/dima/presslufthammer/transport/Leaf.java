@@ -18,9 +18,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Sets;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
-import de.tuberlin.dima.presslufthammer.data.ondisk.OnDiskDataStore;
+import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.ondisk.OnDiskDataStore;
 import de.tuberlin.dima.presslufthammer.qexec.TabletProjector;
 import de.tuberlin.dima.presslufthammer.query.Projection;
 import de.tuberlin.dima.presslufthammer.query.Query;

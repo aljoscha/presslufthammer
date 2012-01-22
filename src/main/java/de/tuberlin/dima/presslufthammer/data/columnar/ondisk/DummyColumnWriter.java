@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.data.ondisk;
+package de.tuberlin.dima.presslufthammer.data.columnar.ondisk;
 
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;

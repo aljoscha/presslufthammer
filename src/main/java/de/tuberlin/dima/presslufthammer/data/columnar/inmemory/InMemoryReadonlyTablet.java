@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.data.columnar;
+package de.tuberlin.dima.presslufthammer.data.columnar.inmemory;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -10,6 +10,10 @@ import com.google.common.collect.Maps;
 
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderImpl;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
+import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
 public class InMemoryReadonlyTablet implements Tablet {
     private SchemaNode schema;
@@ -104,19 +108,35 @@ public class InMemoryReadonlyTablet implements Tablet {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public SchemaNode getSchema() {
         return schema;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean hasColumn(SchemaNode schema) {
         return columns.containsKey(schema);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ColumnWriter getColumnWriter(SchemaNode schema) {
         throw new RuntimeException(
                 "This is a read-only tablet, call to this should not happen. (getColumnWriter)");
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ColumnReader getColumnReader(SchemaNode schema) {
         if (!columns.containsKey(schema)) {
             throw new RuntimeException(

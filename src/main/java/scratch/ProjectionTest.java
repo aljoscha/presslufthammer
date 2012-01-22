@@ -11,8 +11,8 @@ import de.tuberlin.dima.presslufthammer.data.AssemblyFSM;
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryReadonlyTablet;
-import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryWriteonlyTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryReadonlyTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordFile;
 
 public class ProjectionTest {

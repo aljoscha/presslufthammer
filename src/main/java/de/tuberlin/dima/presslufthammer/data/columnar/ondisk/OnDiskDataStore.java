@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.data.ondisk;
+package de.tuberlin.dima.presslufthammer.data.columnar.ondisk;
 
 import java.io.File;
 import java.io.IOException;

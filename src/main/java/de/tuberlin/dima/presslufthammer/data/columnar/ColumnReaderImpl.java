@@ -9,12 +9,24 @@ import java.io.InputStream;
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 
+/**
+ * Implementation of the {@link ColumnReader} interface that reads column data
+ * from an {@link InputStream}. The data in that {@link InputStream} must of
+ * course be organized in such a way that this class understands it,
+ * {@link ColumnWriterImpl} writes column data in such a way.
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public class ColumnReaderImpl implements ColumnReader {
     private SchemaNode schema;
     private DataInputStream in;
     private int nextRepetition;
     private int nextDefinition;
 
+    /**
+     * Constructs a column reader from the given input stream.
+     */
     public ColumnReaderImpl(SchemaNode schema, InputStream inputStream)
             throws IOException {
         this.schema = schema;
@@ -22,10 +34,10 @@ public class ColumnReaderImpl implements ColumnReader {
         readNextLevels();
     }
 
-    public SchemaNode getSchema() {
-        return schema;
-    }
-
+    /**
+     * Internal method that reads the next levels from the input stream and sets
+     * both to -1 when EOF is reached.
+     */
     private void readNextLevels() throws IOException {
         try {
             nextRepetition = in.readInt();
@@ -37,16 +49,25 @@ public class ColumnReaderImpl implements ColumnReader {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean hasNext() {
         return nextRepetition >= 0;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean nextIsNull() {
         return nextDefinition < schema.getMaxDefinition();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getNextRepetition() {
         if (hasNext()) {
@@ -55,6 +76,9 @@ public class ColumnReaderImpl implements ColumnReader {
         return 0; // seems to work with the assembly fsm
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getNextDefinition() {
         if (hasNext()) {
@@ -63,6 +87,9 @@ public class ColumnReaderImpl implements ColumnReader {
         return 0; // seems to work with the assembly fsm
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Object getNextValue() throws IOException {
         if (hasNext()) {
@@ -87,6 +114,9 @@ public class ColumnReaderImpl implements ColumnReader {
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getNextInt32() throws IOException {
         if (hasNext()) {
@@ -104,6 +134,9 @@ public class ColumnReaderImpl implements ColumnReader {
                 "Has no next value, getNext* should not have been called.");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getNextInt64() throws IOException {
         if (hasNext()) {
@@ -121,6 +154,9 @@ public class ColumnReaderImpl implements ColumnReader {
                 "Has no next value, getNext* should not have been called.");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean getNextBool() throws IOException {
         if (hasNext()) {
@@ -138,6 +174,9 @@ public class ColumnReaderImpl implements ColumnReader {
                 "Has no next value, getNext* should not have been called.");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public float getNextFloat() throws IOException {
         if (hasNext()) {
@@ -155,6 +194,9 @@ public class ColumnReaderImpl implements ColumnReader {
                 "Has no next value, getNext* should not have been called.");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public double getNextDouble() throws IOException {
         if (hasNext()) {
@@ -172,6 +214,9 @@ public class ColumnReaderImpl implements ColumnReader {
                 "Has no next value, getNext* should not have been called.");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getNextString() throws IOException {
         if (hasNext()) {

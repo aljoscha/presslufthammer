@@ -13,7 +13,7 @@ import com.google.common.collect.Lists;
 
 import de.tuberlin.dima.presslufthammer.data.AssemblyFSM;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.columnar.InMemoryReadonlyTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryReadonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordPrinter;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;

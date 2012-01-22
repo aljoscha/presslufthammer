@@ -7,8 +7,8 @@ import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.ondisk.OnDiskDataStore;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordFile;
-import de.tuberlin.dima.presslufthammer.data.ondisk.OnDiskDataStore;
 
 public class Columnarizer {
 

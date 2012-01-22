@@ -4,6 +4,13 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.Field;
 
+/**
+ * {@link Field} implementation for record fields. This provides an aditional
+ * method to get the underlying raw data of the record field.
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public class RecordField extends Field {
     private final Object data;
 
@@ -29,6 +36,6 @@ public class RecordField extends Field {
     @Override
     public void writeToColumn(ColumnWriter writer, int repetitionLevel,
             int definitionLevel) {
-       // Do nothing for now ... 
+        // Do nothing for now ...
     }
 }

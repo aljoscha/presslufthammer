@@ -5,6 +5,12 @@ import java.io.IOException;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
+/**
+ * {@link Field} implementation for float values.
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public class FloatField extends PrimitiveField {
     private final float value;
 

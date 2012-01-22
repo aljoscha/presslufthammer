@@ -5,6 +5,12 @@ import java.io.IOException;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
+/**
+ * {@link Field} implementation for string values.
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public class StringField extends PrimitiveField {
     private final String value;
 

@@ -5,6 +5,12 @@ import java.io.IOException;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 
+/**
+ * {@link Field} implementation for double values.
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public class DoubleField extends PrimitiveField {
     private final double value;
 

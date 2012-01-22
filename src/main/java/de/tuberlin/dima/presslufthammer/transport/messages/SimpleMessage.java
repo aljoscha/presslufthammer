@@ -39,21 +39,6 @@ public class SimpleMessage {
 		this.queryID = queryID;
 	}
 
-	public static SimpleMessage getQueryMSG(byte qid, String query) {
-		// TODO
-		Type type = Type.INTERNAL_QUERY;
-		byte[] payload = query.getBytes();
-
-		return new SimpleMessage(type, qid, payload);
-	}
-	
-	public static SimpleMessage getQueryMSG(String query) {
-		Type type = Type.INTERNAL_QUERY;
-		byte[] payload = query.getBytes();
-
-		return new SimpleMessage(type, (byte) 0, payload);
-	}
-
 	@Override
 	public String toString() {
 	    StringBuilder result = new StringBuilder();

@@ -28,7 +28,7 @@ public class DataSource {
 	 */
 	@Override
 	public String toString() {
-		String string = "DataSource: " + schema.getName() + "@" + schemapath + "Partitions: " + numPartitions;
+		String string = "DataSource: " + schema.getName() + "@" + schemapath + ", Partitions: " + numPartitions;
 		return string;
 	}
 

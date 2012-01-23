@@ -35,6 +35,8 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 	private Map<String, DataSource> dataSourceMap = null;
 	private ParseState parseState = ParseState.DS;
 	private DataSource currentSource = null;
+	
+	private File xmlPath;
 
 	private static String convertToFileURL(String filename) {
 		String path = new File(filename).getAbsolutePath();
@@ -50,6 +52,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 	public Map<String, DataSource> readFromXML(String path)
 			throws ParserConfigurationException, SAXException, IOException {
 
+	    this.xmlPath = new File(path);
 		log.debug("attempting to parse " + path);
 
 		SAXParserFactory spf = SAXParserFactory.newInstance();
@@ -82,8 +85,9 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 			try {
 				String name = attributes.getValue(0);
 				String path = attributes.getValue(1);
+				File schemaFile = new File(xmlPath.getParentFile(), path);
 				int parts = Integer.valueOf(attributes.getValue(2));
-				currentSource = new DataSource(path, parts);
+				currentSource = new DataSource(schemaFile.getAbsolutePath(), parts);
 				dataSourceMap.put(name, currentSource);
 				parseState = ParseState.DS;
 			} catch (Exception e) {

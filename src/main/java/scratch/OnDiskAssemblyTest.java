@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import com.google.common.io.Resources;
-
 import de.tuberlin.dima.presslufthammer.data.AssemblyFSM;
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
@@ -17,21 +15,22 @@ public class OnDiskAssemblyTest {
 
     public static void main(String[] args) throws FileNotFoundException,
             IOException {
-        SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(Resources
-                .getResource("Document.proto").getFile());
+        SchemaNode schema = ProtobufSchemaHelper
+                .readSchemaFromFile("src/main/example-data/Document.proto");
         System.out.println(schema.toString());
-        
-        JSONRecordFile records = new JSONRecordFile(schema, Resources
-                .getResource("documents.json").getFile());
+
+        JSONRecordFile records = new JSONRecordFile(schema,
+                "src/main/example-data/documents.json");
 
         OnDiskTablet.removeTablet(new File("documents.tablet"));
-        OnDiskTablet tablet = OnDiskTablet.createTablet(schema, new File("documents.tablet"));
+        OnDiskTablet tablet = OnDiskTablet.createTablet(schema, new File(
+                "documents.tablet"));
         FieldStriper striper = new FieldStriper(schema);
         striper.dissectRecords(records, tablet);
         tablet.flush();
 
         AssemblyFSM fsm = new AssemblyFSM(schema);
-//        System.out.println(fsm.toString());
+        // System.out.println(fsm.toString());
 
         (new File("documents-out.json")).delete();
         JSONRecordFile outRecords = new JSONRecordFile(schema,
@@ -39,16 +38,15 @@ public class OnDiskAssemblyTest {
 
         fsm.assembleRecords(tablet, outRecords);
         tablet.close();
-        
-        
-        
+
         // Now reopen the tablet ...
-        
-        OnDiskTablet reopenedTablet = OnDiskTablet.openTablet(new File("documents.tablet"));
+
+        OnDiskTablet reopenedTablet = OnDiskTablet.openTablet(new File(
+                "documents.tablet"));
         SchemaNode reopenedSchema = reopenedTablet.getSchema();
-        
+
         AssemblyFSM reopenedFsm = new AssemblyFSM(reopenedSchema);
-//        System.out.println(fsm.toString());
+        // System.out.println(fsm.toString());
 
         (new File("documents-out2.json")).delete();
         JSONRecordFile outRecords2 = new JSONRecordFile(reopenedSchema,
@@ -56,7 +54,7 @@ public class OnDiskAssemblyTest {
 
         reopenedFsm.assembleRecords(reopenedTablet, outRecords2);
         reopenedTablet.close();
-        
+
     }
 
 }

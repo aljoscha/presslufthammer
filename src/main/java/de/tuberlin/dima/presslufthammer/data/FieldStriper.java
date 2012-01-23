@@ -35,7 +35,8 @@ public final class FieldStriper {
     /**
      * Dissects records from the given record store to the target tablet.
      */
-    public void dissectRecords(RecordStore records, Tablet targetTablet) throws IOException {
+    public void dissectRecords(RecordStore records, Tablet targetTablet)
+            throws IOException {
         rootWriter = createWriterTree(null, this.schema, targetTablet);
         RecordIterator iterator = records.recordIterator();
         RecordDecoder decoder = iterator.next();
@@ -80,7 +81,10 @@ public final class FieldStriper {
      */
     private FieldWriter createWriterTree(FieldWriter parent, SchemaNode schema,
             Tablet targetTablet) {
-        ColumnWriter columnWriter = targetTablet.getColumnWriter(schema);
+        ColumnWriter columnWriter = null;
+        if (schema.isPrimitive()) {
+            columnWriter = targetTablet.getColumnWriter(schema);
+        }
         FieldWriter fieldWriter = new FieldWriter(parent, schema, columnWriter);
         if (schema.isRecord()) {
             for (SchemaNode childSchema : schema.getFieldList()) {

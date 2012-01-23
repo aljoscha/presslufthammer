@@ -3,8 +3,6 @@ package scratch;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import com.google.common.io.Resources;
-
 import de.tuberlin.dima.presslufthammer.data.AssemblyFSM;
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
@@ -17,20 +15,22 @@ public class AssemblyTest {
 
     public static void main(String[] args) throws FileNotFoundException,
             IOException {
-        SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(Resources
-                .getResource("Document.proto").getFile());
+        SchemaNode schema = ProtobufSchemaHelper
+                .readSchemaFromFile("src/main/example-data/Document.proto");
 
         System.out.println(schema.toString());
-        JSONRecordFile records = new JSONRecordFile(schema, Resources
-                .getResource("documents.json").getFile());
+        JSONRecordFile records = new JSONRecordFile(schema,
+                "src/main/example-data/documents.json");
 
-        InMemoryWriteonlyTablet inMemoryTablet = new InMemoryWriteonlyTablet(schema);
+        InMemoryWriteonlyTablet inMemoryTablet = new InMemoryWriteonlyTablet(
+                schema);
         FieldStriper striper = new FieldStriper(schema);
         striper.dissectRecords(records, inMemoryTablet);
 
         inMemoryTablet.printColumns();
-        
-        InMemoryReadonlyTablet tablet = new InMemoryReadonlyTablet(inMemoryTablet);
+
+        InMemoryReadonlyTablet tablet = new InMemoryReadonlyTablet(
+                inMemoryTablet);
 
         AssemblyFSM fsm = new AssemblyFSM(schema);
         System.out.println(fsm.toString());

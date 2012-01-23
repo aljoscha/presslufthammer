@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-import com.google.common.io.Resources;
 
 import de.tuberlin.dima.presslufthammer.data.AssemblyFSM;
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
@@ -19,32 +18,34 @@ public class ProjectionTest {
 
     public static void main(String[] args) throws FileNotFoundException,
             IOException {
-        SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(Resources
-                .getResource("Document.proto").getFile());
+        SchemaNode schema = ProtobufSchemaHelper
+                .readSchemaFromFile("src/main/example-data/Document.proto");
 
         System.out.println("ORIGINAL SCHEMA:");
         System.out.println(schema);
         System.out.println("-------------------------");
 
-        Set<String> projectedFields = Sets.newHashSet("Document.DocId",
-                "Document.Name.Language.Code", "Document.Name.Language.Country");
+        Set<String> projectedFields = Sets
+                .newHashSet("Document.DocId", "Document.Name.Language.Code",
+                        "Document.Name.Language.Country");
         SchemaNode projectedSchema = schema.project(projectedFields);
 
         System.out.println("PROJECTED SCHEMA:");
         System.out.println(projectedSchema);
         System.out.println("-------------------------");
-        
-        
-        JSONRecordFile records = new JSONRecordFile(schema, Resources
-                .getResource("documents.json").getFile());
 
-        InMemoryWriteonlyTablet writeTablet = new InMemoryWriteonlyTablet(schema);
+        JSONRecordFile records = new JSONRecordFile(schema,
+                "src/main/example-data/documents.json");
+
+        InMemoryWriteonlyTablet writeTablet = new InMemoryWriteonlyTablet(
+                schema);
         FieldStriper striper = new FieldStriper(schema);
         striper.dissectRecords(records, writeTablet);
 
         writeTablet.printColumns();
-        
-        InMemoryReadonlyTablet readTablet = new InMemoryReadonlyTablet(writeTablet);
+
+        InMemoryReadonlyTablet readTablet = new InMemoryReadonlyTablet(
+                writeTablet);
 
         AssemblyFSM fsm = new AssemblyFSM(projectedSchema);
         System.out.println(fsm.toString());

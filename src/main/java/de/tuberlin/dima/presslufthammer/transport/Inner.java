@@ -12,6 +12,8 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -27,8 +29,8 @@ import de.tuberlin.dima.presslufthammer.transport.messages.Type;
  * 
  */
 public class Inner extends ChannelNode {
-	private static final SimpleMessage REGMSG = new SimpleMessage(Type.REGINNER, (byte) 0,
-			"Hello".getBytes());
+	private static final SimpleMessage REGMSG = new SimpleMessage(
+			Type.REGINNER, (byte) 0, "Hello".getBytes());
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
 	ChannelGroup childChannels = new DefaultChannelGroup();
@@ -62,7 +64,7 @@ public class Inner extends ChannelNode {
 						Executors.newCachedThreadPool()));
 
 		// Set up the event pipeline factory.
-		bootstrap.setPipelineFactory(new InnerPipelineFac(this));
+		bootstrap.setPipelineFactory(new GenericPipelineFac(this));
 
 		// Bind and start to accept incoming connections.
 		bootstrap.bind(new InetSocketAddress(port));
@@ -81,10 +83,14 @@ public class Inner extends ChannelNode {
 		return Integer.parseInt(temp[temp.length - 1]);
 	}
 
-
-	/* (non-Javadoc)
-	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#connectNReg(java.net.SocketAddress)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * de.tuberlin.dima.presslufthammer.transport.ChannelNode#connectNReg(java
+	 * .net.SocketAddress)
 	 */
+	@Override
 	public boolean connectNReg(SocketAddress address) {
 		// TODO
 		ClientBootstrap bootstrap = new ClientBootstrap(
@@ -92,7 +98,7 @@ public class Inner extends ChannelNode {
 						Executors.newCachedThreadPool(),
 						Executors.newCachedThreadPool()));
 
-		bootstrap.setPipelineFactory(new InnerPipelineFac(this));
+		bootstrap.setPipelineFactory(new GenericPipelineFac(this));
 		ChannelFuture connectFuture = bootstrap.connect(address);
 
 		connectFuture.addListener(new ChannelFutureListener() {
@@ -121,9 +127,13 @@ public class Inner extends ChannelNode {
 		// TODO
 		childChannels.add(channel);
 	}
-	
-	/* (non-Javadoc)
-	 * @see de.tuberlin.dima.presslufthammer.transport.ChannelNode#query(de.tuberlin.dima.presslufthammer.pressluft.Pressluft)
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * de.tuberlin.dima.presslufthammer.transport.ChannelNode#query(de.tuberlin
+	 * .dima.presslufthammer.pressluft.Pressluft)
 	 */
 	@Override
 	public void query(SimpleMessage query) {
@@ -136,5 +146,44 @@ public class Inner extends ChannelNode {
 	public void handleResult(SimpleMessage prsslft) {
 		// TODO
 		coordChan.write(prsslft);
+	}
+
+	@Override
+	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+
+		if (e.getMessage() instanceof SimpleMessage) {
+			SimpleMessage message = (SimpleMessage) e.getMessage();
+			log.info(message.getType() + " from "
+					+ e.getRemoteAddress().toString());
+
+			switch (message.getType()) {
+			case ACK:
+				// not used yet
+				break;
+			case INFO:
+				// not used yet
+				break;
+			case INTERNAL_QUERY:
+				// TODO split query and hand parts over to children
+				this.query(message);
+				break;
+			case REGINNER:
+				// not used yet
+				break;
+			case REGLEAF:
+				// TODO handle new leaf connection
+				openChannels.add(e.getChannel());
+				this.regChild(e.getChannel());
+				break;
+			case INTERNAL_RESULT:
+				// TODO accumulate results; combine them; send them to parent;
+				this.handleResult(message);
+				break;
+			case UNKNOWN:
+				// not used yet
+				break;
+
+			}
+		}
 	}
 }

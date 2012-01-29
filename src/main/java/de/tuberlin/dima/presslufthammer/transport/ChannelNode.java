@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 
@@ -27,8 +30,8 @@ public abstract class ChannelNode implements Closeable {
 	/**
 	 * see connectNReg( SocketAddress)
 	 * 
-	 * @param host
-	 * @param port
+	 * @param host IP or hostname of target
+	 * @param port host's port
 	 * @return true if connection was established successfully
 	 */
 	public boolean connectNReg(String host, int port) {
@@ -36,7 +39,7 @@ public abstract class ChannelNode implements Closeable {
 	}
 
 	/**
-	 * @param address
+	 * @param address target address
 	 * @return true if connection was established successfully
 	 */
 	public boolean connectNReg(SocketAddress address) {
@@ -48,8 +51,10 @@ public abstract class ChannelNode implements Closeable {
 	 */
 	public void query(String query) {
 		if (query != null && query.length() > 0) {
+//			Query q = new Query(query);
 //			query(SimpleMessage.getQueryMSG(query));
 		}
+		return;
 	}
 
 	/**
@@ -66,5 +71,12 @@ public abstract class ChannelNode implements Closeable {
 	 */
 	public void close() throws IOException {
 		openChannels.close().awaitUninterruptibly();
+	}
+	
+	
+	public abstract void messageReceived(ChannelHandlerContext ctx, MessageEvent e);
+
+	public void removeChannel(Channel channel) {
+		openChannels.remove(channel);
 	}
 }

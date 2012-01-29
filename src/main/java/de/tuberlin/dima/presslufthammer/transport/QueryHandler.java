@@ -81,6 +81,9 @@ public class QueryHandler {
 	    writer.flush();
 	    
 		if (client != null) {
+			if(outArray.size() < 1) {
+				log.warn("Assembled response has size {}", outArray.size());
+			}
 			client.write(new SimpleMessage(Type.CLIENT_RESULT, queryID, outArray.toByteArray()));
 		} else {
 		    log.warn("No client in QueryHandler.");

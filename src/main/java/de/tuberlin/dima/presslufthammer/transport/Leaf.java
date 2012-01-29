@@ -11,6 +11,8 @@ import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +67,7 @@ public class Leaf extends ChannelNode implements Stoppable {
                 Executors.newCachedThreadPool());
         bootstrap = new ClientBootstrap(factory);
 
-        bootstrap.setPipelineFactory(new LeafPipelineFac(this));
+        bootstrap.setPipelineFactory(new GenericPipelineFac(this));
         bootstrap.setOption("connectTimeoutMillis", CONNECT_TIMEOUT);
 
         SocketAddress address = new InetSocketAddress(serverHost, serverPort);
@@ -131,6 +133,34 @@ public class Leaf extends ChannelNode implements Stoppable {
         // TODO
         log.debug("Query received: " + query);
     }
+
+	@Override
+	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+		log.debug("Message received from {}.", e.getRemoteAddress());
+		if (e.getMessage() instanceof SimpleMessage) {
+			SimpleMessage simpleMsg = ((SimpleMessage) e.getMessage());
+			log.debug("Message: {}", simpleMsg.toString());
+            switch (simpleMsg.getType()) {
+            case ACK:
+                break;
+            case INFO:
+                // InetSocketAddress innerAddress = getSockAddrFromBytes(pressluft
+                // .getPayload());
+                // // leaf.close();
+                // leaf.connectNReg(innerAddress);
+                break;
+            case INTERNAL_QUERY:
+                this.query(simpleMsg);
+                break;
+            case REGINNER:
+            case REGLEAF:
+            case INTERNAL_RESULT:
+            case UNKNOWN:
+                break;
+
+            }
+        }
+	}
 
     @Override
     public void stop() {

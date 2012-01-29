@@ -12,6 +12,8 @@ import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +30,7 @@ import de.tuberlin.dima.presslufthammer.transport.messages.Type;
  * 
  */
 
-public class CLIClient {
+public class CLIClient extends ChannelNode {
 
     private static final SimpleMessage REGMSG = new SimpleMessage(
             de.tuberlin.dima.presslufthammer.transport.messages.Type.REGCLIENT,
@@ -52,7 +54,7 @@ public class CLIClient {
                 Executors.newCachedThreadPool());
         bootstrap = new ClientBootstrap(factory);
 
-        bootstrap.setPipelineFactory(new ClientPipelineFac(this));
+        bootstrap.setPipelineFactory(new GenericPipelineFac(this));
 
         SocketAddress address = new InetSocketAddress(coordinatorHost,
                 coordinatorPort);
@@ -74,7 +76,8 @@ public class CLIClient {
         }
     }
 
-    public void query(SimpleMessage query) {
+    @Override
+	public void query(SimpleMessage query) {
         if (query != null && coordinatorChannel != null
                 && coordinatorChannel.isConnected()
                 && coordinatorChannel.isWritable()) {
@@ -86,6 +89,28 @@ public class CLIClient {
         String resultString = new String(message.getPayload());
         System.out.println(resultString);
     }
+
+	@Override
+	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+
+        log.debug("Message received from {}.", e.getRemoteAddress());
+        if (e.getMessage() instanceof SimpleMessage) {
+            SimpleMessage message = ((SimpleMessage) e.getMessage());
+            log.debug("Message: {}", message.toString());
+            switch (message.getType()) {
+            case ACK:
+            case INFO:
+            case INTERNAL_QUERY:
+            case REGINNER:
+            case REGLEAF:
+                break;
+            case CLIENT_RESULT:
+                this.handleResult(message);
+            case UNKNOWN:
+                break;
+            }
+        }
+	}
 
     public void stop() throws IOException {
         if (coordinatorChannel != null) {

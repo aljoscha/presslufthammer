@@ -16,6 +16,7 @@ import de.tuberlin.dima.presslufthammer.transport.messages.Encoder;
 /**
  * @author feichh
  * 
+ * @deprecated replaced by generic version
  */
 public class InnerPipelineFac implements ChannelPipelineFactory {
 	private final Inner inner;

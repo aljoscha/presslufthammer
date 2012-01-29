@@ -18,7 +18,7 @@ import de.tuberlin.dima.presslufthammer.transport.messages.Type;
 public class QueryTest {
     private static final String HOST = "localhost";
     private static final int PORT = 44444;
-    private static final String DATASOURCES = "DataSources.xml";
+    private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
     private static final File LEAF_DATAFIR = new File("data-dir");
 
     public static void main(String[] args) throws Exception {

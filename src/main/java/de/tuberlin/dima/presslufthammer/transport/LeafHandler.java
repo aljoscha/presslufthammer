@@ -21,6 +21,8 @@ import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
  * @author feichh
  * @author Aljoscha Krettek
  * 
+ * @deprecated replaced by generic version
+ * 
  */
 public class LeafHandler extends SimpleChannelHandler {
     private final Logger log = LoggerFactory.getLogger(getClass());

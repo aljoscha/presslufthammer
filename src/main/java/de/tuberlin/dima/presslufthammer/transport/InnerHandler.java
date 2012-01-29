@@ -18,6 +18,7 @@ import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 /**
  * @author feichh
  * 
+ * @deprecated replaced by generic version
  */
 public class InnerHandler extends SimpleChannelHandler {
 	private final Logger log = LoggerFactory.getLogger(getClass());

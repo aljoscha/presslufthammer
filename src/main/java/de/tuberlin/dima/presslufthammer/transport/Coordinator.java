@@ -61,7 +61,7 @@ public class Coordinator extends ChannelNode implements Stoppable {
 			log.info("Read datasources from {}.", dataSources);
 			log.info(tables.toString());
 		} catch (Exception e) {
-			log.warn("Error reading datasources from {}.", dataSources);
+			log.warn("Error reading datasources from {}: {}", dataSources, e.getMessage());
 			if (tables == null) {
 				tables = Maps.newHashMap();
 			}

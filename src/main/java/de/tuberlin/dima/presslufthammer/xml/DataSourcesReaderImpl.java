@@ -53,7 +53,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 			throws ParserConfigurationException, SAXException, IOException {
 
 	    this.xmlPath = new File(path);
-		log.debug("attempting to parse " + path);
+		log.debug("Attempting to read data sources from {}.", path);
 
 		SAXParserFactory spf = SAXParserFactory.newInstance();
 		spf.setNamespaceAware(true);
@@ -68,7 +68,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 	@Override
 	public void startDocument() throws SAXException {
 
-		log.debug("document started");
+		log.debug("Document started.");
 		dataSourceMap = new HashMap<String, DataSource>();
 		parseState = ParseState.START;
 		currentSource = null;
@@ -123,7 +123,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 	@Override
 	public void endDocument() throws SAXException {
 
-		log.debug("document ended");
+		log.debug("Document ended.");
 		super.endDocument();
 	}
 

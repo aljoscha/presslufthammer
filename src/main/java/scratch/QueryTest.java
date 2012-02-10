@@ -19,15 +19,15 @@ public class QueryTest {
     private static final String HOST = "localhost";
     private static final int PORT = 44444;
     private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
-    private static final File LEAF_DATAFIR = new File("data-dir");
+    private static final File LEAF_DATADIR = new File("data-dir");
 
     public static void main(String[] args) throws Exception {
 
         Coordinator coord = new Coordinator(PORT, DATASOURCES);
         coord.start();
-        Leaf leaf1 = new Leaf(HOST, PORT, LEAF_DATAFIR);
-        Leaf leaf2 = new Leaf(HOST, PORT, LEAF_DATAFIR);
-        Leaf leaf3 = new Leaf(HOST, PORT, LEAF_DATAFIR);
+        Leaf leaf1 = new Leaf(HOST, PORT, LEAF_DATADIR);
+        Leaf leaf2 = new Leaf(HOST, PORT, LEAF_DATADIR);
+        Leaf leaf3 = new Leaf(HOST, PORT, LEAF_DATADIR);
         leaf1.start();
         leaf2.start();
         leaf3.start();

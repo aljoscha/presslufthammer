@@ -13,9 +13,11 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.slf4j.Logger;
@@ -62,7 +64,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	private NodeStatus status = NodeStatus.STARTUP;
 
 	private OnDiskDataStore dataStore;
-	private ChannelGroup childChannels;
+	private ChannelGroup childChannels = new DefaultChannelGroup();
 
 	public Slave(String serverHost, int serverPort, File dataDirectory) {
 		this.serverHost = serverHost;
@@ -90,20 +92,32 @@ public class Slave extends ChannelNode implements Stoppable {
 
 		ChannelFuture connectFuture = bootstrap.connect(address);
 
-		if (connectFuture.awaitUninterruptibly().isSuccess()) {
-			coordinatorChannel = connectFuture.getChannel();
-			parentChannel = coordinatorChannel;
-			coordinatorChannel.write(REGMSG);
-			log.info("Connected to coordinator at {}:{}", serverHost,
-					serverPort);
-			Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
-		} else {
-			bootstrap.releaseExternalResources();
-			log.info("Failed to conncet to coordinator at {}:{}", serverHost,
-					serverPort);
-		}
-		serve();
-		status = NodeStatus.LEAF;
+		// if (connectFuture.awaitUninterruptibly().isSuccess()) {
+		// coordinatorChannel = connectFuture.getChannel();
+		// parentChannel = coordinatorChannel;
+		// coordinatorChannel.write(REGMSG);
+		// log.info("Connected to coordinator at {}:{}", serverHost,
+		// serverPort);
+		// Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
+		// } else {
+		// bootstrap.releaseExternalResources();
+		// log.info("Failed to conncet to coordinator at {}:{}", serverHost,
+		// serverPort);
+		// }
+		connectFuture.addListener(new ChannelFutureListener() {
+			public void operationComplete(ChannelFuture future)
+					throws Exception {
+				coordinatorChannel = future.getChannel();
+				parentChannel = coordinatorChannel;
+				openChannels.add(coordinatorChannel);
+				coordinatorChannel.write(REGMSG);
+				log.info("Connected to coordinator at {}",
+						coordinatorChannel.getRemoteAddress());
+				serve();
+				status = NodeStatus.LEAF;
+			}
+		});
+		Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
 	}
 
 	/**
@@ -122,8 +136,19 @@ public class Slave extends ChannelNode implements Stoppable {
 		bootstrap.setPipelineFactory(new GenericPipelineFac(this));
 
 		// Bind and start to accept incoming connections.
-		bootstrap.bind(new InetSocketAddress(port));
-		log.info("serving on port: " + port);
+		boolean unbound = true;
+		int attempts = 0;
+		do {
+			attempts++;
+			try {
+				bootstrap.bind(new InetSocketAddress(port));
+				unbound = false;
+				log.info("serving on port: " + port);
+			} catch (org.jboss.netty.channel.ChannelException e) {
+				log.warn("failed to bind at " + port);
+				port++;
+			}
+		} while (unbound && attempts < 10);
 	}
 
 	/**
@@ -145,37 +170,52 @@ public class Slave extends ChannelNode implements Stoppable {
 
 		String table = query.getFrom();
 
-		try {
-			Tablet tablet = dataStore.getTablet(table, query.getPart());
-			log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
-					query.getPart());
-
-			Set<String> projectedFields = Sets.newHashSet();
-			for (Projection project : query.getSelect()) {
-				projectedFields.add(project.getColumn());
+		switch (status) {
+		case INNER:
+			// TODO rewriting of query
+			for (Channel c : childChannels) {
+				log.debug("querying: " + c.getRemoteAddress());
+				c.write(message);
 			}
-			SchemaNode projectedSchema = null;
-			if (projectedFields.contains("*")) {
-				log.debug("Query is a 'select * ...' query.");
-				projectedSchema = tablet.getSchema();
-			} else {
+			break;
+		case LEAF:
+			try {
+				Tablet tablet = dataStore.getTablet(table, query.getPart());
+				log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
+						query.getPart());
 
-				projectedSchema = tablet.getSchema().project(projectedFields);
+				Set<String> projectedFields = Sets.newHashSet();
+				for (Projection project : query.getSelect()) {
+					projectedFields.add(project.getColumn());
+				}
+				SchemaNode projectedSchema = null;
+				if (projectedFields.contains("*")) {
+					log.debug("Query is a 'select * ...' query.");
+					projectedSchema = tablet.getSchema();
+				} else {
+
+					projectedSchema = tablet.getSchema().project(
+							projectedFields);
+				}
+
+				InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
+						projectedSchema);
+
+				TabletProjector copier = new TabletProjector();
+				copier.project(projectedSchema, tablet, resultTablet);
+
+				SimpleMessage response = new SimpleMessage(
+						Type.INTERNAL_RESULT, message.getQueryID(),
+						resultTablet.serialize());
+
+				coordinatorChannel.write(response);
+			} catch (IOException e) {
+				log.warn("Caught exception while creating result: {}",
+						e.getMessage());
 			}
-
-			InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
-					projectedSchema);
-
-			TabletProjector copier = new TabletProjector();
-			copier.project(projectedSchema, tablet, resultTablet);
-
-			SimpleMessage response = new SimpleMessage(Type.INTERNAL_RESULT,
-					message.getQueryID(), resultTablet.serialize());
-
-			coordinatorChannel.write(response);
-		} catch (IOException e) {
-			log.warn("Caught exception while creating result: {}",
-					e.getMessage());
+			break;
+		case STARTUP:
+			break;
 		}
 	}
 
@@ -229,11 +269,11 @@ public class Slave extends ChannelNode implements Stoppable {
 			Iterator<Channel> it = childChannels.iterator();
 			Channel tempChan = null;
 			int i = 0;
-			while( i < temp && it.hasNext()) {
+			while (i < temp && it.hasNext()) {
 				tempChan = it.next();
 				i++;
 			}
-			assert( tempChan != null);
+			assert (tempChan != null);
 			channel.write(new SimpleMessage(Type.REDIR, (byte) -1, null));
 		}
 	}
@@ -248,39 +288,43 @@ public class Slave extends ChannelNode implements Stoppable {
 	@Override
 	public boolean connectNReg(SocketAddress address) {
 		// TODO
+		log.info("connecting to new parent node");
+
 		ChannelFactory factory = new NioClientSocketChannelFactory(
 				Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
+
 		if (bootstrapParent != null) {
 			bootstrapParent.releaseExternalResources();
 		}
 		if (parentChannel != null) {
 			parentChannel.disconnect();
 		}
-		bootstrapParent = new ClientBootstrap(factory);
 
+		bootstrapParent = new ClientBootstrap(factory);
 		bootstrapParent.setPipelineFactory(new GenericPipelineFac(this));
 		bootstrapParent.setOption("connectTimeoutMillis", CONNECT_TIMEOUT);
-
 		ChannelFuture connectFuture = bootstrapParent.connect(address);
 
-		if (connectFuture.awaitUninterruptibly().isSuccess()) {
-			parentChannel = connectFuture.getChannel();
-			parentChannel.write(REGMSG);
-			log.info("Connected to {}", address);
-			Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
-		} else {
-			bootstrapParent.releaseExternalResources();
-			log.info("Failed to conncet {}", address);
-		}
-		// connectFuture.addListener(new ChannelFutureListener() {
-		// public void operationComplete(ChannelFuture future)
-		// throws Exception {
-		// parentChannel = future.getChannel();
-		// openChannels.add(parentChannel);
+		// if (connectFuture.awaitUninterruptibly().isSuccess()) {
+		// parentChannel = connectFuture.getChannel();
 		// parentChannel.write(REGMSG);
+		// log.info("Connected to {}", address);
+		// Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
+		// } else {
+		// bootstrapParent.releaseExternalResources();
+		// log.info("Failed to conncet {}", address);
 		// }
-		// });
+		connectFuture.addListener(new ChannelFutureListener() {
+			public void operationComplete(ChannelFuture future)
+					throws Exception {
+				parentChannel = future.getChannel();
+				openChannels.add(parentChannel);
+				parentChannel.write(REGMSG);
+				log.info("Connected to {}", parentChannel.getRemoteAddress());
+			}
+		});
+		Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
 
 		return true;
 	}

@@ -13,8 +13,10 @@ public enum Type {
 	CLIENT_RESULT((byte) 0x04), // Result in record from to client
 	REGINNER((byte) 0x05),
 	REGLEAF((byte) 0x06),
-	INFO((byte) 0x07),
+	REDIR((byte) 0x07),
 	REGCLIENT((byte) 0x08),
+//	OFFER((byte) 0x09),
+//	ACCEPT((byte) 0x0A),
 	ACK((byte) 0x09),
 	// put last since it's the least likely one to be encountered in the
 	// fromByte() function

@@ -160,7 +160,7 @@ public class Inner extends ChannelNode {
 			case ACK:
 				// not used yet
 				break;
-			case INFO:
+			case REDIR:
 				// not used yet
 				break;
 			case INTERNAL_QUERY:

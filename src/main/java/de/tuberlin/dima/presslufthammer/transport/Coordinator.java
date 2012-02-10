@@ -108,17 +108,16 @@ public class Coordinator extends ChannelNode implements Stoppable {
 				client.getLocalAddress());
 
 		if (isServing()) {
+			byte qid = nextQID();
 			if (rootChannel != null) {
 				log.info("Handing query to root node of our node tree.");
 				// // clientChans.add(client);// optional
-				// byte qid = nextQID();
 				// message.setQueryID(qid);
 				// queries.put(qid, new QueryHandler(1, message, client));
 				// rootChannel.write(message);
 
 			} else {
 				log.info("Querying leafs directly.");
-				byte qid = nextQID();
 				message.setQueryID(qid);
 				Query query = new Query(message.getPayload());
 				log.info("Received query: {}", query);
@@ -214,7 +213,7 @@ public class Coordinator extends ChannelNode implements Stoppable {
 
 	private SimpleMessage getRootInfo() {
 		// TODO
-		Type type = Type.INFO;
+		Type type = Type.REDIR;
 		byte[] payload = rootChannel.getRemoteAddress().toString().getBytes();
 		return new SimpleMessage(type, (byte) 0, payload);
 	}
@@ -279,7 +278,7 @@ public class Coordinator extends ChannelNode implements Stoppable {
 				break;
 			case UNKNOWN:
 				break;
-			case INFO:
+			case REDIR:
 				break;
 			case REGCLIENT:
 				this.addClient(e.getChannel());

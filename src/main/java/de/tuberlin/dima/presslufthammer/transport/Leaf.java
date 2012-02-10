@@ -143,7 +143,7 @@ public class Leaf extends ChannelNode implements Stoppable {
             switch (simpleMsg.getType()) {
             case ACK:
                 break;
-            case INFO:
+            case REDIR:
                 // InetSocketAddress innerAddress = getSockAddrFromBytes(pressluft
                 // .getPayload());
                 // // leaf.close();

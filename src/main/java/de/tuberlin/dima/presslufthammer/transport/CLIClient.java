@@ -99,7 +99,7 @@ public class CLIClient extends ChannelNode {
             log.debug("Message: {}", message.toString());
             switch (message.getType()) {
             case ACK:
-            case INFO:
+            case REDIR:
             case INTERNAL_QUERY:
             case REGINNER:
             case REGLEAF:

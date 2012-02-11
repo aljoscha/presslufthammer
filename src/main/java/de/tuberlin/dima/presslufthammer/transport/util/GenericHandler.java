@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.transport;
+package de.tuberlin.dima.presslufthammer.transport.util;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
@@ -9,6 +9,7 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.tuberlin.dima.presslufthammer.transport.ChannelNode;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 
 /**
@@ -46,7 +47,7 @@ public class GenericHandler extends SimpleChannelHandler {
 	@Override
 	public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
-		log.debug("Channel opened: " + e.getChannel().getRemoteAddress());
+		log.debug("Channel opened: " + e.getChannel());
 		openChannels.add(e.getChannel());
 		super.channelOpen(ctx, e);
 	}

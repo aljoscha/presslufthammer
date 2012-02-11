@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
 
 /**
  * @author feichh

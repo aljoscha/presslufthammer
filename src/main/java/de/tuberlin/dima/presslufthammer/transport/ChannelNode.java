@@ -26,7 +26,7 @@ public abstract class ChannelNode implements Closeable {
 	/**
 	 * All connected/open netty channels;
 	 */
-	ChannelGroup openChannels = new DefaultChannelGroup();
+	public ChannelGroup openChannels = new DefaultChannelGroup();
 
 	/**
 	 * see connectNReg( SocketAddress)

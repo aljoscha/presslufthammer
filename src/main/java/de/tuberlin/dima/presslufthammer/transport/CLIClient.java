@@ -23,6 +23,7 @@ import com.google.common.base.Splitter;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
 
 /**
  * @author feichh

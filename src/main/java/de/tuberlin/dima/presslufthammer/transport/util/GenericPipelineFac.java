@@ -1,13 +1,14 @@
 /**
  * 
  */
-package de.tuberlin.dima.presslufthammer.transport;
+package de.tuberlin.dima.presslufthammer.transport.util;
 
 import static org.jboss.netty.channel.Channels.pipeline;
 
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 
+import de.tuberlin.dima.presslufthammer.transport.ChannelNode;
 import de.tuberlin.dima.presslufthammer.transport.messages.Decoder;
 import de.tuberlin.dima.presslufthammer.transport.messages.Encoder;
 

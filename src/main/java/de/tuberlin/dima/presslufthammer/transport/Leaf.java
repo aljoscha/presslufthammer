@@ -28,6 +28,7 @@ import de.tuberlin.dima.presslufthammer.query.Projection;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
 

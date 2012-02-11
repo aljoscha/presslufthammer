@@ -30,13 +30,23 @@ public class SlaveTest {
 		SlaveCoordinator coord = new SlaveCoordinator(PORT, DATASOURCES);
 		coord.start();
 		
-		Slave slave1 = new Slave(HOST, PORT, LEAF_DATADIR);
-		slave1.start();
-		Thread.sleep(2000);// wait until slave1 has bound
-		Slave slave2 = new Slave(HOST, PORT, LEAF_DATADIR);
-		slave2.start();
-		Slave slave3 = new Slave(HOST, PORT, LEAF_DATADIR);
-		slave3.start();
+		Slave slave_0 = new Slave(HOST, PORT, LEAF_DATADIR);
+		slave_0.start();
+		Thread.sleep(5000);// wait until slave1 has bound
+		Slave slave_l0 = new Slave(HOST, PORT, LEAF_DATADIR);
+		Slave slave_r0 = new Slave(HOST, PORT, LEAF_DATADIR);
+		slave_l0.start();
+		Thread.sleep(5000);// wait until slave1 has bound
+		slave_r0.start();
+		Thread.sleep(5000);// wait until slave1 has bound
+		Slave slave_l1 = new Slave(HOST, PORT, LEAF_DATADIR);
+		Slave slave_l2 = new Slave(HOST, PORT, LEAF_DATADIR);
+		Slave slave_r1 = new Slave(HOST, PORT, LEAF_DATADIR);
+		Slave slave_r2 = new Slave(HOST, PORT, LEAF_DATADIR);
+//		slave_l1.start();
+//		slave_l2.start();
+//		slave_r1.start();
+//		slave_r2.start();
 //		Thread.sleep(2000);
 
 		CLIClient client = new CLIClient(HOST, PORT);
@@ -57,9 +67,13 @@ public class SlaveTest {
 		}
 
 		client.stop();
-		slave1.stop();
-		slave2.stop();
-		slave3.stop();
+		slave_l1.stop();
+		slave_l2.stop();
+		slave_r2.stop();
+		slave_r1.stop();
+		slave_l0.stop();
+		slave_r0.stop();
+		slave_0.stop();
 		coord.stop();
 	}
 }

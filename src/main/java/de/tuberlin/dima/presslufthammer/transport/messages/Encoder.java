@@ -46,6 +46,7 @@ public class Encoder extends OneToOneEncoder {
 					"Message type cannot be null or UNKNOWN");
 		}
 
+		int payloadLen = (message.getPayload() != null)? message.getPayload().length: 0;
 		if ((message.getPayload() == null)
 				|| (message.getPayload().length == 0)) {
 			throw new IllegalArgumentException(
@@ -53,12 +54,12 @@ public class Encoder extends OneToOneEncoder {
 		}
 
 		// type(1b) + qid(1b) + payload length(4b) + payload(nb)
-		int size = 6 + message.getPayload().length;
+		int size = 6 + payloadLen;
 
 		ChannelBuffer buffer = ChannelBuffers.buffer(size);
 		buffer.writeByte(message.getType().getByteValue());
 		buffer.writeByte(message.getQueryID());
-		buffer.writeInt(message.getPayload().length);
+		buffer.writeInt(payloadLen);
 		buffer.writeBytes(message.getPayload());
 
 		return buffer;

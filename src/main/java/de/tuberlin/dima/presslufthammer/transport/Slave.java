@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
@@ -34,6 +36,8 @@ import de.tuberlin.dima.presslufthammer.query.Projection;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
+import de.tuberlin.dima.presslufthammer.transport.util.ServingChannel;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
 
@@ -48,19 +52,20 @@ public class Slave extends ChannelNode implements Stoppable {
 		STARTUP, INNER, LEAF
 	}
 
-	private static final SimpleMessage REGMSG = new SimpleMessage(
-			Type.REGINNER, (byte) 0, "Hello".getBytes());
 	private static int CONNECT_TIMEOUT = 10000;
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
 	private Channel coordinatorChannel;
 	private Channel parentChannel;
+	private Channel servingChannel;
 	private ClientBootstrap bootstrap;
 	private ClientBootstrap bootstrapParent;
 	private String serverHost;
 	private int serverPort;
+	private int ownPort;
 	private final int degree;
 	private int childrenAdded = 0;
+	private List<ServingChannel> directChildren = new ArrayList<ServingChannel>();
 	private NodeStatus status = NodeStatus.STARTUP;
 
 	private OnDiskDataStore dataStore;
@@ -70,16 +75,18 @@ public class Slave extends ChannelNode implements Stoppable {
 		this.serverHost = serverHost;
 		this.serverPort = serverPort;
 		this.degree = 2;
-
-		try {
-			dataStore = OnDiskDataStore.openDataStore(dataDirectory);
-		} catch (IOException e) {
-			log.warn("Exception caught while while loading datastore: {}",
-					e.getMessage());
-		}
+		//
+		// try {
+		// dataStore = OnDiskDataStore.openDataStore(dataDirectory);
+		// } catch (IOException e) {
+		// log.warn("Exception caught while while loading datastore: {}",
+		// e.getMessage());
+		// }
 	}
 
 	public void start() {
+		ownPort = 0;
+		serve();
 		ChannelFactory factory = new NioClientSocketChannelFactory(
 				Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
@@ -108,12 +115,13 @@ public class Slave extends ChannelNode implements Stoppable {
 			public void operationComplete(ChannelFuture future)
 					throws Exception {
 				coordinatorChannel = future.getChannel();
+				// ownPort = getPortFromSocketAddress(coordinatorChannel
+				// .getLocalAddress()) + 1;
 				parentChannel = coordinatorChannel;
 				openChannels.add(coordinatorChannel);
-				coordinatorChannel.write(REGMSG);
+				coordinatorChannel.write(getRegMsg());
 				log.info("Connected to coordinator at {}",
 						coordinatorChannel.getRemoteAddress());
-				serve();
 				status = NodeStatus.LEAF;
 			}
 		});
@@ -124,8 +132,6 @@ public class Slave extends ChannelNode implements Stoppable {
 	 * 
 	 */
 	public void serve() {
-		int port = getPortFromSocketAddress(coordinatorChannel
-				.getLocalAddress()) + 1;
 		// Configure the server.
 		ServerBootstrap bootstrap = new ServerBootstrap(
 				new NioServerSocketChannelFactory(
@@ -137,18 +143,14 @@ public class Slave extends ChannelNode implements Stoppable {
 
 		// Bind and start to accept incoming connections.
 		boolean unbound = true;
-		int attempts = 0;
-		do {
-			attempts++;
-			try {
-				bootstrap.bind(new InetSocketAddress(port));
-				unbound = false;
-				log.info("serving on port: " + port);
-			} catch (org.jboss.netty.channel.ChannelException e) {
-				log.warn("failed to bind at " + port);
-				port++;
-			}
-		} while (unbound && attempts < 10);
+		try {
+			servingChannel = bootstrap.bind(new InetSocketAddress(ownPort));
+			ownPort = getPortFromSocketAddress(servingChannel.getLocalAddress());
+			unbound = false;
+			log.info("serving on port: " + ownPort);
+		} catch (org.jboss.netty.channel.ChannelException e) {
+			log.warn("failed to bind at " + ownPort);
+		}
 	}
 
 	/**
@@ -234,15 +236,13 @@ public class Slave extends ChannelNode implements Stoppable {
 			case ACK:
 				break;
 			case REDIR:
-				InetSocketAddress innerAddress = getSockAddrFromBytes(simpleMsg
-						.getPayload());
-				this.connectNReg(innerAddress);
+				this.connectNReg(getSockAddrFromBytes(simpleMsg.getPayload()));
 				break;
 			case INTERNAL_QUERY:
 				this.query(simpleMsg);
 				break;
 			case REGINNER:
-				this.addChild(e.getChannel());
+				this.addChild(e.getChannel(), simpleMsg);
 				break;
 			case REGLEAF:
 			case INTERNAL_RESULT:
@@ -258,24 +258,31 @@ public class Slave extends ChannelNode implements Stoppable {
 
 	/**
 	 * @param channel
+	 * @param simpleMsg
 	 */
-	private void addChild(Channel channel) {
+	private void addChild(Channel channel, SimpleMessage simpleMsg) {
 		// TODO
+		log.info("adding child: " + channel);
 		if (childChannels.size() < degree) {
 			status = NodeStatus.INNER;
-			this.childChannels.add(channel);
 		} else {
 			int temp = childrenAdded % degree;
 			Iterator<Channel> it = childChannels.iterator();
 			Channel tempChan = null;
 			int i = 0;
-			while (i < temp && it.hasNext()) {
+			while (i <= temp && it.hasNext()) {
 				tempChan = it.next();
 				i++;
 			}
-			assert (tempChan != null);
-			channel.write(new SimpleMessage(Type.REDIR, (byte) -1, null));
+			if (tempChan != null) {
+				tempChan.write(new SimpleMessage(Type.REDIR, (byte) -1, channel
+						.getRemoteAddress().toString().getBytes()));
+			} else {
+				log.warn("could not find parent for {}", channel);
+			}
 		}
+		childChannels.add(channel);
+		directChildren.add(new ServingChannel(channel, simpleMsg.getPayload()));
 	}
 
 	/*
@@ -288,15 +295,15 @@ public class Slave extends ChannelNode implements Stoppable {
 	@Override
 	public boolean connectNReg(SocketAddress address) {
 		// TODO
-		log.info("connecting to new parent node");
+		log.info("connecting to new parent node at {}", address);
 
 		ChannelFactory factory = new NioClientSocketChannelFactory(
 				Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
 
-		if (bootstrapParent != null) {
-			bootstrapParent.releaseExternalResources();
-		}
+		// if (bootstrapParent != null) {
+		// bootstrapParent.releaseExternalResources();
+		// }
 		if (parentChannel != null) {
 			parentChannel.disconnect();
 		}
@@ -320,13 +327,22 @@ public class Slave extends ChannelNode implements Stoppable {
 					throws Exception {
 				parentChannel = future.getChannel();
 				openChannels.add(parentChannel);
-				parentChannel.write(REGMSG);
-				log.info("Connected to {}", parentChannel.getRemoteAddress());
+				parentChannel.write(getRegMsg());
+				log.info("Connected to parent at {}",
+						parentChannel.getRemoteAddress());
 			}
 		});
 		Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
 
 		return true;
+	}
+
+	private SimpleMessage getRegMsg() {
+
+		return new SimpleMessage(Type.REGINNER, (byte) 0,
+				ServingChannel.intToByte(ownPort));
+		// return new SimpleMessage(Type.REGINNER, (byte) 0,
+		// ("" + ownPort).getBytes());
 	}
 
 	/**
@@ -336,11 +352,11 @@ public class Slave extends ChannelNode implements Stoppable {
 	private InetSocketAddress getSockAddrFromBytes(byte[] payload) {
 		// TODO
 		String temp = new String(payload);
-		log.debug(temp);
+		// log.debug(temp);
 		String[] split = temp.split(":");
 		String ipaddr = split[0].replaceAll("/", "");
-		int port = Integer.parseInt(split[1]) + 1;
-		log.debug(ipaddr + " " + port);
+		int port = Integer.parseInt(split[1]);
+		// log.debug(ipaddr + " " + port);
 		return new InetSocketAddress(ipaddr, port);
 	}
 
@@ -353,24 +369,24 @@ public class Slave extends ChannelNode implements Stoppable {
 		bootstrap.releaseExternalResources();
 		log.info("Leaf stopped.");
 	}
-
-	private static void printUsage() {
-		System.out.println("Usage:");
-		System.out.println("hostname port data-dir");
-	}
-
-	public static void main(String[] args) throws InterruptedException {
-		// Print usage if necessary.
-		if (args.length < 3) {
-			printUsage();
-			return;
-		}
-		// Parse options.
-		String host = args[0];
-		int port = Integer.parseInt(args[1]);
-		File dataDirectory = new File(args[2]);
-
-		Slave leaf = new Slave(host, port, dataDirectory);
-		leaf.start();
-	}
+	//
+	// private static void printUsage() {
+	// System.out.println("Usage:");
+	// System.out.println("hostname port data-dir");
+	// }
+	//
+	// public static void main(String[] args) throws InterruptedException {
+	// // Print usage if necessary.
+	// if (args.length < 3) {
+	// printUsage();
+	// return;
+	// }
+	// // Parse options.
+	// String host = args[0];
+	// int port = Integer.parseInt(args[1]);
+	// File dataDirectory = new File(args[2]);
+	//
+	// Slave leaf = new Slave(host, port, dataDirectory);
+	// leaf.start();
+	// }
 }

@@ -60,6 +60,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	private Channel servingChannel;
 	private ClientBootstrap bootstrap;
 	private ClientBootstrap bootstrapParent;
+	private ServerBootstrap serverBootstrap;
 	private String serverHost;
 	private int serverPort;
 	private int ownPort;
@@ -133,23 +134,23 @@ public class Slave extends ChannelNode implements Stoppable {
 	 */
 	public void serve() {
 		// Configure the server.
-		ServerBootstrap bootstrap = new ServerBootstrap(
+		// ServerBootstrap bootstrap = new ServerBootstrap(
+		serverBootstrap = new ServerBootstrap(
 				new NioServerSocketChannelFactory(
 						Executors.newCachedThreadPool(),
 						Executors.newCachedThreadPool()));
 
 		// Set up the event pipeline factory.
-		bootstrap.setPipelineFactory(new GenericPipelineFac(this));
+		serverBootstrap.setPipelineFactory(new GenericPipelineFac(this));
 
 		// Bind and start to accept incoming connections.
-		boolean unbound = true;
 		try {
-			servingChannel = bootstrap.bind(new InetSocketAddress(ownPort));
+			servingChannel = serverBootstrap
+					.bind(new InetSocketAddress(ownPort));
 			ownPort = getPortFromSocketAddress(servingChannel.getLocalAddress());
-			unbound = false;
 			log.info("serving on port: " + ownPort);
 		} catch (org.jboss.netty.channel.ChannelException e) {
-			log.warn("failed to bind at " + ownPort);
+			log.warn("failed to bind.");
 		}
 	}
 
@@ -261,6 +262,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	/**
 	 * @param channel
 	 * @param simpleMsg
+	 *            registration message
 	 */
 	private void addChild(Channel channel, SimpleMessage simpleMsg) {
 		// TODO adding a child to the slave properly and efficiently
@@ -269,14 +271,16 @@ public class Slave extends ChannelNode implements Stoppable {
 		ServingChannel newChild = new ServingChannel(channel,
 				simpleMsg.getPayload());
 
-		if (childChannels.size() < degree) {
-			// there still is room left for a direct child
+		if (childChannels.size() <= degree) {
+			// there is still room left for a direct child
 			status = NodeStatus.INNER;
 		} else {
 			// the new child has to replace one of the existing children
 			// and become it's new parent
 			// so we find the parent that should be replaced
-			ServingChannel ch = directChildren.get(childrenAdded % degree);
+			int temp = childrenAdded % degree;
+			ServingChannel ch = directChildren.get(temp);
+			directChildren.remove(temp);
 			Channel tempChan = ch.getChannel();
 			// and tell it to connect to the new child
 			tempChan.write(new SimpleMessage(Type.REDIR, (byte) -1, newChild
@@ -340,6 +344,10 @@ public class Slave extends ChannelNode implements Stoppable {
 		return true;
 	}
 
+	/**
+	 * @return Message to register with a ChannelNode, the payload being the
+	 *         port this listens for client connections
+	 */
 	private SimpleMessage getRegMsg() {
 
 		return new SimpleMessage(Type.REGINNER, (byte) 0,
@@ -350,7 +358,8 @@ public class Slave extends ChannelNode implements Stoppable {
 
 	/**
 	 * @param payload
-	 * @return
+	 *            bytes of a representative String
+	 * @return SocketAddress equivalent to the bytes provided
 	 */
 	private InetSocketAddress getSockAddrFromBytes(byte[] payload) {
 		// TODO
@@ -365,14 +374,24 @@ public class Slave extends ChannelNode implements Stoppable {
 
 	@Override
 	public void stop() {
-		log.info("Stopping leaf.");
+		// TODO proper shut down
+		log.info("Stopping slave at {}.", coordinatorChannel);
 		if (coordinatorChannel != null) {
 			coordinatorChannel.close().awaitUninterruptibly();
 		}
-		if( bootstrap != null) {
+		if (bootstrap != null) {
 			bootstrap.releaseExternalResources();
+			bootstrap = null;
 		}
-		log.info("Leaf stopped.");
+		if (bootstrapParent != null) {
+			bootstrapParent.releaseExternalResources();
+			bootstrapParent = null;
+		}
+		if (serverBootstrap != null) {
+			serverBootstrap.releaseExternalResources();
+			serverBootstrap = null;
+		}
+		log.info("Slave stopped.");
 	}
 	//
 	// private static void printUsage() {

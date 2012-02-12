@@ -3,16 +3,13 @@ package scratch;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
-import java.util.Iterator;
 
-import de.tuberlin.dima.presslufthammer.query.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.tuberlin.dima.presslufthammer.transport.CLIClient;
-import de.tuberlin.dima.presslufthammer.transport.Coordinator;
-import de.tuberlin.dima.presslufthammer.transport.Leaf;
 import de.tuberlin.dima.presslufthammer.transport.Slave;
 import de.tuberlin.dima.presslufthammer.transport.SlaveCoordinator;
-import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
 
 /**
  * Test the query handling by a Slave tree.
@@ -20,6 +17,7 @@ import de.tuberlin.dima.presslufthammer.transport.messages.Type;
  * @author Aljoscha Krettek
  */
 public class SlaveTest {
+	private static final Logger log = LoggerFactory.getLogger("SlaveTest");
 	private static final String HOST = "localhost";
 	private static final int PORT = 44444;
 	private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
@@ -27,27 +25,30 @@ public class SlaveTest {
 
 	public static void main(String[] args) throws Exception {
 
+		log.info("Test Starting");
 		SlaveCoordinator coord = new SlaveCoordinator(PORT, DATASOURCES);
 		coord.start();
 		
 		Slave slave_0 = new Slave(HOST, PORT, LEAF_DATADIR);
 		slave_0.start();
-		Thread.sleep(5000);// wait until slave1 has bound
+		log.info("Waiting for the coordinator to accept the root node.");
+		Thread.sleep(5000);// wait until slave_0 has been established as root
 		Slave slave_l0 = new Slave(HOST, PORT, LEAF_DATADIR);
 		Slave slave_r0 = new Slave(HOST, PORT, LEAF_DATADIR);
 		slave_l0.start();
-		Thread.sleep(5000);// wait until slave1 has bound
 		slave_r0.start();
 		Thread.sleep(5000);// wait until slave1 has bound
 		Slave slave_l1 = new Slave(HOST, PORT, LEAF_DATADIR);
 		Slave slave_l2 = new Slave(HOST, PORT, LEAF_DATADIR);
 		Slave slave_r1 = new Slave(HOST, PORT, LEAF_DATADIR);
 		Slave slave_r2 = new Slave(HOST, PORT, LEAF_DATADIR);
-//		slave_l1.start();
+		slave_l1.start();
 //		slave_l2.start();
 //		slave_r1.start();
 //		slave_r2.start();
 //		Thread.sleep(2000);
+		log.info("A number of slaves have been added.");
+		log.info("Starting a client to send queries.");
 
 		CLIClient client = new CLIClient(HOST, PORT);
 		client.start();
@@ -66,6 +67,7 @@ public class SlaveTest {
 			}
 		}
 
+		log.info("Test ended");
 		client.stop();
 		slave_l1.stop();
 		slave_l2.stop();

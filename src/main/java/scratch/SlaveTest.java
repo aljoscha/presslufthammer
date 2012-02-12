@@ -25,7 +25,7 @@ public class SlaveTest {
 	private static final int PORT = 44444;
 	private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
 	private static final File LEAF_DATADIR = new File("data-dir");
-	private static final int NUM_SLAVES = 16; 
+	private static final int NUM_SLAVES = 7; 
 
 	public static void main(String[] args) throws Exception {
 
@@ -61,7 +61,7 @@ public class SlaveTest {
 //		slave_r1.start();
 //		Thread.sleep(3000);
 //		slave_r2.start();
-		Thread.sleep(5000);
+		Thread.sleep(3000);
 		log.info("{} Slaves have been added.", NUM_SLAVES);
 		log.info("Starting a client to send queries.");
 

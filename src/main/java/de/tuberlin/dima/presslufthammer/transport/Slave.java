@@ -79,12 +79,12 @@ public class Slave extends ChannelNode implements Stoppable {
 		this.serverPort = serverPort;
 		this.degree = 2;
 
-		// try {
-		// dataStore = OnDiskDataStore.openDataStore(dataDirectory);
-		// } catch (IOException e) {
-		// log.warn("Exception caught while while loading datastore: {}",
-		// e.getMessage());
-		// }
+		try {
+			dataStore = OnDiskDataStore.openDataStore(dataDirectory);
+		} catch (IOException e) {
+			log.warn("Exception caught while while loading datastore: {}",
+					e.getMessage());
+		}
 	}
 
 	public void start() {
@@ -166,48 +166,48 @@ public class Slave extends ChannelNode implements Stoppable {
 		switch (status) {
 		case INNER:
 			// TODO rewriting of query
-			for (Channel c : childChannels) {
+			for (ServingChannel c : directChildren) {
 				log.debug("querying: " + c.getRemoteAddress());
 				c.write(message);
 			}
 			break;
 		case LEAF:
 			// log.debug("Query processing disabled for debugging purposes");
-			// try {
-			// Tablet tablet = dataStore.getTablet(table, query.getPart());
-			// log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
-			// query.getPart());
-			//
-			// Set<String> projectedFields = Sets.newHashSet();
-			// for (Projection project : query.getSelect()) {
-			// projectedFields.add(project.getColumn());
-			// }
-			// SchemaNode projectedSchema = null;
-			// if (projectedFields.contains("*")) {
-			// log.debug("Query is a 'select * ...' query.");
-			// projectedSchema = tablet.getSchema();
-			// } else {
-			//
-			// projectedSchema = tablet.getSchema().project(
-			// projectedFields);
-			// }
-			//
-			// InMemoryWriteonlyTablet resultTablet = new
-			// InMemoryWriteonlyTablet(
-			// projectedSchema);
-			//
-			// TabletProjector copier = new TabletProjector();
-			// copier.project(projectedSchema, tablet, resultTablet);
-			//
-			// SimpleMessage response = new SimpleMessage(
-			// Type.INTERNAL_RESULT, message.getQueryID(),
-			// resultTablet.serialize());
-			//
-			// coordinatorChannel.write(response);
-			// } catch (IOException e) {
-			// log.warn("Caught exception while creating result: {}",
-			// e.getMessage());
-			// }
+			try {
+				Tablet tablet = dataStore.getTablet(table, query.getPart());
+				log.debug("Tablet: {}:{}", tablet.getSchema()
+						.getName(),
+						query.getPart());
+
+				Set<String> projectedFields = Sets.newHashSet();
+				for (Projection project : query.getSelect()) {
+					projectedFields.add(project.getColumn());
+				}
+				SchemaNode projectedSchema = null;
+				if (projectedFields.contains("*")) {
+					log.debug("Query is a 'select * ...' query.");
+					projectedSchema = tablet.getSchema();
+				} else {
+
+					projectedSchema = tablet.getSchema().project(
+							projectedFields);
+				}
+
+				InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
+						projectedSchema);
+
+				TabletProjector copier = new TabletProjector();
+				copier.project(projectedSchema, tablet, resultTablet);
+
+				SimpleMessage response = new SimpleMessage(
+						Type.INTERNAL_RESULT, message.getQueryID(),
+						resultTablet.serialize());
+
+				coordinatorChannel.write(response);
+			} catch (IOException e) {
+				log.warn("Caught exception while creating result: {}",
+						e.getMessage());
+			}
 			break;
 		case STARTUP:
 			break;
@@ -256,30 +256,34 @@ public class Slave extends ChannelNode implements Stoppable {
 	 */
 	private void addChild(Channel channel, SimpleMessage simpleMsg) {
 		// TODO adding a child to the slave properly and efficiently
-		log.info("adding child: " + channel);
 		// the new Child channel will be a direct descendant
 		ServingChannel newChild = new ServingChannel(channel,
 				simpleMsg.getPayload());
 
-		if (childChannels.size() <= degree) {
-			// there is still room left for a direct child
-			status = NodeStatus.INNER;
-		} else {
-			// the new child has to replace one of the existing children
-			// and become it's new parent
-			// so we find the parent that should be replaced
-			int temp = childrenAdded % degree;
-			ServingChannel ch = directChildren.get(temp);
-			directChildren.remove(temp);
-			Channel tempChan = ch.getChannel();
-			// and tell it to connect to the new child
-			tempChan.write(new SimpleMessage(Type.REDIR, (byte) -1, newChild
-					.getServingAddress().toString().getBytes()));
-
+		log.info("Adding child: " + newChild);
+		synchronized(directChildren) {
+			if (childChannels.size() < degree) {
+				// there is still room left for a direct child
+				status = NodeStatus.INNER;
+			} else {
+				// the new child has to replace one of the existing children
+				// and become it's new parent
+				// so we find the parent that should be replaced
+				int temp = childrenAdded % degree;
+				ServingChannel ch = directChildren.get(temp);
+				directChildren.remove(temp);
+				Channel tempChan = ch.getChannel();
+				// and tell it to connect to the new child
+				tempChan.write(new SimpleMessage(Type.REDIR, (byte) -1, newChild
+						.getServingAddress().toString().getBytes()));
+	
+			}
+			// add new child to ChannelGroup / List
+			childChannels.add(channel);
+			directChildren.add(newChild);
+			childrenAdded++;
 		}
-		// add new child to ChannelGroup / List
-		childChannels.add(channel);
-		directChildren.add(newChild);
+		log.debug("direct " + directChildren.size() + " / degree " + degree + " / all " + childrenAdded);
 	}
 
 	/*
@@ -292,7 +296,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	@Override
 	public boolean connectNReg(SocketAddress address) {
 		// TODO
-		log.info("connecting to new parent node at {}", address);
+		log.info("Connecting to new parent node at {}", address);
 
 		ChannelFactory factory = new NioClientSocketChannelFactory(
 				Executors.newCachedThreadPool(),

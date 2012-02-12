@@ -1,6 +1,11 @@
 package de.tuberlin.dima.presslufthammer.transport.messages;
 
 
+/**
+ * @author feichh
+ * @author Aljoscha Krettek
+ *
+ */
 public class SimpleMessage {
 	private Type type;
 	private byte queryID;

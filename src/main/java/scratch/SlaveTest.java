@@ -16,6 +16,7 @@ import de.tuberlin.dima.presslufthammer.transport.SlaveCoordinator;
 /**
  * Test the query handling by a Slave tree.
  * 
+ * @author feichh
  * @author Aljoscha Krettek
  */
 public class SlaveTest {

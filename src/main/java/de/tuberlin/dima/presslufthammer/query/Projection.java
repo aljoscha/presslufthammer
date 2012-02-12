@@ -1,5 +1,10 @@
 package de.tuberlin.dima.presslufthammer.query;
 
+/**
+ * @author feichh
+ * @author Aljoscha Krettek
+ *
+ */
 public class Projection {
 	private String column;
 

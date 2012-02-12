@@ -42,6 +42,8 @@ import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
 
 /**
+ * ChannelNode that can serve both as a intermediate server or leaf server.
+ * 
  * @author feichh
  * @author Aljoscha Krettek
  * 
@@ -100,18 +102,6 @@ public class Slave extends ChannelNode implements Stoppable {
 
 		ChannelFuture connectFuture = bootstrap.connect(address);
 
-		// if (connectFuture.awaitUninterruptibly().isSuccess()) {
-		// coordinatorChannel = connectFuture.getChannel();
-		// parentChannel = coordinatorChannel;
-		// coordinatorChannel.write(REGMSG);
-		// log.info("Connected to coordinator at {}:{}", serverHost,
-		// serverPort);
-		// Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
-		// } else {
-		// bootstrap.releaseExternalResources();
-		// log.info("Failed to conncet to coordinator at {}:{}", serverHost,
-		// serverPort);
-		// }
 		connectFuture.addListener(new ChannelFutureListener() {
 			public void operationComplete(ChannelFuture future)
 					throws Exception {
@@ -320,15 +310,6 @@ public class Slave extends ChannelNode implements Stoppable {
 		bootstrapParent.setOption("connectTimeoutMillis", CONNECT_TIMEOUT);
 		ChannelFuture connectFuture = bootstrapParent.connect(address);
 
-		// if (connectFuture.awaitUninterruptibly().isSuccess()) {
-		// parentChannel = connectFuture.getChannel();
-		// parentChannel.write(REGMSG);
-		// log.info("Connected to {}", address);
-		// Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
-		// } else {
-		// bootstrapParent.releaseExternalResources();
-		// log.info("Failed to conncet {}", address);
-		// }
 		connectFuture.addListener(new ChannelFutureListener() {
 			public void operationComplete(ChannelFuture future)
 					throws Exception {

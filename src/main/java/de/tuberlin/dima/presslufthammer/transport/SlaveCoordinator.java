@@ -219,7 +219,6 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 	}
 //
 //	public void addLeaf(Channel channel) {
-//		// TODO
 //		log.info("Adding leaf node: {}", channel.getRemoteAddress());
 //		leafChannels.add(channel);
 //		if (rootChannel != null) {

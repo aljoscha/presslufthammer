@@ -29,6 +29,7 @@ import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.Type;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericHandler;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
+import de.tuberlin.dima.presslufthammer.transport.util.QueryHandler;
 import de.tuberlin.dima.presslufthammer.transport.util.ServingChannel;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;

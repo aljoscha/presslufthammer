@@ -42,7 +42,7 @@ import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
 
 /**
- * ChannelNode that can serve both as a intermediate server or leaf server.
+ * ChannelNode that can serve both as an intermediate server or a leaf server.
  * 
  * @author feichh
  * @author Aljoscha Krettek
@@ -50,6 +50,9 @@ import de.tuberlin.dima.presslufthammer.util.Stoppable;
  */
 public class Slave extends ChannelNode implements Stoppable {
 
+	/**
+	 * enumeration representing the current state of the Node
+	 */
 	public enum NodeStatus {
 		STARTUP, INNER, LEAF
 	}
@@ -63,11 +66,13 @@ public class Slave extends ChannelNode implements Stoppable {
 	private ClientBootstrap bootstrap;
 	private ClientBootstrap bootstrapParent;
 	private ServerBootstrap serverBootstrap;
+
 	private String serverHost;
 	private int serverPort;
 	private int ownPort;
 	private final int degree;
 	private int childrenAdded = 0;
+
 	private List<ServingChannel> directChildren = new ArrayList<ServingChannel>();
 	private NodeStatus status = NodeStatus.STARTUP;
 
@@ -120,7 +125,8 @@ public class Slave extends ChannelNode implements Stoppable {
 	}
 
 	/**
-	 * 
+	 * Binds a socket to a port to listen for client connections and stores the
+	 * port in ownPort.
 	 */
 	public void serve() {
 		// Configure the server.
@@ -145,8 +151,13 @@ public class Slave extends ChannelNode implements Stoppable {
 	}
 
 	/**
+	 * Tries to read the port from a {@link SocketAddress}. Sadly there is no
+	 * functionality for this in {@link SocketAddress}.
+	 * 
 	 * @param localAddress
-	 * @return
+	 *            address to read the port from.
+	 * @return the last element of the String[] resulting from split()ing by
+	 *         colon
 	 */
 	private int getPortFromSocketAddress(SocketAddress localAddress) {
 		String s = localAddress.toString();
@@ -175,8 +186,7 @@ public class Slave extends ChannelNode implements Stoppable {
 			// log.debug("Query processing disabled for debugging purposes");
 			try {
 				Tablet tablet = dataStore.getTablet(table, query.getPart());
-				log.debug("Tablet: {}:{}", tablet.getSchema()
-						.getName(),
+				log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
 						query.getPart());
 
 				Set<String> projectedFields = Sets.newHashSet();
@@ -210,13 +220,9 @@ public class Slave extends ChannelNode implements Stoppable {
 			}
 			break;
 		case STARTUP:
+			log.warn("Query received during startup");
 			break;
 		}
-	}
-
-	public void query(Query query) {
-		// TODO
-		log.debug("Query received: " + query);
 	}
 
 	@Override
@@ -250,18 +256,21 @@ public class Slave extends ChannelNode implements Stoppable {
 	}
 
 	/**
+	 * Adds a channel as direct child to the Slave.
+	 * 
 	 * @param channel
+	 *            new child's Channel
 	 * @param simpleMsg
 	 *            registration message
 	 */
 	private void addChild(Channel channel, SimpleMessage simpleMsg) {
-		// TODO adding a child to the slave properly and efficiently
+		// TODO adding children properly and efficiently
 		// the new Child channel will be a direct descendant
 		ServingChannel newChild = new ServingChannel(channel,
 				simpleMsg.getPayload());
 
 		log.info("Adding child: " + newChild);
-		synchronized(directChildren) {
+		synchronized (directChildren) {
 			if (childChannels.size() < degree) {
 				// there is still room left for a direct child
 				status = NodeStatus.INNER;
@@ -274,16 +283,17 @@ public class Slave extends ChannelNode implements Stoppable {
 				directChildren.remove(temp);
 				Channel tempChan = ch.getChannel();
 				// and tell it to connect to the new child
-				tempChan.write(new SimpleMessage(Type.REDIR, (byte) -1, newChild
-						.getServingAddress().toString().getBytes()));
-	
+				tempChan.write(new SimpleMessage(Type.REDIR, (byte) -1,
+						newChild.getServingAddress().toString().getBytes()));
+
 			}
 			// add new child to ChannelGroup / List
 			childChannels.add(channel);
 			directChildren.add(newChild);
 			childrenAdded++;
 		}
-		log.debug("direct " + directChildren.size() + " / degree " + degree + " / all " + childrenAdded);
+		log.debug("direct " + directChildren.size() + " / degree " + degree
+				+ " / all " + childrenAdded);
 	}
 
 	/*
@@ -337,8 +347,6 @@ public class Slave extends ChannelNode implements Stoppable {
 
 		return new SimpleMessage(Type.REGINNER, (byte) 0,
 				ServingChannel.intToByte(ownPort));
-		// return new SimpleMessage(Type.REGINNER, (byte) 0,
-		// ("" + ownPort).getBytes());
 	}
 
 	/**

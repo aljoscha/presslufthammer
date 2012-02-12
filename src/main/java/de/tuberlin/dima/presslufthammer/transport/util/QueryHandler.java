@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.transport;
+package de.tuberlin.dima.presslufthammer.transport.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

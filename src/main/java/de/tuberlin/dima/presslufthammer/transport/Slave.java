@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -69,16 +68,42 @@ public class Slave extends ChannelNode implements Stoppable {
 
 	private String serverHost;
 	private int serverPort;
+	/**
+	 * port this slave is listening for clients (children) on
+	 */
 	private int ownPort;
+	/**
+	 * number of direct children the slave accepts
+	 */
 	private final int degree;
 	private int childrenAdded = 0;
 
+	/**
+	 * the children directly connected to this slave
+	 */
 	private List<ServingChannel> directChildren = new ArrayList<ServingChannel>();
+	/**
+	 * group of all children's channels currently connected
+	 */
+	private ChannelGroup childChannels = new DefaultChannelGroup();
+	/**
+	 * the current status of the slave
+	 */
 	private NodeStatus status = NodeStatus.STARTUP;
 
 	private OnDiskDataStore dataStore;
-	private ChannelGroup childChannels = new DefaultChannelGroup();
 
+	/**
+	 * Constructor<br />
+	 * Reads data from the data directory.
+	 * 
+	 * @param serverHost
+	 *            coordinator hostname or address
+	 * @param serverPort
+	 *            coordinator port
+	 * @param dataDirectory
+	 *            directory containing data sources
+	 */
 	public Slave(String serverHost, int serverPort, File dataDirectory) {
 		this.serverHost = serverHost;
 		this.serverPort = serverPort;
@@ -92,6 +117,10 @@ public class Slave extends ChannelNode implements Stoppable {
 		}
 	}
 
+	/**
+	 * Sets up a server socket listening for client connections. Connects to the
+	 * coordinator using the connection info supplied to the constructor.
+	 */
 	public void start() {
 		ownPort = 0;
 		serve();
@@ -106,13 +135,12 @@ public class Slave extends ChannelNode implements Stoppable {
 		SocketAddress address = new InetSocketAddress(serverHost, serverPort);
 
 		ChannelFuture connectFuture = bootstrap.connect(address);
-
+		// use a listener because awaitUninter... fails on multiconn/threaded
+		// stuff
 		connectFuture.addListener(new ChannelFutureListener() {
 			public void operationComplete(ChannelFuture future)
 					throws Exception {
 				coordinatorChannel = future.getChannel();
-				// ownPort = getPortFromSocketAddress(coordinatorChannel
-				// .getLocalAddress()) + 1;
 				parentChannel = coordinatorChannel;
 				openChannels.add(coordinatorChannel);
 				coordinatorChannel.write(getRegMsg());
@@ -183,7 +211,6 @@ public class Slave extends ChannelNode implements Stoppable {
 			}
 			break;
 		case LEAF:
-			// log.debug("Query processing disabled for debugging purposes");
 			try {
 				Tablet tablet = dataStore.getTablet(table, query.getPart());
 				log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
@@ -293,7 +320,7 @@ public class Slave extends ChannelNode implements Stoppable {
 			childrenAdded++;
 		}
 		log.debug("direct " + directChildren.size() + " / degree " + degree
-				+ " / all " + childrenAdded);
+				+ " / added " + childrenAdded);
 	}
 
 	/*

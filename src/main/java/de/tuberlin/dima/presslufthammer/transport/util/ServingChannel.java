@@ -1,6 +1,5 @@
 package de.tuberlin.dima.presslufthammer.transport.util;
 
-import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
@@ -17,13 +16,26 @@ import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 public class ServingChannel {
 	private Channel channel;
 	private SocketAddress servingAddress;
+	private int servingPort;
 
+	/**
+	 * Converts an integer into a byte[] using a ChannelBuffer.
+	 * 
+	 * @param integer
+	 * @return byte representation of the integer
+	 */
 	public static byte[] intToByte(int integer) {
 		ChannelBuffer buffer = ChannelBuffers.buffer(4);
 		buffer.writeInt(integer);
 		return buffer.array();
 	}
 
+	/**
+	 * Converts the byte[] to an integer using a ChannelBuffer.
+	 * 
+	 * @param bytes
+	 * @return integer value of the bytes
+	 */
 	public static int byteToInt(byte[] bytes) {
 		ChannelBuffer buffer = ChannelBuffers.buffer(4);
 		buffer.writeBytes(bytes);
@@ -37,11 +49,18 @@ public class ServingChannel {
 	// this.setServingAddress(servingAddress);
 	// }
 
+	/**
+	 * @param channel
+	 *            the channel through which the node is connected
+	 * @param portbytes
+	 *            port in the form of a byte[]
+	 */
 	public ServingChannel(Channel channel, byte[] portbytes) {
 
 		this.setChannel(channel);
 		// int port = Integer.parseInt(new String(portbytes));
 		int port = byteToInt(portbytes);
+		this.setServingPort(port);
 		String host = channel.getRemoteAddress().toString().split(":")[0];
 		SocketAddress servingAddress = new InetSocketAddress(host, port);
 		this.servingAddress = servingAddress;
@@ -55,6 +74,14 @@ public class ServingChannel {
 		this.servingAddress = servingAddress;
 	}
 
+	public int getServingPort() {
+		return servingPort;
+	}
+
+	public void setServingPort(int servingPort) {
+		this.servingPort = servingPort;
+	}
+
 	public Channel getChannel() {
 		return channel;
 	}
@@ -63,10 +90,18 @@ public class ServingChannel {
 		this.channel = channel;
 	}
 
+	/**
+	 * Wraps channel.write().
+	 * 
+	 * @param message
+	 */
 	public void write(SimpleMessage message) {
 		channel.write(message);
 	}
 
+	/**
+	 * @return channel.getRemoteAddress()
+	 */
 	public Object getRemoteAddress() {
 		return channel.getRemoteAddress();
 	}
@@ -87,4 +122,15 @@ public class ServingChannel {
 			return super.equals(obj);
 		}
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return channel + " " + servingAddress;
+	}
+
 }

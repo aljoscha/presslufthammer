@@ -41,7 +41,9 @@ public class Inner extends ChannelNode {
 	 * Constructor
 	 * 
 	 * @param host
+	 *            hostname or address of the coordinator
 	 * @param port
+	 *            port of the coordinator
 	 * @throws InterruptedException
 	 *             if interrupted
 	 */
@@ -54,7 +56,8 @@ public class Inner extends ChannelNode {
 	}
 
 	/**
-	 * 
+	 * Binds a server socket to the port one after the one used to connect to
+	 * the coordinator.
 	 */
 	public void serve() {
 		int port = getPortFromSocketAddress(coordChan.getLocalAddress()) + 1;

@@ -240,7 +240,7 @@ public class Slave extends ChannelNode implements Stoppable {
 						Type.INTERNAL_RESULT, message.getQueryID(),
 						resultTablet.serialize());
 
-				coordinatorChannel.write(response);
+				parentChannel.write(response);
 			} catch (IOException e) {
 				log.warn("Caught exception while creating result: {}",
 						e.getMessage());
@@ -256,22 +256,25 @@ public class Slave extends ChannelNode implements Stoppable {
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 		log.debug("Message received from {}.", e.getRemoteAddress());
 		if (e.getMessage() instanceof SimpleMessage) {
-			SimpleMessage simpleMsg = ((SimpleMessage) e.getMessage());
-			log.debug("Message: {}", simpleMsg.toString());
-			switch (simpleMsg.getType()) {
+			SimpleMessage message = ((SimpleMessage) e.getMessage());
+			log.debug("Message: {}", message.toString());
+			switch (message.getType()) {
 			case ACK:
 				break;
 			case REDIR:
-				this.connectNReg(getSockAddrFromBytes(simpleMsg.getPayload()));
+				this.connectNReg(getSockAddrFromBytes(message.getPayload()));
 				break;
 			case INTERNAL_QUERY:
-				this.query(simpleMsg);
+				this.query(message);
+				break;
+			case INTERNAL_RESULT:
+				// TODO do something
+				parentChannel.write(message);
 				break;
 			case REGINNER:
-				this.addChild(e.getChannel(), simpleMsg);
+				this.addChild(e.getChannel(), message);
 				break;
 			case REGLEAF:
-			case INTERNAL_RESULT:
 			case UNKNOWN:
 			case CLIENT_QUERY:
 			case CLIENT_RESULT:

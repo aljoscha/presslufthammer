@@ -190,6 +190,13 @@ public class Query {
     public void setGroupBy(String[] groupBy) {
         this.groupBy = groupBy;
     }
+    
+    /**
+     * @return byte representation of the query for network transfer
+     */
+    public byte[] getBytes() {
+    	return toString().getBytes();
+    }
 
     @Override
     public String toString() {

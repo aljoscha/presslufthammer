@@ -163,8 +163,7 @@ public class Coordinator extends ChannelNode implements Stoppable {
 						Query leafQuery = new Query(query.toString());
 						leafQuery.setPart((byte) i);
 						SimpleMessage leafMessage = new SimpleMessage(
-								Type.INTERNAL_QUERY, qid, leafQuery.toString()
-										.getBytes());
+								Type.INTERNAL_QUERY, qid, leafQuery.getBytes());
 						leaf.write(leafMessage);
 						log.info("Sent query to leaf {}: {}",
 								leaf.getRemoteAddress(), leafQuery);

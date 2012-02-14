@@ -146,7 +146,12 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 					message.setQueryID(qid);
 					queries.put(qid, new QueryHandler(1, message,
 							projectedSchema, client));
-					rootChannel.write(message);
+					for(int i = 0; i < table.getNumPartitions(); i++) {
+						query.setPart((byte) i);
+						message.setPayload(query.getBytes());
+						rootChannel.write(message);
+					}
+//					rootChannel.write(message);
 
 				} else {
 					log.info("Cannot process query w/o at least one slave.");
@@ -169,8 +174,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 //						Query leafQuery = new Query(query.toString());
 //						leafQuery.setPart((byte) i);
 //						SimpleMessage leafMessage = new SimpleMessage(
-//								Type.INTERNAL_QUERY, qid, leafQuery.toString()
-//										.getBytes());
+//								Type.INTERNAL_QUERY, qid, leafQuery.getBytes());
 //						leaf.write(leafMessage);
 //						log.info("Sent query to leaf {}: {}",
 //								leaf.getRemoteAddress(), leafQuery);

@@ -48,8 +48,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 	private int port;
 	private ServerBootstrap bootstrap;
 	private Channel acceptChannel;
-	private ChannelGroup innerChannels = new DefaultChannelGroup();
-//	private ChannelGroup leafChannels = new DefaultChannelGroup();
+	private ChannelGroup slaveChannels = new DefaultChannelGroup();
 	private ChannelGroup clientChannels = new DefaultChannelGroup();
 	private final GenericHandler handler = new GenericHandler(this);
 	private ServingChannel rootChannel = null;
@@ -113,12 +112,12 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 				client.getLocalAddress());
 
 		if (isServing()) {
-			
+
 			byte qid = nextQID();
 			message.setQueryID(qid);
 			Query query = new Query(message.getPayload());
 			log.info("Received query: {}", query);
-			
+
 			String tableName = query.getFrom();
 			if (!tables.containsKey(tableName)) {
 				client.write(new SimpleMessage(Type.CLIENT_RESULT, (byte) -1,
@@ -138,47 +137,23 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 					projectedSchema = table.getSchema()
 							.project(projectedFields);
 				}
-				
+
 				message.setType(Type.INTERNAL_QUERY);
 				if (rootChannel != null) {
 					log.info("Handing query to root node of our node tree.");
-					// // clientChans.add(client);// optional
+					// clientChans.add(client);// optional
 					message.setQueryID(qid);
-					queries.put(qid, new QueryHandler(1, message,
-							projectedSchema, client));
-					for(int i = 0; i < table.getNumPartitions(); i++) {
+					queries.put(qid, new QueryHandler(table.getNumPartitions(),
+							message, projectedSchema, client));
+					// send a seperate query for each tablet
+					for (int i = 0; i < table.getNumPartitions(); i++) {
 						query.setPart((byte) i);
 						message.setPayload(query.getBytes());
 						rootChannel.write(message);
 					}
-//					rootChannel.write(message);
 
 				} else {
 					log.info("Cannot process query w/o at least one slave.");
-
-//					queries.put(qid, new QueryHandler(table.getNumPartitions(),
-//							message, projectedSchema, client));
-//
-//					// send a request to the leafs for every partition
-//					Iterator<Channel> leafIter = leafChannels.iterator();
-//					for (int i = 0; i < table.getNumPartitions(); ++i) {
-//						Channel leaf = null;
-//						if (leafIter.hasNext()) {
-//							leaf = leafIter.next();
-//						} else {
-//
-//							leafIter = leafChannels.iterator();
-//							leaf = leafIter.next();
-//						}
-//						// create a new query for only the specific partition
-//						Query leafQuery = new Query(query.toString());
-//						leafQuery.setPart((byte) i);
-//						SimpleMessage leafMessage = new SimpleMessage(
-//								Type.INTERNAL_QUERY, qid, leafQuery.getBytes());
-//						leaf.write(leafMessage);
-//						log.info("Sent query to leaf {}: {}",
-//								leaf.getRemoteAddress(), leafQuery);
-//					}
 				}
 			}
 
@@ -192,8 +167,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 	 * leaf.
 	 */
 	public boolean isServing() {
-		return handler != null
-				&& !innerChannels.isEmpty();
+		return handler != null && !slaveChannels.isEmpty();
 	}
 
 	public void addClient(Channel channel) {
@@ -205,31 +179,17 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 	public void addInner(Channel channel, byte[] portbs) {
 		// TODO
 		log.info("Adding inner node: {};", channel.getRemoteAddress());
-		synchronized(innerChannels) {
-			innerChannels.add(channel);
+		synchronized (slaveChannels) {
+			slaveChannels.add(channel);
 			if (rootChannel == null) {
 				rootChannel = new ServingChannel(channel, portbs);
-				log.info("new root node connected at " + rootChannel.getRemoteAddress());
-	//			SimpleMessage rootInfo = getRootInfo();
-	//			for (Channel chan : leafChannels) {
-	//				chan.write(rootInfo);
-	//				// chan.close();
-	//			}
+				log.info("new root node connected at "
+						+ rootChannel.getRemoteAddress());
 			} else {
 				channel.write(getRootInfo());
-	//					new SimpleMessage(Type.REDIR, (byte) -1, rootChannel
-	//					.getServingAddress().toString().getBytes()));
 			}
 		}
 	}
-//
-//	public void addLeaf(Channel channel) {
-//		log.info("Adding leaf node: {}", channel.getRemoteAddress());
-//		leafChannels.add(channel);
-//		if (rootChannel != null) {
-//			channel.write(getRootInfo());
-//		}
-//	}
 
 	private SimpleMessage getRootInfo() {
 		Type type = Type.REDIR;
@@ -285,7 +245,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 				this.addInner(e.getChannel(), message.getPayload());
 				break;
 			case REGLEAF:
-//				this.addLeaf(e.getChannel());
+				// this.addLeaf(e.getChannel());
 				break;
 			case INTERNAL_RESULT:
 				// Send the result to the coordinator so it can be assembled
@@ -303,10 +263,10 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 				this.addClient(e.getChannel());
 				break;
 			}
-//
-//			e.getChannel().write(
-//					new SimpleMessage(Type.ACK, (byte) 0,
-//							new byte[] { (byte) 0 }));
+			//
+			// e.getChannel().write(
+			// new SimpleMessage(Type.ACK, (byte) 0,
+			// new byte[] { (byte) 0 }));
 		}
 	}
 

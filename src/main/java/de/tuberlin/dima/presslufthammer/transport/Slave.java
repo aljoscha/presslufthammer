@@ -205,10 +205,8 @@ public class Slave extends ChannelNode implements Stoppable {
 		switch (status) {
 		case INNER:
 			// TODO rewriting of query
-			for (ServingChannel c : directChildren) {
-				log.debug("querying: " + c.getRemoteAddress());
-				c.write(message);
-			}
+			int temp = query.getPart() % directChildren.size();
+			directChildren.get(temp).write(message);
 			break;
 		case LEAF:
 			try {
@@ -290,36 +288,30 @@ public class Slave extends ChannelNode implements Stoppable {
 	 * 
 	 * @param channel
 	 *            new child's Channel
-	 * @param simpleMsg
+	 * @param message
 	 *            registration message
 	 */
-	private void addChild(Channel channel, SimpleMessage simpleMsg) {
+	private void addChild(Channel channel, SimpleMessage message) {
 		// TODO adding children properly and efficiently
 		// the new Child channel will be a direct descendant
 		ServingChannel newChild = new ServingChannel(channel,
-				simpleMsg.getPayload());
+				message.getPayload());
 
 		log.info("Adding child: " + newChild);
 		synchronized (directChildren) {
 			if (childChannels.size() < degree) {
 				// there is still room left for a direct child
 				status = NodeStatus.INNER;
+				directChildren.add(newChild);
 			} else {
-				// the new child has to replace one of the existing children
-				// and become it's new parent
-				// so we find the parent that should be replaced
+				// find a suitable parent
 				int temp = childrenAdded % degree;
 				ServingChannel ch = directChildren.get(temp);
-				directChildren.remove(temp);
-				Channel tempChan = ch.getChannel();
-				// and tell it to connect to the new child
-				tempChan.write(new SimpleMessage(Type.REDIR, (byte) -1,
-						newChild.getServingAddress().toString().getBytes()));
-
+				newChild.write(new SimpleMessage(Type.REDIR, (byte) -1, ch
+						.getServingAddress().toString().getBytes()));
 			}
 			// add new child to ChannelGroup / List
 			childChannels.add(channel);
-			directChildren.add(newChild);
 			childrenAdded++;
 		}
 		log.debug("direct " + directChildren.size() + " / degree " + degree
@@ -399,9 +391,17 @@ public class Slave extends ChannelNode implements Stoppable {
 	public void stop() {
 		// TODO proper shut down
 		log.info("Stopping slave at {}.", coordinatorChannel);
-		if (coordinatorChannel != null) {
-			coordinatorChannel.close().awaitUninterruptibly();
-		}
+		super.close();
+		// if (coordinatorChannel != null) {
+		// if( coordinatorChannel.isConnected()) {
+		// coordinatorChannel.disconnect().awaitUninterruptibly();
+		// }
+		// coordinatorChannel.close();
+		// coordinatorChannel = null;
+		// }
+		// if( childChannels != null) {
+		// childChannels.close();
+		// }
 		if (bootstrap != null) {
 			bootstrap.releaseExternalResources();
 			bootstrap = null;

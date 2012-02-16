@@ -392,16 +392,15 @@ public class Slave extends ChannelNode implements Stoppable {
 		// TODO proper shut down
 		log.info("Stopping slave at {}.", coordinatorChannel);
 		super.close();
-		// if (coordinatorChannel != null) {
-		// if( coordinatorChannel.isConnected()) {
-		// coordinatorChannel.disconnect().awaitUninterruptibly();
-		// }
-		// coordinatorChannel.close();
-		// coordinatorChannel = null;
-		// }
-		// if( childChannels != null) {
-		// childChannels.close();
-		// }
+		if (coordinatorChannel != null) {
+			if (coordinatorChannel.isConnected()) {
+				coordinatorChannel.disconnect().awaitUninterruptibly();
+			}
+			coordinatorChannel = null;
+		}
+		directChildren.clear();
+		childChannels.clear();
+		
 		if (bootstrap != null) {
 			bootstrap.releaseExternalResources();
 			bootstrap = null;

@@ -25,11 +25,11 @@ import de.tuberlin.dima.presslufthammer.transport.messages.Type;
  * 
  */
 public class QueryHandler {
-    
+
 	public enum QueryStatus {
 		OPEN, CLOSED
 	}
-	
+
 	private Logger log = LoggerFactory.getLogger(getClass());
 
 	final byte queryID;
@@ -39,9 +39,13 @@ public class QueryHandler {
 	private int numPartsExpected;
 	QueryStatus status;
 	SchemaNode schema;
-	List<InMemoryReadonlyTablet> parts;
+	private List<InMemoryReadonlyTablet> parts;
 
-	public QueryHandler(int parts, SimpleMessage queryMsg, SchemaNode schema, Channel client) {
+	// private Map<Integer, InMemoryReadonlyTablet> partS = new HashMap<Integer,
+	// InMemoryReadonlyTablet>();
+
+	public QueryHandler(int parts, SimpleMessage queryMsg, SchemaNode schema,
+			Channel client) {
 		assert (queryMsg.getQueryID() > 0);
 		this.parts = Lists.newLinkedList();
 		this.numPartsExpected = parts;
@@ -54,6 +58,7 @@ public class QueryHandler {
 	}
 
 	public void addPart(SimpleMessage message) {
+		// TODO figure out what part this is and whether we still need it.
 		if (message.getQueryID() == queryID && parts.size() < numPartsExpected) {
 			parts.add(new InMemoryReadonlyTablet(message.getPayload()));
 			if (parts.size() == numPartsExpected) {
@@ -63,30 +68,33 @@ public class QueryHandler {
 	}
 
 	private void assemble() {
-	    ByteArrayOutputStream outArray = new ByteArrayOutputStream();
-	    PrintWriter writer = new PrintWriter(outArray);
-	    JSONRecordPrinter recordPrinter = new JSONRecordPrinter(schema, writer);
-	    
-	    AssemblyFSM assemblyFSM = new AssemblyFSM(schema);
-	    
-	    log.info("Assembling client response from {} tablets.", parts.size());
-	    
-	    for (InMemoryReadonlyTablet tablet : parts) {
-	        try {
-                assemblyFSM.assembleRecords(tablet, recordPrinter);
-            } catch (IOException e) {
-                log.warn("Caught exception while assembling result for client: {}", e.getMessage());
-            }
-	    }
-	    writer.flush();
-	    
+		ByteArrayOutputStream outArray = new ByteArrayOutputStream();
+		PrintWriter writer = new PrintWriter(outArray);
+		JSONRecordPrinter recordPrinter = new JSONRecordPrinter(schema, writer);
+
+		AssemblyFSM assemblyFSM = new AssemblyFSM(schema);
+
+		log.info("Assembling client response from {} tablets.", parts.size());
+
+		for (InMemoryReadonlyTablet tablet : parts) {
+			try {
+				assemblyFSM.assembleRecords(tablet, recordPrinter);
+			} catch (IOException e) {
+				log.warn(
+						"Caught exception while assembling result for client: {}",
+						e.getMessage());
+			}
+		}
+		writer.flush();
+
 		if (client != null) {
-			if(outArray.size() < 1) {
+			if (outArray.size() < 1) {
 				log.warn("Assembled response has size {}", outArray.size());
 			}
-			client.write(new SimpleMessage(Type.CLIENT_RESULT, queryID, outArray.toByteArray()));
+			client.write(new SimpleMessage(Type.CLIENT_RESULT, queryID,
+					outArray.toByteArray()));
 		} else {
-		    log.warn("No client in QueryHandler.");
+			log.warn("No client in QueryHandler.");
 		}
 		close();
 	}

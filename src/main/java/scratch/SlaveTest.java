@@ -45,24 +45,8 @@ public class SlaveTest {
 			slaves.add(i, s);
 			Thread.sleep(1000);
 		}
-//		Slave slave_l0 = new Slave(HOST, PORT, LEAF_DATADIR);
-//		Slave slave_r0 = new Slave(HOST, PORT, LEAF_DATADIR);
-//		slave_l0.start();
-//		slave_r0.start();
-//		Thread.sleep(5000);// wait until slave1 has bound
-//		Slave slave_l1 = new Slave(HOST, PORT, LEAF_DATADIR);
-//		Slave slave_l2 = new Slave(HOST, PORT, LEAF_DATADIR);
-//		Slave slave_r1 = new Slave(HOST, PORT, LEAF_DATADIR);
-//		Slave slave_r2 = new Slave(HOST, PORT, LEAF_DATADIR);
-//		slave_l1.start();
-//		Thread.sleep(3000);
-//		slave_l2.start();
-//		Thread.sleep(3000);
-//		slave_r1.start();
-//		Thread.sleep(3000);
-//		slave_r2.start();
-		Thread.sleep(3000);
 		log.info("{} Slaves have been added.", NUM_SLAVES);
+		Thread.sleep(2000);
 		log.info("Starting a client to send queries.");
 
 		CLIClient client = new CLIClient(HOST, PORT);
@@ -87,6 +71,22 @@ public class SlaveTest {
 		for(Slave s: slaves) {
 			s.stop();
 		}
+//		Slave slave_l0 = new Slave(HOST, PORT, LEAF_DATADIR);
+//		Slave slave_r0 = new Slave(HOST, PORT, LEAF_DATADIR);
+//		slave_l0.start();
+//		slave_r0.start();
+//		Thread.sleep(5000);// wait until slave1 has bound
+//		Slave slave_l1 = new Slave(HOST, PORT, LEAF_DATADIR);
+//		Slave slave_l2 = new Slave(HOST, PORT, LEAF_DATADIR);
+//		Slave slave_r1 = new Slave(HOST, PORT, LEAF_DATADIR);
+//		Slave slave_r2 = new Slave(HOST, PORT, LEAF_DATADIR);
+//		slave_l1.start();
+//		Thread.sleep(1000);
+//		slave_l2.start();
+//		Thread.sleep(1000);
+//		slave_r1.start();
+//		Thread.sleep(1000);
+//		slave_r2.start();
 //		slave_l1.stop();
 //		slave_l2.stop();
 //		slave_r2.stop();

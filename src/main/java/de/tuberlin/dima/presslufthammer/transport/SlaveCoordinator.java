@@ -220,6 +220,8 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		QueryHandler qhand = queries.get(qid);
 		if (qhand != null) {
 			qhand.addPart(message);
+		} else {
+			log.error("Received result for query " + qid + " but no handler was found.");
 		}
 	}
 

@@ -18,6 +18,7 @@ public enum Type {
 //	OFFER((byte) 0x09),
 //	ACCEPT((byte) 0x0A),
 	ACK((byte) 0x09),
+	NACK((byte) 0x0A),
 	// put last since it's the least likely one to be encountered in the
 	// fromByte() function
 	UNKNOWN((byte) 0x00);

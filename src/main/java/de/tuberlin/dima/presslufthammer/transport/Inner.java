@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
 
 /**
  * @author feichh
@@ -30,7 +30,7 @@ import de.tuberlin.dima.presslufthammer.transport.messages.Type;
  */
 public class Inner extends ChannelNode {
 	private static final SimpleMessage REGMSG = new SimpleMessage(
-			Type.REGINNER, (byte) 0, "Hello".getBytes());
+			MessageType.REGINNER, (byte) 0, "Hello".getBytes());
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
 	ChannelGroup childChannels = new DefaultChannelGroup();
@@ -135,7 +135,6 @@ public class Inner extends ChannelNode {
 	 * de.tuberlin.dima.presslufthammer.transport.ChannelNode#query(de.tuberlin
 	 * .dima.presslufthammer.pressluft.Pressluft)
 	 */
-	@Override
 	public void query(SimpleMessage query) {
 		for (Channel c : childChannels) {
 			log.debug("querying: " + c.getRemoteAddress());

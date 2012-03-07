@@ -1,7 +1,6 @@
-/**
- * 
- */
 package de.tuberlin.dima.presslufthammer.transport.messages;
+
+import java.nio.charset.Charset;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -10,77 +9,114 @@ import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 
-/**
- * based on / taken from: https://github.com/brunodecarvalho/netty-tutorials
- * 
- * OneToOneEncoder implementation that converts an Envelope instance into a
- * ChannelBuffer.
- * 
- * Since the encoder is stateless, a single instance can be shared among all
- * pipelines, hence the @Sharable annotation and the singleton instantiation.
- */
 @ChannelHandler.Sharable
 public class Encoder extends OneToOneEncoder {
+    private final Charset charset;
 
-	// constructors
-	// ---------------------------------------------------------------------------------------------------
+    public Encoder() {
+        this(Charset.defaultCharset());
+    }
 
-	private Encoder() {
-	}
+    public Encoder(Charset charset) {
+        if (charset == null) {
+            throw new NullPointerException("charset");
+        }
+        this.charset = charset;
+    }
 
-	// public static methods
-	// ------------------------------------------------------------------------------------------
+    public static Encoder getInstance() {
+        return InstanceHolder.INSTANCE;
+    }
 
-	public static Encoder getInstance() {
-		return InstanceHolder.INSTANCE;
-	}
+    public ChannelBuffer encodeSimple(SimpleMessage message)
+            throws IllegalArgumentException {
+        // you can move these verifications "upper" (before writing to the
+        // channel) in order not to cause a
+        // channel shutdown
 
-	public static ChannelBuffer encodeMessage(SimpleMessage message)
-			throws IllegalArgumentException {
-		// you can move these verifications "upper" (before writing to the
-		// channel) in order not to cause a
-		// channel shutdown
+        if ((message.getType() == null)
+                || (message.getType() == MessageType.UNKNOWN)) {
+            throw new IllegalArgumentException(
+                    "Message type cannot be null or UNKNOWN");
+        }
 
-		if ((message.getType() == null) || (message.getType() == Type.UNKNOWN)) {
-			throw new IllegalArgumentException(
-					"Message type cannot be null or UNKNOWN");
-		}
+        if ((message.getPayload() == null)
+                || (message.getPayload().length == 0)) {
+            throw new IllegalArgumentException(
+                    "Message payload cannot be null or empty");
+        }
 
-		if ((message.getPayload() == null)
-				|| (message.getPayload().length == 0)) {
-			throw new IllegalArgumentException(
-					"Message payload cannot be null or empty");
-		}
+        // type(1b) + qid(1b) + payload length(4b) + payload(nb)
+        int size = 9 + message.getPayload().length;
 
-		// type(1b) + qid(1b) + payload length(4b) + payload(nb)
-		int size = 6 + message.getPayload().length;
+        ChannelBuffer buffer = ChannelBuffers.buffer(size);
+        buffer.writeByte(message.getType().getByteValue());
+        buffer.writeInt(message.getQueryID());
+        buffer.writeInt(message.getPayload().length);
+        buffer.writeBytes(message.getPayload());
 
-		ChannelBuffer buffer = ChannelBuffers.buffer(size);
-		buffer.writeByte(message.getType().getByteValue());
-		buffer.writeByte(message.getQueryID());
-		buffer.writeInt(message.getPayload().length);
-		buffer.writeBytes(message.getPayload());
+        return buffer;
+    }
 
-		return buffer;
-	}
+    public ChannelBuffer encodeQuery(QueryMessage message)
+            throws IllegalArgumentException {
 
-	// OneToOneEncoder
-	// ------------------------------------------------------------------------------------------------
+        if (message.getQuery() == null) {
+            throw new IllegalArgumentException("QueryMessage has no query");
+        }
 
-	@Override
-	protected Object encode(ChannelHandlerContext channelHandlerContext,
-			Channel channel, Object msg) throws Exception {
-		if (msg instanceof SimpleMessage) {
-			return encodeMessage((SimpleMessage) msg);
-		} else {
-			return msg;
-		}
-	}
+        ChannelBuffer queryBuffer = ChannelBuffers.copiedBuffer(message
+                .getQuery().toString(), charset);
+        // type(1b) + qid(4b) + payload length(4b) + payload(nb)
+        int size = 9 + queryBuffer.capacity();
 
-	// private classes
-	// ------------------------------------------------------------------------------------------------
+        ChannelBuffer buffer = ChannelBuffers.buffer(size);
 
-	private static final class InstanceHolder {
-		private static final Encoder INSTANCE = new Encoder();
-	}
+        buffer.writeByte(MessageType.QUERY.getByteValue());
+        buffer.writeInt(message.getQueryId());
+        buffer.writeInt(queryBuffer.readableBytes());
+        buffer.writeBytes(queryBuffer);
+
+        return buffer;
+    }
+
+    public ChannelBuffer encodeTablet(TabletMessage message)
+            throws IllegalArgumentException {
+
+        if (message.getTabletData() == null) {
+            throw new IllegalArgumentException(
+                    "TabletMessage has no tablet data query");
+        }
+
+        // type(1b) + qid(4b) + payload length(4b) + payload(nb)
+        int size = 9 + message.getTabletData().length;
+
+        ChannelBuffer buffer = ChannelBuffers.buffer(size);
+
+        buffer.writeByte(MessageType.TABLET.getByteValue());
+        buffer.writeInt(message.getQueryId());
+        buffer.writeInt(message.getTabletData().length);
+        buffer.writeBytes(message.getTabletData());
+
+        return buffer;
+    }
+
+    @Override
+    protected Object encode(ChannelHandlerContext channelHandlerContext,
+            Channel channel, Object msg) throws Exception {
+        if (msg instanceof SimpleMessage) {
+            return encodeSimple((SimpleMessage) msg);
+        } else if (msg instanceof QueryMessage) {
+            return encodeQuery((QueryMessage) msg);
+        } else if (msg instanceof TabletMessage) {
+            return encodeTablet((TabletMessage) msg);
+            // return encodeTablet((TabletMessage) msg);
+        } else {
+            return msg;
+        }
+    }
+
+    private static final class InstanceHolder {
+        private static final Encoder INSTANCE = new Encoder();
+    }
 }

@@ -24,10 +24,12 @@ import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.ondisk.OnDiskDataStore;
 import de.tuberlin.dima.presslufthammer.qexec.TabletProjector;
-import de.tuberlin.dima.presslufthammer.query.Projection;
 import de.tuberlin.dima.presslufthammer.query.Query;
+import de.tuberlin.dima.presslufthammer.query.SelectClause;
+import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
+import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.messages.TabletMessage;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
 
@@ -37,8 +39,8 @@ import de.tuberlin.dima.presslufthammer.util.Stoppable;
  * 
  */
 public class Leaf extends ChannelNode implements Stoppable {
-    private static final SimpleMessage REGMSG = new SimpleMessage(Type.REGLEAF,
-            (byte) 0, "Hello".getBytes());
+    private static final SimpleMessage REGMSG = new SimpleMessage(
+            MessageType.REGLEAF, (byte) 0, "Hello".getBytes());
     private static int CONNECT_TIMEOUT = 10000;
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -91,28 +93,27 @@ public class Leaf extends ChannelNode implements Stoppable {
 
     }
 
-    @Override
-    public void query(SimpleMessage message) {
-        Query query = new Query(message.getPayload());
-        log.info("Received query: " + query);
+    public void query(QueryMessage message, Channel channel) {
+        Query query = message.getQuery();
+        log.info("Received query \"{}\" from {}", query, channel.getRemoteAddress());
 
-        String table = query.getFrom();
+        String tableName = query.getTableName();
 
         try {
-            Tablet tablet = dataStore.getTablet(table, query.getPart());
+            Tablet tablet = dataStore
+                    .getTablet(tableName, query.getPartition());
             log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
-                    query.getPart());
+                    query.getPartition());
 
             Set<String> projectedFields = Sets.newHashSet();
-            for (Projection project : query.getSelect()) {
-                projectedFields.add(project.getColumn());
+            for (SelectClause selectClause : query.getSelectClauses()) {
+                projectedFields.add(selectClause.getColumn());
             }
             SchemaNode projectedSchema = null;
             if (projectedFields.contains("*")) {
                 log.debug("Query is a 'select * ...' query.");
                 projectedSchema = tablet.getSchema();
             } else {
-
                 projectedSchema = tablet.getSchema().project(projectedFields);
             }
 
@@ -122,25 +123,22 @@ public class Leaf extends ChannelNode implements Stoppable {
             TabletProjector copier = new TabletProjector();
             copier.project(projectedSchema, tablet, resultTablet);
 
-            SimpleMessage response = new SimpleMessage(Type.INTERNAL_RESULT,
-                    message.getQueryID(), resultTablet.serialize());
+            TabletMessage response = new TabletMessage(message.getQueryId(),
+                    resultTablet.serialize());
 
-            coordinatorChannel.write(response);
+            channel.write(response);
         } catch (IOException e) {
             log.warn("Caught exception while creating result: {}",
                     e.getMessage());
         }
     }
 
-    public void query(Query query) {
-        // TODO
-        log.debug("Query received: " + query);
-    }
-
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
         log.debug("Message received from {}.", e.getRemoteAddress());
-        if (e.getMessage() instanceof SimpleMessage) {
+        if (e.getMessage() instanceof QueryMessage) {
+            query((QueryMessage) e.getMessage(), e.getChannel());
+        } else if (e.getMessage() instanceof SimpleMessage) {
             SimpleMessage simpleMsg = ((SimpleMessage) e.getMessage());
             log.debug("Message: {}", simpleMsg.toString());
             switch (simpleMsg.getType()) {
@@ -152,9 +150,6 @@ public class Leaf extends ChannelNode implements Stoppable {
                 // .getPayload());
                 // // leaf.close();
                 // leaf.connectNReg(innerAddress);
-                break;
-            case INTERNAL_QUERY:
-                this.query(simpleMsg);
                 break;
             case REGINNER:
             case REGLEAF:

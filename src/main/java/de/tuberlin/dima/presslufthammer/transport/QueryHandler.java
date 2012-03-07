@@ -16,8 +16,10 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryReadonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordPrinter;
 import de.tuberlin.dima.presslufthammer.query.Query;
+import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
+import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.messages.TabletMessage;
 
 /**
  * @author feichh
@@ -25,77 +27,81 @@ import de.tuberlin.dima.presslufthammer.transport.messages.Type;
  * 
  */
 public class QueryHandler {
-    
-	public enum QueryStatus {
-		OPEN, CLOSED
-	}
-	
-	private Logger log = LoggerFactory.getLogger(getClass());
 
-	final byte queryID;
-	final Channel client;
-	final SimpleMessage queryMsg;
-	final Query query;
-	private int numPartsExpected;
-	QueryStatus status;
-	SchemaNode schema;
-	List<InMemoryReadonlyTablet> parts;
+    public enum QueryStatus {
+        OPEN, CLOSED
+    }
 
-	public QueryHandler(int parts, SimpleMessage queryMsg, SchemaNode schema, Channel client) {
-		assert (queryMsg.getQueryID() > 0);
-		this.parts = Lists.newLinkedList();
-		this.numPartsExpected = parts;
-		this.queryMsg = queryMsg;
-		this.query = null;
-		this.queryID = queryMsg.getQueryID();
-		this.client = client;
-		this.status = QueryStatus.OPEN;
-		this.schema = schema;
-	}
+    private Logger log = LoggerFactory.getLogger(getClass());
 
-	public void addPart(SimpleMessage message) {
-		if (message.getQueryID() == queryID && parts.size() < numPartsExpected) {
-			parts.add(new InMemoryReadonlyTablet(message.getPayload()));
-			if (parts.size() == numPartsExpected) {
-				assemble();
-			}
-		}
-	}
+    final int queryID;
+    final Channel client;
+    final QueryMessage queryMsg;
+    final Query query;
+    private int numPartsExpected;
+    QueryStatus status;
+    SchemaNode schema;
+    List<InMemoryReadonlyTablet> parts;
 
-	private void assemble() {
-	    ByteArrayOutputStream outArray = new ByteArrayOutputStream();
-	    PrintWriter writer = new PrintWriter(outArray);
-	    JSONRecordPrinter recordPrinter = new JSONRecordPrinter(schema, writer);
-	    
-	    AssemblyFSM assemblyFSM = new AssemblyFSM(schema);
-	    
-	    log.info("Assembling client response from {} tablets.", parts.size());
-	    
-	    for (InMemoryReadonlyTablet tablet : parts) {
-	        try {
+    public QueryHandler(int parts, QueryMessage queryMsg, SchemaNode schema,
+            Channel client) {
+        assert (queryMsg.getQueryId() > 0);
+        this.parts = Lists.newLinkedList();
+        this.numPartsExpected = parts;
+        this.queryMsg = queryMsg;
+        this.query = null;
+        this.queryID = queryMsg.getQueryId();
+        this.client = client;
+        this.status = QueryStatus.OPEN;
+        this.schema = schema;
+    }
+
+    public void addPart(TabletMessage message) {
+        if (message.getQueryId() == queryID && parts.size() < numPartsExpected) {
+            parts.add(new InMemoryReadonlyTablet(message.getTabletData()));
+            if (parts.size() == numPartsExpected) {
+                assemble();
+            }
+        }
+    }
+
+    private void assemble() {
+        ByteArrayOutputStream outArray = new ByteArrayOutputStream();
+        PrintWriter writer = new PrintWriter(outArray);
+        JSONRecordPrinter recordPrinter = new JSONRecordPrinter(schema, writer);
+
+        AssemblyFSM assemblyFSM = new AssemblyFSM(schema);
+
+        log.info("Assembling client response from {} tablets.", parts.size());
+
+        for (InMemoryReadonlyTablet tablet : parts) {
+            try {
                 assemblyFSM.assembleRecords(tablet, recordPrinter);
             } catch (IOException e) {
-                log.warn("Caught exception while assembling result for client: {}", e.getMessage());
+                log.warn(
+                        "Caught exception while assembling result for client: {}",
+                        e.getMessage());
             }
-	    }
-	    writer.flush();
-	    
-		if (client != null) {
-			if(outArray.size() < 1) {
-				log.warn("Assembled response has size {}", outArray.size());
-			}
-			client.write(new SimpleMessage(Type.CLIENT_RESULT, queryID, outArray.toByteArray()));
-		} else {
-		    log.warn("No client in QueryHandler.");
-		}
-		close();
-	}
+        }
+        writer.flush();
 
-	public boolean isComplete() {
-		return this.status == QueryStatus.CLOSED;
-	}
+        if (client != null) {
+            if (outArray.size() < 1) {
+                log.warn("Assembled response has size {}", outArray.size());
+            }
+            client.write(new SimpleMessage(MessageType.CLIENT_RESULT, queryID,
+                    outArray.toByteArray()));
+        } else {
+            log.warn("No client in QueryHandler.");
+        }
+        close();
+    }
 
-	private void close() {
-		status = QueryStatus.CLOSED;
-	}
+    public boolean isComplete() {
+        return this.status == QueryStatus.CLOSED;
+    }
+
+    private void close() {
+        status = QueryStatus.CLOSED;
+    }
 }

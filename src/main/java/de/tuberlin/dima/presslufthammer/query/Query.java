@@ -1,205 +1,101 @@
 package de.tuberlin.dima.presslufthammer.query;
 
-import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 
 /**
- * @author feichh
+ * A class for representing a query in our simplistic query language. The
+ * toString() method generates output that can again be parser by our query
+ * parser, this is useful for transmitting the query over the network. (Too lazy
+ * to implement a proper serialized form ... :D)
+ * 
  * @author Aljoscha Krettek
  * 
  */
 public class Query {
-    private static final String SEPERATOR = ":";
-    private static final String SUBSEPERATOR = ",";
-    private static final Splitter splitter = Splitter.on(SEPERATOR);
-    private static final Splitter subSplitter = Splitter.on(SUBSEPERATOR);
+    private List<SelectClause> selectClauses;
+    private List<WhereClause> whereClauses;
+    private List<String> groupByColumns;
+    private String tableName;
+    private int partition;
 
-    private byte id;
-    private Projection[] select;
-    private String from;
-    private byte part;
-    private Selection where;
-    private String[] groupBy;
-
-    /**
-     * empty constructor
-     */
-    public Query() {
+    public Query(String tableName, int partition,
+            List<SelectClause> selectClauses, List<WhereClause> whereClauses,
+            List<String> groupByColumns) {
+        this.partition = partition;
+        this.selectClauses = Lists.newLinkedList(selectClauses);
+        this.whereClauses = Lists.newLinkedList(whereClauses);
+        this.groupByColumns = Lists.newLinkedList(groupByColumns);
+        this.tableName = tableName;
     }
 
-    /**
-     * Constructor with fields
-     * 
-     * @param id
-     *            query ID
-     * @param select
-     *            projection clause
-     * @param from
-     *            targeted data source (table)
-     * @param part
-     *            partition of the source
-     * @param where
-     *            selection clause
-     * @param groupBy
-     *            grouping clause
-     */
-    public Query(byte id, Projection[] select, String from, byte part,
-            Selection where, String[] groupBy) {
-        super();
-        assert (from != null);
-        this.id = id;
-        this.select = select;
-        this.from = from;
-        this.part = part;
-        this.where = where;
-        this.groupBy = groupBy;
+    public Query(Query other) {
+        this.selectClauses = Lists.newLinkedList(other.selectClauses);
+        this.whereClauses = Lists.newLinkedList(other.whereClauses);
+        this.groupByColumns = Lists.newLinkedList(other.groupByColumns);
+        this.tableName = other.tableName;
     }
 
-    /**
-     * expects Query.toString().getBytes() as input
-     * 
-     * @param bytes
-     *            bytes of a String representing a Query
-     */
-    public Query(byte[] bytes) {
-        this(new String(bytes));
+    public List<SelectClause> getSelectClauses() {
+        return selectClauses;
     }
 
-    /**
-     * expects Query.toString() as input
-     * 
-     * @param query
-     *            String representation of a Query
-     */
-    public Query(String query) {
-        Iterator<String> splitIter = splitter.split(query).iterator();
-        // ID
-        this.id = Byte.parseByte(splitIter.next());
-        // SELECT
-        Iterable<String> selectIter = subSplitter.split(splitIter.next());
-        List<Projection> selectList = Lists.newLinkedList();
-        for (String select : selectIter) {
-            selectList.add(new Projection(select));
-        }
-        this.select = selectList.toArray(new Projection[selectList.size()]);
-        // FROM
-        this.from = splitIter.next();
-        // PART
-        this.part = Byte.parseByte(splitIter.next());
-        // WHERE
-        this.where = new Selection(splitIter.next());
-        // GROUP BY
-        Iterable<String> groupIter = subSplitter.split(splitIter.next());
-        List<String> groupByList = Lists.newLinkedList();
-        for (String groupBy : groupIter) {
-            groupByList.add(groupBy);
-        }
-        this.groupBy = groupByList.toArray(new String[groupByList.size()]);
+    public void setSelectClauses(List<SelectClause> selectClauses) {
+        this.selectClauses = selectClauses;
     }
 
-    /**
-     * @return the id
-     */
-    public byte getId() {
-        return id;
+    public List<WhereClause> getWhereClauses() {
+        return whereClauses;
     }
 
-    /**
-     * @param id
-     *            the id to set
-     */
-    public void setId(byte id) {
-        this.id = id;
+    public void setWhereClauses(List<WhereClause> whereClauses) {
+        this.whereClauses = whereClauses;
     }
 
-    /**
-     * @return the select
-     */
-    public Projection[] getSelect() {
-        return select;
+    public List<String> getGroupByColumns() {
+        return groupByColumns;
     }
 
-    /**
-     * @param select
-     *            the select to set
-     */
-    public void setSelect(Projection[] select) {
-        this.select = select;
+    public void setGroupByColumns(List<String> groupByColumns) {
+        this.groupByColumns = groupByColumns;
     }
 
-    /**
-     * @return the from
-     */
-    public String getFrom() {
-        return from;
+    public String getTableName() {
+        return tableName;
     }
 
-    /**
-     * @param from
-     *            the from to set
-     */
-    public void setFrom(String from) {
-        this.from = from;
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
 
-    /**
-     * @return the part
-     */
-    public byte getPart() {
-        return part;
+    public int getPartition() {
+        return partition;
     }
 
-    /**
-     * @param part
-     *            the part to set
-     */
-    public void setPart(byte part) {
-        this.part = part;
-    }
-
-    /**
-     * @return the where
-     */
-    public Selection getWhere() {
-        return where;
-    }
-
-    /**
-     * @param where
-     *            the where to set
-     */
-    public void setWhere(Selection where) {
-        this.where = where;
-    }
-
-    /**
-     * @return the groupBy
-     */
-    public String[] getGroupBy() {
-        return groupBy;
-    }
-
-    /**
-     * @param groupBy
-     *            the groupBy to set
-     */
-    public void setGroupBy(String[] groupBy) {
-        this.groupBy = groupBy;
+    public void setPartition(int partition) {
+        this.partition = partition;
     }
 
     @Override
     public String toString() {
-        String string = id + SEPERATOR;
-        Joiner subJoin = Joiner.on(SUBSEPERATOR);
-        string += subJoin.join(select);
-        string += SEPERATOR + from;
-        string += SEPERATOR + part;
-        string += SEPERATOR + where + SEPERATOR;
-        string += subJoin.join(groupBy);
-        return string;
+        StringBuilder result = new StringBuilder();
+        result.append("SELECT ");
+        Joiner commaJoiner = Joiner.on(",");
+        result.append(commaJoiner.join(selectClauses));
+        result.append(" FROM " + tableName + ":" + partition);
+
+        if (whereClauses.size() > 0) {
+            result.append(" WHERE ");
+            result.append(commaJoiner.join(whereClauses));
+        }
+
+        if (groupByColumns.size() > 0) {
+            result.append(" GROUP BY ");
+            result.append(commaJoiner.join(groupByColumns));
+        }
+
+        return result.toString();
     }
 }

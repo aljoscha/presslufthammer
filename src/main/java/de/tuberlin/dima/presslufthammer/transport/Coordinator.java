@@ -23,10 +23,12 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.query.Projection;
 import de.tuberlin.dima.presslufthammer.query.Query;
+import de.tuberlin.dima.presslufthammer.query.SelectClause;
+import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
+import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.messages.TabletMessage;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
 import de.tuberlin.dima.presslufthammer.xml.DataSource;
@@ -49,9 +51,9 @@ public class Coordinator extends ChannelNode implements Stoppable {
     private ChannelGroup clientChannels = new DefaultChannelGroup();
     private final GenericHandler handler = new GenericHandler(this);
     private Channel rootChannel = null;
-    private final Map<Byte, QueryHandler> queries = new HashMap<Byte, QueryHandler>();
+    private final Map<Integer, QueryHandler> queries = new HashMap<Integer, QueryHandler>();
     private Map<String, DataSource> tables;
-    private byte priorQID = 0;
+    private int priorQID = -1;
 
     private boolean running = false;
 
@@ -110,9 +112,9 @@ public class Coordinator extends ChannelNode implements Stoppable {
         }
     }
 
-    public void query(SimpleMessage message, Channel client) {
-        log.info("Received query({}) from client {}.", message,
-                client.getLocalAddress());
+    public void query(QueryMessage message, Channel client) {
+        log.info("Received query \"{}\" from client {}.", message.getQuery(),
+                client.getRemoteAddress());
 
         if (isServing()) {
             if (rootChannel != null) {
@@ -125,28 +127,26 @@ public class Coordinator extends ChannelNode implements Stoppable {
 
             } else {
                 log.info("Querying leafs directly.");
-                byte qid = nextQID();
-                message.setQueryID(qid);
-                Query query = new Query(message.getPayload());
-                log.info("Received query: {}", query);
+                int qid = nextQID();
+                message = new QueryMessage(qid, message.getQuery());
+                Query query = message.getQuery();
 
-                String tableName = query.getFrom();
+                String tableName = query.getTableName();
                 if (!tables.containsKey(tableName)) {
-                    client.write(new SimpleMessage(Type.CLIENT_RESULT,
+                    client.write(new SimpleMessage(MessageType.CLIENT_RESULT,
                             (byte) -1, "Table not available".getBytes()));
                     log.info("Table {} not in tables.", tableName);
                 } else {
                     DataSource table = tables.get(tableName);
                     Set<String> projectedFields = Sets.newHashSet();
-                    for (Projection project : query.getSelect()) {
-                        projectedFields.add(project.getColumn());
+                    for (SelectClause selectClause : query.getSelectClauses()) {
+                        projectedFields.add(selectClause.getColumn());
                     }
                     SchemaNode projectedSchema = null;
                     if (projectedFields.contains("*")) {
                         log.debug("Query is a 'select * ...' query.");
                         projectedSchema = table.getSchema();
                     } else {
-
                         projectedSchema = table.getSchema().project(
                                 projectedFields);
                     }
@@ -165,11 +165,10 @@ public class Coordinator extends ChannelNode implements Stoppable {
                             leaf = leafIter.next();
                         }
                         // create a new query for only the specific partition
-                        Query leafQuery = new Query(query.toString());
-                        leafQuery.setPart((byte) i);
-                        SimpleMessage leafMessage = new SimpleMessage(
-                                Type.INTERNAL_QUERY, qid, leafQuery.toString()
-                                        .getBytes());
+                        Query leafQuery = new Query(query);
+                        leafQuery.setPartition(i);
+                        QueryMessage leafMessage = new QueryMessage(qid,
+                                leafQuery);
                         leaf.write(leafMessage);
                         log.info("Sent query to leaf {}: {}",
                                 leaf.getRemoteAddress(), leafQuery);
@@ -221,7 +220,7 @@ public class Coordinator extends ChannelNode implements Stoppable {
 
     private SimpleMessage getRootInfo() {
         // TODO
-        Type type = Type.INFO;
+        MessageType type = MessageType.INFO;
         byte[] payload = rootChannel.getRemoteAddress().toString().getBytes();
         return new SimpleMessage(type, (byte) 0, payload);
     }
@@ -243,10 +242,11 @@ public class Coordinator extends ChannelNode implements Stoppable {
         // log.debug( "" + openChannels.remove( channel));
     }
 
-    public void handleResult(SimpleMessage message) {
+    public void handleResult(TabletMessage message) {
         // TODO
-        byte qid = message.getQueryID();
+        int qid = message.getQueryId();
         QueryHandler qhand = queries.get(qid);
+        System.out.println(queries);
         if (qhand != null) {
             qhand.addPart(message);
         }
@@ -263,7 +263,11 @@ public class Coordinator extends ChannelNode implements Stoppable {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
         log.debug("Message received from {}.", e.getRemoteAddress());
-        if (e.getMessage() instanceof SimpleMessage) {
+        if (e.getMessage() instanceof QueryMessage) {
+            query((QueryMessage) e.getMessage(), e.getChannel());
+        } else if (e.getMessage() instanceof TabletMessage) {
+            handleResult((TabletMessage) e.getMessage());
+        } else if (e.getMessage() instanceof SimpleMessage) {
             SimpleMessage message = ((SimpleMessage) e.getMessage());
             log.debug("Message: {}", message.toString());
 
@@ -276,14 +280,6 @@ public class Coordinator extends ChannelNode implements Stoppable {
             case REGLEAF:
                 this.addLeaf(e.getChannel());
                 break;
-            case INTERNAL_RESULT:
-                // Send the result to the coordinator so it can be assembled
-                this.handleResult(message);
-                break;
-            case CLIENT_QUERY:
-                // handle the query from the client
-                this.query(message, e.getChannel());
-                break;
             case UNKNOWN:
                 break;
             case INFO:
@@ -294,17 +290,17 @@ public class Coordinator extends ChannelNode implements Stoppable {
             }
 
             e.getChannel().write(
-                    new SimpleMessage(Type.ACK, (byte) 0,
+                    new SimpleMessage(MessageType.ACK, (byte) 0,
                             new byte[] { (byte) 0 }));
         }
     }
 
-    private byte nextQID() {
+    private int nextQID() {
         return ++priorQID;
     }
 
     private static void printUsage() {
-        System.out.println("Parameters:");
+        System.out.println("Usage:");
         System.out.println("port datasources");
     }
 

@@ -2,24 +2,24 @@ package de.tuberlin.dima.presslufthammer.transport.messages;
 
 
 public class SimpleMessage {
-	private Type type;
-	private byte queryID;
+	private MessageType type;
+	private int queryID;
 	private byte[] payload;
 
 	public SimpleMessage() {
 	}
 
-	public SimpleMessage(Type t, byte qid, byte[] load) {
+	public SimpleMessage(MessageType t, int qid, byte[] load) {
 		this.type = t;
 		this.queryID = qid;
 		this.payload = load;
 	}
 
-	public Type getType() {
+	public MessageType getType() {
 		return type;
 	}
 
-	public void setType(Type type) {
+	public void setType(MessageType type) {
 		this.type = type;
 	}
 
@@ -31,7 +31,7 @@ public class SimpleMessage {
 		this.payload = payload;
 	}
 
-	public byte getQueryID() {
+	public int getQueryID() {
 		return queryID;
 	}
 

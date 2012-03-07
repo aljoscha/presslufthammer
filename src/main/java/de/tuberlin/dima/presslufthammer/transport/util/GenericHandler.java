@@ -40,10 +40,6 @@ public class GenericHandler extends SimpleChannelHandler {
 		ctx.sendUpstream(e);
 	}
 
-	public ChannelGroup getOpenChannels() {
-		return openChannels;
-	}
-
 	@Override
 	public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
@@ -62,4 +58,5 @@ public class GenericHandler extends SimpleChannelHandler {
 		}
 	}
 
+	
 }

@@ -25,7 +25,8 @@ public class SlaveTest {
 	private static final int PORT = 44444;
 	private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
 	private static final File LEAF_DATADIR = new File("data-dir");
-	private static final int NUM_SLAVES = 7; 
+	private static final int NUM_SLAVES = 5;
+	private static final int SLAVE_DEGREE = 4;
 
 	public static void main(String[] args) throws Exception {
 
@@ -34,13 +35,13 @@ public class SlaveTest {
 		coord.start();
 
 		List<Slave> slaves = new ArrayList<Slave>();
-		Slave slave_0 = new Slave(HOST, PORT, LEAF_DATADIR);
+		Slave slave_0 = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR);
 		slave_0.start();
 		slaves.add(0, slave_0);
 		log.info("Waiting for the coordinator to accept the root node.");
 		Thread.sleep(5000);// wait until slave_0 has been established as root
 		for(int i = 1; i < NUM_SLAVES; i++) {
-			Slave s = new Slave(HOST, PORT, LEAF_DATADIR);
+			Slave s = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR);
 			s.start();
 			slaves.add(i, s);
 			Thread.sleep(1000);

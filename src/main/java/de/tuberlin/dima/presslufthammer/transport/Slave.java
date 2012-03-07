@@ -102,11 +102,37 @@ public class Slave extends ChannelNode implements Stoppable {
 	 * 
 	 */
 	private OnDiskDataStore dataStore;
+//
+//	/**
+//	 * Constructor<br />
+//	 * Reads data from the data directory.
+//	 * 
+//	 * @param serverHost
+//	 *            coordinator hostname or address
+//	 * @param serverPort
+//	 *            coordinator port
+//	 * @param dataDirectory
+//	 *            directory containing data sources
+//	 */
+//	public Slave(String serverHost, int serverPort, File dataDirectory) {
+//		this.serverHost = serverHost;
+//		this.serverPort = serverPort;
+//		this.degree = 2;
+//
+//		try {
+//			dataStore = OnDiskDataStore.openDataStore(dataDirectory);
+//		} catch (IOException e) {
+//			log.warn("Exception caught while while loading datastore: {}",
+//					e.getMessage());
+//		}
+//	}
 
 	/**
 	 * Constructor<br />
 	 * Reads data from the data directory.
 	 * 
+	 * @param degree
+	 *            the number of direct children the slave should accept
 	 * @param serverHost
 	 *            coordinator hostname or address
 	 * @param serverPort
@@ -114,10 +140,14 @@ public class Slave extends ChannelNode implements Stoppable {
 	 * @param dataDirectory
 	 *            directory containing data sources
 	 */
-	public Slave(String serverHost, int serverPort, File dataDirectory) {
+	public Slave(int degree, String serverHost, int serverPort,
+			File dataDirectory) {
+		if (degree < 1) {
+			log.error("not a valid degree: " + degree, new Exception());
+		}
 		this.serverHost = serverHost;
 		this.serverPort = serverPort;
-		this.degree = 2;
+		this.degree = degree;
 
 		try {
 			dataStore = OnDiskDataStore.openDataStore(dataDirectory);
@@ -403,7 +433,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	public void stop() {
 		// TODO proper shut down
 		log.info("Stopping slave at {}.", coordinatorChannel);
-		super.close();
+		super.close();// should disconnect and close all open channels
 		if (coordinatorChannel != null) {
 			// if (coordinatorChannel.isConnected()) {
 			// coordinatorChannel.disconnect().awaitUninterruptibly();
@@ -430,21 +460,22 @@ public class Slave extends ChannelNode implements Stoppable {
 	//
 	// private static void printUsage() {
 	// System.out.println("Usage:");
-	// System.out.println("hostname port data-dir");
+	// System.out.println("degree hostname port data-dir");
 	// }
 	//
 	// public static void main(String[] args) throws InterruptedException {
 	// // Print usage if necessary.
-	// if (args.length < 3) {
+	// if (args.length < 4) {
 	// printUsage();
 	// return;
 	// }
 	// // Parse options.
-	// String host = args[0];
-	// int port = Integer.parseInt(args[1]);
-	// File dataDirectory = new File(args[2]);
+	// int degree = Integer.parseInt(args[0]);
+	// String host = args[1];
+	// int port = Integer.parseInt(args[2]);
+	// File dataDirectory = new File(args[3]);
 	//
-	// Slave leaf = new Slave(host, port, dataDirectory);
-	// leaf.start();
+	// Slave slave = new Slave(degree, host, port, dataDirectory);
+	// slave.start();
 	// }
 }

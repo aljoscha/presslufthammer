@@ -102,7 +102,8 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 	@Override
 	public void stop() {
 		log.info("Stopping coordinator.");
-		handler.getOpenChannels().close().awaitUninterruptibly();
+		this.openChannels.disconnect().awaitUninterruptibly();
+		this.openChannels.close().awaitUninterruptibly();
 		bootstrap.releaseExternalResources();
 		log.info("Coordinator stopped.");
 	}
@@ -221,7 +222,8 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		if (qhand != null) {
 			qhand.addPart(message);
 		} else {
-			log.error("Received result for query " + qid + " but no handler was found.");
+			log.error("Received result for query " + qid
+					+ " but no handler was found.");
 		}
 	}
 

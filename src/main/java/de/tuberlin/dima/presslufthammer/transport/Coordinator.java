@@ -101,7 +101,8 @@ public class Coordinator extends ChannelNode implements Stoppable {
 	@Override
 	public void stop() {
 		log.info("Stopping coordinator.");
-		handler.getOpenChannels().close().awaitUninterruptibly();
+		this.openChannels.disconnect().awaitUninterruptibly();
+		this.openChannels.close().awaitUninterruptibly();
 		bootstrap.releaseExternalResources();
 		log.info("Coordinator stopped.");
 	}

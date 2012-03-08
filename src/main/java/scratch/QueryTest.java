@@ -36,7 +36,7 @@ public class QueryTest {
 
         if (client.start()) {
             Query query = QueryParser
-                    .parse("SELECT Document.DocId, Document.Name.Language.Code,Document.Name.Language.Country FROM DOCUMENT");
+                    .parse("SELECT Document.DocId, Document.Name.Language.Code,Document.Name.Language.Country FROM Document");
             QueryMessage queryMsg = new QueryMessage(-1, query);
             client.query(queryMsg);
         }

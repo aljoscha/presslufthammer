@@ -147,10 +147,17 @@ public class CLIClient extends ChannelNode {
                 running = false;
             } else {
 
-                Query query = QueryParser.parse(line);
-                System.out.println("QUERY: " + query);
-                QueryMessage queryMsg = new QueryMessage(-1, query);
-                client.query(queryMsg);
+                Query query;
+                try {
+                    query = QueryParser.parse(line);
+                    QueryMessage queryMsg = new QueryMessage(-1, query);
+                    client.query(queryMsg);
+                } catch (QueryParser.ParseError e) {
+                    System.err.println("Error parsing query:");
+                    for (String error : e.getErrors()) {
+                        System.err.println(error);
+                    }
+                }
             }
         }
 

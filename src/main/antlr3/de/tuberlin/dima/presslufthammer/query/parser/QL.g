@@ -1,6 +1,8 @@
 /**
  * ANTLR grammar for our simplistic query language, the rules directly
  * create the query using the classes in query.*. 
+ *
+ * @autor Aljoscha Krettek
  */
 grammar QL;
 
@@ -10,13 +12,27 @@ options {
 }
 
 @header {
-package de.tuberlin.dima.presslufthammer.query.parser;
-import de.tuberlin.dima.presslufthammer.query.*;
-import com.google.common.collect.Lists;
+  package de.tuberlin.dima.presslufthammer.query.parser;
+  import de.tuberlin.dima.presslufthammer.query.*;
+  import com.google.common.collect.Lists;
 }
 
+@members {
+    private List<String> errors = Lists.newLinkedList();
+    public void displayRecognitionError(String[] tokenNames,
+                                        RecognitionException e) {
+        String hdr = getErrorHeader(e);
+        String msg = getErrorMessage(e, tokenNames);
+        errors.add(hdr + " " + msg);
+    }
+    public List<String> getErrors() {
+        return errors;
+    }
+}
+
+
 @lexer::header {
-package de.tuberlin.dima.presslufthammer.query.parser;
+  package de.tuberlin.dima.presslufthammer.query.parser;
 }
 
 // Parser section *************************************************************

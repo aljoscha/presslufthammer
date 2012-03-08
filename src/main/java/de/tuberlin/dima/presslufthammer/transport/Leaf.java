@@ -49,6 +49,8 @@ public class Leaf extends ChannelNode implements Stoppable {
 
     private OnDiskDataStore dataStore;
 
+    private boolean running = false;
+
     public Leaf(String serverHost, int serverPort, File dataDirectory) {
         this.serverHost = serverHost;
         this.serverPort = serverPort;
@@ -80,6 +82,7 @@ public class Leaf extends ChannelNode implements Stoppable {
             log.info("Connected to coordinator at {}:{}", serverHost,
                     serverPort);
             Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
+            running = true;
         } else {
             bootstrap.releaseExternalResources();
             log.info("Failed to conncet to coordinator at {}:{}", serverHost,
@@ -134,17 +137,18 @@ public class Leaf extends ChannelNode implements Stoppable {
         log.debug("Query received: " + query);
     }
 
-	@Override
-	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
-		log.debug("Message received from {}.", e.getRemoteAddress());
-		if (e.getMessage() instanceof SimpleMessage) {
-			SimpleMessage simpleMsg = ((SimpleMessage) e.getMessage());
-			log.debug("Message: {}", simpleMsg.toString());
+    @Override
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+        log.debug("Message received from {}.", e.getRemoteAddress());
+        if (e.getMessage() instanceof SimpleMessage) {
+            SimpleMessage simpleMsg = ((SimpleMessage) e.getMessage());
+            log.debug("Message: {}", simpleMsg.toString());
             switch (simpleMsg.getType()) {
             case ACK:
                 break;
             case INFO:
-                // InetSocketAddress innerAddress = getSockAddrFromBytes(pressluft
+                // InetSocketAddress innerAddress =
+                // getSockAddrFromBytes(pressluft
                 // .getPayload());
                 // // leaf.close();
                 // leaf.connectNReg(innerAddress);
@@ -160,16 +164,19 @@ public class Leaf extends ChannelNode implements Stoppable {
 
             }
         }
-	}
+    }
 
     @Override
     public void stop() {
-        log.info("Stopping leaf.");
-        if (coordinatorChannel != null) {
-            coordinatorChannel.close().awaitUninterruptibly();
+        if (running) {
+            log.info("Stopping leaf.");
+            if (coordinatorChannel != null) {
+                coordinatorChannel.close().awaitUninterruptibly();
+            }
+            bootstrap.releaseExternalResources();
+            log.info("Leaf stopped.");
+            running = false;
         }
-        bootstrap.releaseExternalResources();
-        log.info("Leaf stopped.");
     }
 
     private static void printUsage() {

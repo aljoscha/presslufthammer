@@ -39,279 +39,286 @@ import de.tuberlin.dima.presslufthammer.xml.DataSourcesReaderImpl;
  * 
  */
 public class Coordinator extends ChannelNode implements Stoppable {
-	private final Logger log = LoggerFactory.getLogger(getClass());
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
-	private int port;
-	private ServerBootstrap bootstrap;
-	private Channel acceptChannel;
-	private ChannelGroup innerChannels = new DefaultChannelGroup();
-	private ChannelGroup leafChannels = new DefaultChannelGroup();
-	private ChannelGroup clientChannels = new DefaultChannelGroup();
-	private final GenericHandler handler = new GenericHandler(this);
-	private Channel rootChannel = null;
-	private final Map<Byte, QueryHandler> queries = new HashMap<Byte, QueryHandler>();
-	private Map<String, DataSource> tables;
-	private byte priorQID = 0;
+    private int port;
+    private ServerBootstrap bootstrap;
+    private Channel acceptChannel;
+    private ChannelGroup innerChannels = new DefaultChannelGroup();
+    private ChannelGroup leafChannels = new DefaultChannelGroup();
+    private ChannelGroup clientChannels = new DefaultChannelGroup();
+    private final GenericHandler handler = new GenericHandler(this);
+    private Channel rootChannel = null;
+    private final Map<Byte, QueryHandler> queries = new HashMap<Byte, QueryHandler>();
+    private Map<String, DataSource> tables;
+    private byte priorQID = 0;
 
-	public Coordinator(int port, String dataSources) {
-		this.port = port;
-		DataSourcesReader dsReader = new DataSourcesReaderImpl();
-		try {
-			tables = dsReader.readFromXML(dataSources);
-			log.info("Read datasources from {}.", dataSources);
-			log.info(tables.toString());
-		} catch (Exception e) {
-			log.warn("Error reading datasources from {}: {}", dataSources, e.getMessage());
-			if (tables == null) {
-				tables = Maps.newHashMap();
-			}
-		}
-	}
+    private boolean running = false;
 
-	public void start() {
-		ChannelFactory factory = new NioServerSocketChannelFactory(
-				Executors.newCachedThreadPool(),
-				Executors.newCachedThreadPool());
-		bootstrap = new ServerBootstrap(factory);
+    public Coordinator(int port, String dataSources) {
+        this.port = port;
+        DataSourcesReader dsReader = new DataSourcesReaderImpl();
+        try {
+            tables = dsReader.readFromXML(dataSources);
+            log.info("Read datasources from {}.", dataSources);
+            log.info(tables.toString());
+        } catch (Exception e) {
+            log.warn("Error reading datasources from {}: {}", dataSources,
+                    e.getMessage());
+            if (tables == null) {
+                tables = Maps.newHashMap();
+            }
+        }
+    }
 
-		bootstrap.setPipelineFactory(new GenericPipelineFac(this.handler));
+    public void start() {
+        ChannelFactory factory = new NioServerSocketChannelFactory(
+                Executors.newCachedThreadPool(),
+                Executors.newCachedThreadPool());
+        bootstrap = new ServerBootstrap(factory);
 
-		try {
-			acceptChannel = bootstrap.bind(new InetSocketAddress(port));
-		} catch (ChannelException ce) {
-			Throwable cause = ce.getCause();
-			log.error("Failed to start coordinator at port {}: {}.", port,
-					cause.getMessage());
-			return;
-		}
+        bootstrap.setPipelineFactory(new GenericPipelineFac(this.handler));
 
-		if (acceptChannel.isBound()) {
-			Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
-			log.info("Coordinator launched at: " + port);
-		} else {
-			bootstrap.releaseExternalResources();
-			log.error("Failed to start coordinator at port {}.", port);
-		}
+        try {
+            acceptChannel = bootstrap.bind(new InetSocketAddress(port));
+        } catch (ChannelException ce) {
+            Throwable cause = ce.getCause();
+            log.error("Failed to start coordinator at port {}: {}.", port,
+                    cause.getMessage());
+            return;
+        }
 
-	}
+        if (acceptChannel.isBound()) {
+            Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
+            log.info("Coordinator launched at: " + port);
+            running = true;
+        } else {
+            bootstrap.releaseExternalResources();
+            log.error("Failed to start coordinator at port {}.", port);
+        }
 
-	@Override
-	public void stop() {
-		log.info("Stopping coordinator.");
-		handler.getOpenChannels().close().awaitUninterruptibly();
-		bootstrap.releaseExternalResources();
-		log.info("Coordinator stopped.");
-	}
+    }
 
-	public void query(SimpleMessage message, Channel client) {
-		log.info("Received query({}) from client {}.", message,
-				client.getLocalAddress());
+    @Override
+    public void stop() {
+        if (running) {
+            log.info("Stopping coordinator.");
+            handler.getOpenChannels().close().awaitUninterruptibly();
+            bootstrap.releaseExternalResources();
+            log.info("Coordinator stopped.");
+            running = false;
+        }
+    }
 
-		if (isServing()) {
-			if (rootChannel != null) {
-				log.info("Handing query to root node of our node tree.");
-				// // clientChans.add(client);// optional
-				// byte qid = nextQID();
-				// message.setQueryID(qid);
-				// queries.put(qid, new QueryHandler(1, message, client));
-				// rootChannel.write(message);
+    public void query(SimpleMessage message, Channel client) {
+        log.info("Received query({}) from client {}.", message,
+                client.getLocalAddress());
 
-			} else {
-				log.info("Querying leafs directly.");
-				byte qid = nextQID();
-				message.setQueryID(qid);
-				Query query = new Query(message.getPayload());
-				log.info("Received query: {}", query);
+        if (isServing()) {
+            if (rootChannel != null) {
+                log.info("Handing query to root node of our node tree.");
+                // // clientChans.add(client);// optional
+                // byte qid = nextQID();
+                // message.setQueryID(qid);
+                // queries.put(qid, new QueryHandler(1, message, client));
+                // rootChannel.write(message);
 
-				String tableName = query.getFrom();
-				if (!tables.containsKey(tableName)) {
-					client.write(new SimpleMessage(Type.CLIENT_RESULT,
-							(byte) -1, "Table not available".getBytes()));
-					log.info("Table {} not in tables.", tableName);
-				} else {
-					DataSource table = tables.get(tableName);
-					Set<String> projectedFields = Sets.newHashSet();
-					for (Projection project : query.getSelect()) {
-						projectedFields.add(project.getColumn());
-					}
-					SchemaNode projectedSchema = null;
-					if (projectedFields.contains("*")) {
-						log.debug("Query is a 'select * ...' query.");
-						projectedSchema = table.getSchema();
-					} else {
+            } else {
+                log.info("Querying leafs directly.");
+                byte qid = nextQID();
+                message.setQueryID(qid);
+                Query query = new Query(message.getPayload());
+                log.info("Received query: {}", query);
 
-						projectedSchema = table.getSchema().project(
-								projectedFields);
-					}
-					queries.put(qid, new QueryHandler(table.getNumPartitions(),
-							message, projectedSchema, client));
+                String tableName = query.getFrom();
+                if (!tables.containsKey(tableName)) {
+                    client.write(new SimpleMessage(Type.CLIENT_RESULT,
+                            (byte) -1, "Table not available".getBytes()));
+                    log.info("Table {} not in tables.", tableName);
+                } else {
+                    DataSource table = tables.get(tableName);
+                    Set<String> projectedFields = Sets.newHashSet();
+                    for (Projection project : query.getSelect()) {
+                        projectedFields.add(project.getColumn());
+                    }
+                    SchemaNode projectedSchema = null;
+                    if (projectedFields.contains("*")) {
+                        log.debug("Query is a 'select * ...' query.");
+                        projectedSchema = table.getSchema();
+                    } else {
 
-					// send a request to the leafs for every partition
-					Iterator<Channel> leafIter = leafChannels.iterator();
-					for (int i = 0; i < table.getNumPartitions(); ++i) {
-						Channel leaf = null;
-						if (leafIter.hasNext()) {
-							leaf = leafIter.next();
-						} else {
+                        projectedSchema = table.getSchema().project(
+                                projectedFields);
+                    }
+                    queries.put(qid, new QueryHandler(table.getNumPartitions(),
+                            message, projectedSchema, client));
 
-							leafIter = leafChannels.iterator();
-							leaf = leafIter.next();
-						}
-						// create a new query for only the specific partition
-						Query leafQuery = new Query(query.toString());
-						leafQuery.setPart((byte) i);
-						SimpleMessage leafMessage = new SimpleMessage(
-								Type.INTERNAL_QUERY, qid, leafQuery.toString()
-										.getBytes());
-						leaf.write(leafMessage);
-						log.info("Sent query to leaf {}: {}",
-								leaf.getRemoteAddress(), leafQuery);
-					}
-				}
-			}
+                    // send a request to the leafs for every partition
+                    Iterator<Channel> leafIter = leafChannels.iterator();
+                    for (int i = 0; i < table.getNumPartitions(); ++i) {
+                        Channel leaf = null;
+                        if (leafIter.hasNext()) {
+                            leaf = leafIter.next();
+                        } else {
 
-		} else {
-			log.warn("Query cannot be processed because we have no leafs.");
-		}
-	}
+                            leafIter = leafChannels.iterator();
+                            leaf = leafIter.next();
+                        }
+                        // create a new query for only the specific partition
+                        Query leafQuery = new Query(query.toString());
+                        leafQuery.setPart((byte) i);
+                        SimpleMessage leafMessage = new SimpleMessage(
+                                Type.INTERNAL_QUERY, qid, leafQuery.toString()
+                                        .getBytes());
+                        leaf.write(leafMessage);
+                        log.info("Sent query to leaf {}: {}",
+                                leaf.getRemoteAddress(), leafQuery);
+                    }
+                }
+            }
 
-	/**
-	 * Returns {@code true} if this coordinator is connected to at least one
-	 * leaf.
-	 */
-	public boolean isServing() {
-		return handler != null && !leafChannels.isEmpty();
-	}
+        } else {
+            log.warn("Query cannot be processed because we have no leafs.");
+        }
+    }
 
-	public void addClient(Channel channel) {
-		// TODO
-		log.debug("Adding client channel: {}.", channel.getRemoteAddress());
-		clientChannels.add(channel);
-	}
+    /**
+     * Returns {@code true} if this coordinator is connected to at least one
+     * leaf.
+     */
+    public boolean isServing() {
+        return handler != null && !leafChannels.isEmpty();
+    }
 
-	public void addInner(Channel channel) {
-		// TODO
-		log.info("Adding inner node: {}", channel.getRemoteAddress());
-		innerChannels.add(channel);
-		if (rootChannel == null) {
-			log.debug("new root node connected.");
-			rootChannel = channel;
-			SimpleMessage rootInfo = getRootInfo();
-			for (Channel chan : leafChannels) {
-				chan.write(rootInfo);
-			}
-		}
-	}
+    public void addClient(Channel channel) {
+        // TODO
+        log.debug("Adding client channel: {}.", channel.getRemoteAddress());
+        clientChannels.add(channel);
+    }
 
-	public void addLeaf(Channel channel) {
-		// TODO
-		log.info("Adding leaf node: {}", channel.getRemoteAddress());
-		leafChannels.add(channel);
-		if (rootChannel != null) {
-			channel.write(getRootInfo());
-		}
-	}
+    public void addInner(Channel channel) {
+        // TODO
+        log.info("Adding inner node: {}", channel.getRemoteAddress());
+        innerChannels.add(channel);
+        if (rootChannel == null) {
+            log.debug("new root node connected.");
+            rootChannel = channel;
+            SimpleMessage rootInfo = getRootInfo();
+            for (Channel chan : leafChannels) {
+                chan.write(rootInfo);
+            }
+        }
+    }
 
-	private SimpleMessage getRootInfo() {
-		// TODO
-		Type type = Type.INFO;
-		byte[] payload = rootChannel.getRemoteAddress().toString().getBytes();
-		return new SimpleMessage(type, (byte) 0, payload);
-	}
+    public void addLeaf(Channel channel) {
+        // TODO
+        log.info("Adding leaf node: {}", channel.getRemoteAddress());
+        leafChannels.add(channel);
+        if (rootChannel != null) {
+            channel.write(getRootInfo());
+        }
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * de.tuberlin.dima.presslufthammer.transport.ChannelNode#removeChannel(
-	 * org.jboss.netty.channel.Channel)
-	 */
-	@Override
-	public void removeChannel(Channel channel) {
-		// TODO
-		if (rootChannel == channel) {
-			rootChannel = null;
-		}
-		channel.close();
-		// log.debug( "" + openChannels.remove( channel));
-	}
+    private SimpleMessage getRootInfo() {
+        // TODO
+        Type type = Type.INFO;
+        byte[] payload = rootChannel.getRemoteAddress().toString().getBytes();
+        return new SimpleMessage(type, (byte) 0, payload);
+    }
 
-	public void handleResult(SimpleMessage message) {
-		// TODO
-		byte qid = message.getQueryID();
-		QueryHandler qhand = queries.get(qid);
-		if (qhand != null) {
-			qhand.addPart(message);
-		}
-	}
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * de.tuberlin.dima.presslufthammer.transport.ChannelNode#removeChannel(
+     * org.jboss.netty.channel.Channel)
+     */
+    @Override
+    public void removeChannel(Channel channel) {
+        // TODO
+        if (rootChannel == channel) {
+            rootChannel = null;
+        }
+        channel.close();
+        // log.debug( "" + openChannels.remove( channel));
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * de.tuberlin.dima.presslufthammer.transport.ChannelNode#messageReceived
-	 * (org.jboss.netty.channel.ChannelHandlerContext,
-	 * org.jboss.netty.channel.MessageEvent)
-	 */
-	@Override
-	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
-		log.debug("Message received from {}.", e.getRemoteAddress());
-		if (e.getMessage() instanceof SimpleMessage) {
-			SimpleMessage message = ((SimpleMessage) e.getMessage());
-			log.debug("Message: {}", message.toString());
+    public void handleResult(SimpleMessage message) {
+        // TODO
+        byte qid = message.getQueryID();
+        QueryHandler qhand = queries.get(qid);
+        if (qhand != null) {
+            qhand.addPart(message);
+        }
+    }
 
-			switch (message.getType()) {
-			case ACK:
-				break;
-			case REGINNER:
-				this.addInner(e.getChannel());
-				break;
-			case REGLEAF:
-				this.addLeaf(e.getChannel());
-				break;
-			case INTERNAL_RESULT:
-				// Send the result to the coordinator so it can be assembled
-				this.handleResult(message);
-				break;
-			case CLIENT_QUERY:
-				// handle the query from the client
-				this.query(message, e.getChannel());
-				break;
-			case UNKNOWN:
-				break;
-			case INFO:
-				break;
-			case REGCLIENT:
-				this.addClient(e.getChannel());
-				break;
-			}
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * de.tuberlin.dima.presslufthammer.transport.ChannelNode#messageReceived
+     * (org.jboss.netty.channel.ChannelHandlerContext,
+     * org.jboss.netty.channel.MessageEvent)
+     */
+    @Override
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+        log.debug("Message received from {}.", e.getRemoteAddress());
+        if (e.getMessage() instanceof SimpleMessage) {
+            SimpleMessage message = ((SimpleMessage) e.getMessage());
+            log.debug("Message: {}", message.toString());
 
-			e.getChannel().write(
-					new SimpleMessage(Type.ACK, (byte) 0,
-							new byte[] { (byte) 0 }));
-		}
-	}
+            switch (message.getType()) {
+            case ACK:
+                break;
+            case REGINNER:
+                this.addInner(e.getChannel());
+                break;
+            case REGLEAF:
+                this.addLeaf(e.getChannel());
+                break;
+            case INTERNAL_RESULT:
+                // Send the result to the coordinator so it can be assembled
+                this.handleResult(message);
+                break;
+            case CLIENT_QUERY:
+                // handle the query from the client
+                this.query(message, e.getChannel());
+                break;
+            case UNKNOWN:
+                break;
+            case INFO:
+                break;
+            case REGCLIENT:
+                this.addClient(e.getChannel());
+                break;
+            }
 
-	private byte nextQID() {
-		return ++priorQID;
-	}
+            e.getChannel().write(
+                    new SimpleMessage(Type.ACK, (byte) 0,
+                            new byte[] { (byte) 0 }));
+        }
+    }
 
-	private static void printUsage() {
-		System.out.println("Parameters:");
-		System.out.println("port datasources");
-	}
+    private byte nextQID() {
+        return ++priorQID;
+    }
 
-	public static void main(String[] args) {
-		// Print usage if necessary.
-		if (args.length < 2) {
-			printUsage();
-			return;
-		}
+    private static void printUsage() {
+        System.out.println("Parameters:");
+        System.out.println("port datasources");
+    }
 
-		int port = Integer.parseInt(args[0]);
-		String datasources = args[1];
+    public static void main(String[] args) {
+        // Print usage if necessary.
+        if (args.length < 2) {
+            printUsage();
+            return;
+        }
 
-		Coordinator coordinator = new Coordinator(port, datasources);
-		coordinator.start();
-	}
+        int port = Integer.parseInt(args[0]);
+        String datasources = args[1];
+
+        Coordinator coordinator = new Coordinator(port, datasources);
+        coordinator.start();
+    }
 }

@@ -26,6 +26,15 @@ public class ColumnWriterImpl implements ColumnWriter {
      */
     public ColumnWriterImpl(SchemaNode schema, OutputStream outputStream)
             throws IOException {
+        this(schema, new DataOutputStream(
+                new BufferedOutputStream(outputStream)));
+    }
+
+    /**
+     * Constructs a column writer that reads from the given data output stream.
+     */
+    public ColumnWriterImpl(SchemaNode schema, DataOutputStream outputStream)
+            throws IOException {
         this.schema = schema;
         out = new DataOutputStream(new BufferedOutputStream(outputStream));
     }

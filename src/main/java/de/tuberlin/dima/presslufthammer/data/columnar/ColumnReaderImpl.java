@@ -29,8 +29,16 @@ public class ColumnReaderImpl implements ColumnReader {
      */
     public ColumnReaderImpl(SchemaNode schema, InputStream inputStream)
             throws IOException {
+        this(schema, new DataInputStream(new BufferedInputStream(inputStream)));
+    }
+
+    /**
+     * Constructs a column reader directly from the given data input stream.
+     */
+    public ColumnReaderImpl(SchemaNode schema, DataInputStream inputStream)
+            throws IOException {
         this.schema = schema;
-        in = new DataInputStream(new BufferedInputStream(inputStream));
+        this.in = inputStream;
         readNextLevels();
     }
 

@@ -92,13 +92,13 @@ whereClause returns [WhereClause result]
       {
         $result = new WhereClause($column.getText(),
                                   WhereClause.Op.EQ,
-                                  $literal.getText());
+                                  $literal.text.substring(1, $literal.text.length()-1)); 
       }
     | column=IDENTIFIER '!=' literal=STRINGLITERAL
       {
         $result = new WhereClause($column.getText(),
                                   WhereClause.Op.NEQ,
-                                  $literal.getText());
+                                  $literal.text.substring(1, $literal.text.length()-1)); 
       }
     | column=IDENTIFIER '==' literal=INTLITERAL
       {

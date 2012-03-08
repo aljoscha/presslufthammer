@@ -57,6 +57,13 @@ public class GenericHandler extends SimpleChannelHandler {
 			super.messageReceived(ctx, e);
 		}
 	}
-
-	
+//
+//	@Override
+//	public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
+//			throws Exception {
+//		
+//		node.removeChannel(ctx.getChannel());
+//		super.channelClosed(ctx, e);
+//	}
+//
 }

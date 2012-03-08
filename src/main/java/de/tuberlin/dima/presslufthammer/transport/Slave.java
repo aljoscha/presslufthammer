@@ -57,21 +57,42 @@ public class Slave extends ChannelNode implements Stoppable {
 	}
 
 	private static final int CONNECT_TIMEOUT = 10000;
-
+	/**
+	 * logger that logs loggable stuff
+	 */
 	private final Logger log = LoggerFactory.getLogger(getClass());
-	private Channel coordinatorChannel;
-	private Channel parentChannel;
-	private Channel servingChannel;
-	private ClientBootstrap bootstrap;
-	private ClientBootstrap bootstrapParent;
-	private ServerBootstrap serverBootstrap;
 
 	/**
-	 * 
+	 * channel connected to the coordinator
+	 */
+	private Channel coordinatorChannel;
+	/**
+	 * channel connected to the current parent
+	 */
+	private Channel parentChannel;
+	/**
+	 * channel that accepts incoming connections
+	 */
+	private Channel servingChannel;
+	/**
+	 * for connecting to the coordinator
+	 */
+	private ClientBootstrap bootstrapCoordinator;
+	/**
+	 * for the connection to the parent
+	 */
+	private ClientBootstrap bootstrapParent;
+	/**
+	 * for incoming connections of children
+	 */
+	private ServerBootstrap bootstrapServer;
+
+	/**
+	 * host name or address of the coordinator server
 	 */
 	private final String serverHost;
 	/**
-	 * 
+	 * port of the coordinator server
 	 */
 	private final int serverPort;
 	/**
@@ -83,7 +104,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	 */
 	private final int degree;
 	/**
-	 * 
+	 * number of children added
 	 */
 	private int childrenAdded = 0;
 	/**
@@ -102,30 +123,32 @@ public class Slave extends ChannelNode implements Stoppable {
 	 * 
 	 */
 	private OnDiskDataStore dataStore;
-//
-//	/**
-//	 * Constructor<br />
-//	 * Reads data from the data directory.
-//	 * 
-//	 * @param serverHost
-//	 *            coordinator hostname or address
-//	 * @param serverPort
-//	 *            coordinator port
-//	 * @param dataDirectory
-//	 *            directory containing data sources
-//	 */
-//	public Slave(String serverHost, int serverPort, File dataDirectory) {
-//		this.serverHost = serverHost;
-//		this.serverPort = serverPort;
-//		this.degree = 2;
-//
-//		try {
-//			dataStore = OnDiskDataStore.openDataStore(dataDirectory);
-//		} catch (IOException e) {
-//			log.warn("Exception caught while while loading datastore: {}",
-//					e.getMessage());
-//		}
-//	}
+	private boolean connecting = false;
+
+	//
+	// /**
+	// * Constructor<br />
+	// * Reads data from the data directory.
+	// *
+	// * @param serverHost
+	// * coordinator hostname or address
+	// * @param serverPort
+	// * coordinator port
+	// * @param dataDirectory
+	// * directory containing data sources
+	// */
+	// public Slave(String serverHost, int serverPort, File dataDirectory) {
+	// this.serverHost = serverHost;
+	// this.serverPort = serverPort;
+	// this.degree = 2;
+	//
+	// try {
+	// dataStore = OnDiskDataStore.openDataStore(dataDirectory);
+	// } catch (IOException e) {
+	// log.warn("Exception caught while while loading datastore: {}",
+	// e.getMessage());
+	// }
+	// }
 
 	/**
 	 * Constructor<br />
@@ -167,21 +190,20 @@ public class Slave extends ChannelNode implements Stoppable {
 		ChannelFactory factory = new NioClientSocketChannelFactory(
 				Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
-		bootstrap = new ClientBootstrap(factory);
+		bootstrapCoordinator = new ClientBootstrap(factory);
 
-		bootstrap.setPipelineFactory(new GenericPipelineFac(this));
-		bootstrap.setOption("connectTimeoutMillis", CONNECT_TIMEOUT);
+		bootstrapCoordinator.setPipelineFactory(new GenericPipelineFac(this));
+		bootstrapCoordinator.setOption("connectTimeoutMillis", CONNECT_TIMEOUT);
 
 		SocketAddress address = new InetSocketAddress(serverHost, serverPort);
-
-		ChannelFuture connectFuture = bootstrap.connect(address);
+		ChannelFuture connectFuture = bootstrapCoordinator.connect(address);
 		// use a listener because awaitUninter... fails on multiple
 		// conns/threads
 		connectFuture.addListener(new ChannelFutureListener() {
 			public void operationComplete(ChannelFuture future)
 					throws Exception {
 				coordinatorChannel = future.getChannel();
-				parentChannel = coordinatorChannel;
+				// parentChannel = coordinatorChannel;
 				openChannels.add(coordinatorChannel);
 				coordinatorChannel.write(getRegMsg());
 				log.info("Connected to coordinator at {}",
@@ -199,17 +221,17 @@ public class Slave extends ChannelNode implements Stoppable {
 	public void serve() {
 		// Configure the server.
 		// ServerBootstrap bootstrap = new ServerBootstrap(
-		serverBootstrap = new ServerBootstrap(
+		bootstrapServer = new ServerBootstrap(
 				new NioServerSocketChannelFactory(
 						Executors.newCachedThreadPool(),
 						Executors.newCachedThreadPool()));
 
 		// Set up the event pipeline factory.
-		serverBootstrap.setPipelineFactory(new GenericPipelineFac(this));
+		bootstrapServer.setPipelineFactory(new GenericPipelineFac(this));
 
 		// Bind and start to accept incoming connections.
 		try {
-			servingChannel = serverBootstrap
+			servingChannel = bootstrapServer
 					.bind(new InetSocketAddress(ownPort));
 			ownPort = getPortFromSocketAddress(servingChannel.getLocalAddress());
 			log.info("serving on port: " + ownPort);
@@ -240,8 +262,6 @@ public class Slave extends ChannelNode implements Stoppable {
 		Query query = new Query(message.getPayload());
 		log.info("Received query: " + query);
 
-		String table = query.getFrom();
-
 		switch (status) {
 		case INNER:
 			// TODO rewriting of query
@@ -250,6 +270,7 @@ public class Slave extends ChannelNode implements Stoppable {
 			break;
 		case LEAF:
 			try {
+				String table = query.getFrom();
 				Tablet tablet = dataStore.getTablet(table, query.getPart());
 				log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
 						query.getPart());
@@ -362,6 +383,7 @@ public class Slave extends ChannelNode implements Stoppable {
 		// TODO
 		log.info("Connecting to new parent node at {}", address);
 
+		connecting = true;
 		ChannelFactory factory = new NioClientSocketChannelFactory(
 				Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
@@ -384,6 +406,7 @@ public class Slave extends ChannelNode implements Stoppable {
 				parentChannel = future.getChannel();
 				openChannels.add(parentChannel);
 				parentChannel.write(getRegMsg());
+				connecting = false;
 				log.info("Connected to parent at {}",
 						parentChannel.getRemoteAddress());
 			}
@@ -409,8 +432,15 @@ public class Slave extends ChannelNode implements Stoppable {
 				this.query(message);
 				break;
 			case INTERNAL_RESULT:
-				// TODO do something
-				parentChannel.write(message);
+				// TODO aggregating of partial results within intermediate layer
+				if (parentChannel != null && parentChannel.isConnected()) {
+					parentChannel.write(message);
+				} else if (coordinatorChannel != null
+						&& coordinatorChannel.isConnected()) {
+					coordinatorChannel.write(message);
+				} else {
+					log.warn("Received internal result w/o parent connection available.");
+				}
 				break;
 			case REGINNER:
 				this.addChild(e.getChannel(), message);
@@ -430,30 +460,52 @@ public class Slave extends ChannelNode implements Stoppable {
 	}
 
 	@Override
+	public void removeChannel(Channel channel) {
+		// TODO
+		log.debug("Channel to {} closed.", channel.getRemoteAddress());
+		if (parentChannel == channel) {
+			if (!connecting) {
+				parentChannel = null;
+				if (coordinatorChannel.isConnected()) {
+					coordinatorChannel.write(getRegMsg());
+					System.out.println("AAA");
+				} else {
+					connectNReg(serverHost, serverPort);
+					System.out.println("BBB");
+				}
+				log.info("Connection to parent lost. Contacting Coordinator.");
+			}
+		} else {
+			for (ServingChannel sc : directChildren) {
+				if (sc.equals(channel)) {
+					directChildren.remove(sc);
+					break;
+				}
+			}
+		}
+		super.removeChannel(channel);
+	}
+
+	@Override
 	public void stop() {
 		// TODO proper shut down
 		log.info("Stopping slave at {}.", coordinatorChannel);
 		super.close();// should disconnect and close all open channels
-		if (coordinatorChannel != null) {
-			// if (coordinatorChannel.isConnected()) {
-			// coordinatorChannel.disconnect().awaitUninterruptibly();
-			// }
-			coordinatorChannel = null;
-		}
+		coordinatorChannel = null;
 		directChildren.clear();
 		childChannels.clear();
 
-		if (bootstrap != null) {
-			bootstrap.releaseExternalResources();
-			bootstrap = null;
+		if (bootstrapCoordinator != null) {
+			bootstrapCoordinator.releaseExternalResources();
+			bootstrapCoordinator = null;
 		}
 		if (bootstrapParent != null) {
 			bootstrapParent.releaseExternalResources();
 			bootstrapParent = null;
 		}
-		if (serverBootstrap != null) {
-			serverBootstrap.releaseExternalResources();
-			serverBootstrap = null;
+		if (bootstrapServer != null) {
+			bootstrapServer.releaseExternalResources();
+			bootstrapServer = null;
 		}
 		log.info("Slave stopped.");
 	}

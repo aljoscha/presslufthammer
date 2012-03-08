@@ -2,7 +2,6 @@ package de.tuberlin.dima.presslufthammer.transport;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -165,7 +164,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 
 	/**
 	 * Returns {@code true} if this coordinator is connected to at least one
-	 * leaf.
+	 * slave.
 	 */
 	public boolean isServing() {
 		return handler != null && !slaveChannels.isEmpty();
@@ -181,15 +180,20 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		// TODO
 		log.info("Adding inner node: {};", channel.getRemoteAddress());
 		synchronized (slaveChannels) {
-			slaveChannels.add(channel);
+//			log.debug("lock obtained");
+			if(slaveChannels.add(channel)) {
+				log.debug("addition successful");
+			}
 			if (rootChannel == null) {
 				rootChannel = new ServingChannel(channel, portbs);
 				log.info("new root node connected at "
 						+ rootChannel.getRemoteAddress());
 			} else {
 				channel.write(getRootInfo());
+//				System.out.println("CCCCCCCCC");
 			}
 		}
+//		log.debug("lock released");
 	}
 
 	private SimpleMessage getRootInfo() {
@@ -211,6 +215,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		if (rootChannel == channel) {
 			rootChannel = null;
 		}
+		slaveChannels.remove(channel);
 		channel.close();
 		// log.debug( "" + openChannels.remove( channel));
 	}
@@ -249,7 +254,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 				this.addInner(e.getChannel(), message.getPayload());
 				break;
 			case REGLEAF:
-				// this.addLeaf(e.getChannel());
+				this.addInner(e.getChannel(), message.getPayload());
 				break;
 			case INTERNAL_RESULT:
 				// Send the result to the coordinator so it can be assembled

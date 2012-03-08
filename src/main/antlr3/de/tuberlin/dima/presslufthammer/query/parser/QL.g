@@ -53,7 +53,7 @@ query returns [Query result]
       (
       'WHERE'
       wc1=whereClause { whereClauses.add($wc1.result); }
-      (',' wcn=whereClause { whereClauses.add($wcn.result); })*
+      ('OR' wcn=whereClause { whereClauses.add($wcn.result); })*
       )?
       
       (

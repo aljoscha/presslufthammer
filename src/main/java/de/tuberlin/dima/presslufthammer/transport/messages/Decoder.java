@@ -44,9 +44,6 @@ public class Decoder extends ReplayingDecoder<Decoder.DecodingState> {
             checkpoint(DecodingState.PAYLOAD_LENGTH);
         case PAYLOAD_LENGTH:
             int size = messageBuffer.readInt();
-            if (size <= 0) {
-                throw new Exception("Invalid content size");
-            }
             // pre-allocate content buffer
 
             buffer = new byte[size];
@@ -57,6 +54,7 @@ public class Decoder extends ReplayingDecoder<Decoder.DecodingState> {
                 switch (messageType) {
                 case QUERY:
                     ChannelBuffer buf = ChannelBuffers.copiedBuffer(buffer);
+                    System.out.println("DECODING: " + buf.toString(charset));
                     Query query = QueryParser.parse(buf.toString(charset));
                     QueryMessage msg = new QueryMessage(queryId, query);
                     return msg;

@@ -40,12 +40,6 @@ public class Encoder extends OneToOneEncoder {
                     "Message type cannot be null or UNKNOWN");
         }
 
-        if ((message.getPayload() == null)
-                || (message.getPayload().length == 0)) {
-            throw new IllegalArgumentException(
-                    "Message payload cannot be null or empty");
-        }
-
         // type(1b) + qid(1b) + payload length(4b) + payload(nb)
         int size = 9 + message.getPayload().length;
 

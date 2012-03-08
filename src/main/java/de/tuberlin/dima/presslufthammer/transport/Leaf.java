@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Set;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -17,15 +16,11 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
-
-import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.ondisk.OnDiskDataStore;
-import de.tuberlin.dima.presslufthammer.qexec.TabletProjector;
+import de.tuberlin.dima.presslufthammer.qexec.QueryExecutor;
 import de.tuberlin.dima.presslufthammer.query.Query;
-import de.tuberlin.dima.presslufthammer.query.SelectClause;
 import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
 import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
@@ -95,40 +90,28 @@ public class Leaf extends ChannelNode implements Stoppable {
 
     public void query(QueryMessage message, Channel channel) {
         Query query = message.getQuery();
-        log.info("Received query \"{}\" from {}", query, channel.getRemoteAddress());
+        log.info("Received query \"{}\" from {}", query,
+                channel.getRemoteAddress());
 
         String tableName = query.getTableName();
 
         try {
             Tablet tablet = dataStore
                     .getTablet(tableName, query.getPartition());
+
             log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
                     query.getPartition());
 
-            Set<String> projectedFields = Sets.newHashSet();
-            for (SelectClause selectClause : query.getSelectClauses()) {
-                projectedFields.add(selectClause.getColumn());
-            }
-            SchemaNode projectedSchema = null;
-            if (projectedFields.contains("*")) {
-                log.debug("Query is a 'select * ...' query.");
-                projectedSchema = tablet.getSchema();
-            } else {
-                projectedSchema = tablet.getSchema().project(projectedFields);
-            }
+            QueryExecutor qx = new QueryExecutor(tablet, query);
 
-            InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
-                    projectedSchema);
-
-            TabletProjector copier = new TabletProjector();
-            copier.project(projectedSchema, tablet, resultTablet);
+            InMemoryWriteonlyTablet resultTablet = qx.performQuery();
 
             TabletMessage response = new TabletMessage(message.getQueryId(),
                     resultTablet.serialize());
 
             channel.write(response);
         } catch (IOException e) {
-            log.warn("Caught exception while creating result: {}",
+            log.warn("Caught exception while performing query: {}",
                     e.getMessage());
         }
     }

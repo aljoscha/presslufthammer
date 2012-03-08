@@ -42,9 +42,9 @@ public class WhereClause {
     @Override
     public String toString() {
         if (op == Op.EQ) {
-            return column + "==" + value;
+            return column + " == \"" + value + "\"";
         } else if (op == Op.NEQ) {
-            return column + "==" + value;
+            return column + " == \"" + value + "\"";
         } else {
             throw new RuntimeException("Should not happen.");
         }

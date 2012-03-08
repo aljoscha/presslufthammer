@@ -4,6 +4,7 @@ import java.io.File;
 
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.query.parser.QueryParser;
+import de.tuberlin.dima.presslufthammer.query.parser.QueryParser.ParseError;
 import de.tuberlin.dima.presslufthammer.transport.CLIClient;
 import de.tuberlin.dima.presslufthammer.transport.Coordinator;
 import de.tuberlin.dima.presslufthammer.transport.Leaf;
@@ -29,16 +30,21 @@ public class QueryTest {
         Leaf leaf2 = new Leaf(HOST, PORT, LEAF_DATAFIR);
         Leaf leaf3 = new Leaf(HOST, PORT, LEAF_DATAFIR);
         leaf1.start();
-        leaf2.start();
-        leaf3.start();
+        // leaf2.start();
+        // leaf3.start();
 
         CLIClient client = new CLIClient(HOST, PORT);
 
         if (client.start()) {
-            Query query = QueryParser
-                    .parse("SELECT Document.DocId, Document.Name.Language.Code,Document.Name.Language.Country FROM Document");
-            QueryMessage queryMsg = new QueryMessage(-1, query);
-            client.query(queryMsg);
+            try {
+                Query query = QueryParser
+                        .parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://B\"");
+                System.out.println("QUERY: " + query);
+                QueryMessage queryMsg = new QueryMessage(-1, query);
+                client.query(queryMsg);
+            } catch (ParseError e) {
+                System.out.println(e.getErrors());
+            }
         }
 
         Thread.sleep(2000);

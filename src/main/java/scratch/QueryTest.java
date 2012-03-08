@@ -30,8 +30,8 @@ public class QueryTest {
         Leaf leaf2 = new Leaf(HOST, PORT, LEAF_DATAFIR);
         Leaf leaf3 = new Leaf(HOST, PORT, LEAF_DATAFIR);
         leaf1.start();
-        leaf2.start();
-        leaf3.start();
+        // leaf2.start();
+        // leaf3.start();
 
         CLIClient client = new CLIClient(HOST, PORT);
 

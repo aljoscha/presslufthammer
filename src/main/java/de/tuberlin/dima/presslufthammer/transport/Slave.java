@@ -6,7 +6,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -24,17 +23,15 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
-
-import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
-import de.tuberlin.dima.presslufthammer.data.columnar.ondisk.OnDiskDataStore;
-import de.tuberlin.dima.presslufthammer.qexec.TabletProjector;
-import de.tuberlin.dima.presslufthammer.query.Projection;
+import de.tuberlin.dima.presslufthammer.data.columnar.local.LocalDiskDataStore;
+import de.tuberlin.dima.presslufthammer.qexec.QueryExecutor;
 import de.tuberlin.dima.presslufthammer.query.Query;
+import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
+import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.messages.TabletMessage;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
 import de.tuberlin.dima.presslufthammer.transport.util.ServingChannel;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
@@ -122,7 +119,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	/**
 	 * 
 	 */
-	private OnDiskDataStore dataStore;
+	private LocalDiskDataStore dataStore;
 	private boolean connecting = false;
 
 	//
@@ -173,7 +170,7 @@ public class Slave extends ChannelNode implements Stoppable {
 		this.degree = degree;
 
 		try {
-			dataStore = OnDiskDataStore.openDataStore(dataDirectory);
+			dataStore = LocalDiskDataStore.openDataStore(dataDirectory);
 		} catch (IOException e) {
 			log.warn("Exception caught while while loading datastore: {}",
 					e.getMessage());
@@ -257,48 +254,58 @@ public class Slave extends ChannelNode implements Stoppable {
 		return Integer.parseInt(temp[temp.length - 1]);
 	}
 
-	@Override
-	public void query(SimpleMessage message) {
-		Query query = new Query(message.getPayload());
+	public void query(QueryMessage message) {
+		Query query = message.getQuery();
 		log.info("Received query: " + query);
 
 		switch (status) {
 		case INNER:
 			// TODO rewriting of query
-			int temp = query.getPart() % directChildren.size();
+			int temp = query.getPartition() % directChildren.size();
 			directChildren.get(temp).write(message);
 			break;
 		case LEAF:
 			try {
-				String table = query.getFrom();
-				Tablet tablet = dataStore.getTablet(table, query.getPart());
-				log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
-						query.getPart());
+				String tableName = query.getTableName();
+//				Tablet tablet = dataStore.getTablet(table, query.getPartition());
+//				log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
+//						query.getPartition());
+//
+//				Set<String> projectedFields = Sets.newHashSet();
+//				for (Projection project : query.getSelect()) {
+//					projectedFields.add(project.getColumn());
+//				}
+//				SchemaNode projectedSchema = null;
+//				if (projectedFields.contains("*")) {
+//					log.debug("Query is a 'select * ...' query.");
+//					projectedSchema = tablet.getSchema();
+//				} else {
+//
+//					projectedSchema = tablet.getSchema().project(
+//							projectedFields);
+//				}
+//
+//				InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
+//						projectedSchema);
+//
+//				TabletProjector copier = new TabletProjector();
+//				copier.project(projectedSchema, tablet, resultTablet);
+//
+//				SimpleMessage response = new SimpleMessage(
+//						Type.INTERNAL_RESULT, message.getQueryID(),
+//						resultTablet.serialize());
+				Tablet tablet = dataStore
+	                    .getTablet(tableName, query.getPartition());
 
-				Set<String> projectedFields = Sets.newHashSet();
-				for (Projection project : query.getSelect()) {
-					projectedFields.add(project.getColumn());
-				}
-				SchemaNode projectedSchema = null;
-				if (projectedFields.contains("*")) {
-					log.debug("Query is a 'select * ...' query.");
-					projectedSchema = tablet.getSchema();
-				} else {
+	            log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
+	                    query.getPartition());
 
-					projectedSchema = tablet.getSchema().project(
-							projectedFields);
-				}
+	            QueryExecutor qx = new QueryExecutor(tablet, query);
 
-				InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
-						projectedSchema);
+	            InMemoryWriteonlyTablet resultTablet = qx.performQuery();
 
-				TabletProjector copier = new TabletProjector();
-				copier.project(projectedSchema, tablet, resultTablet);
-
-				SimpleMessage response = new SimpleMessage(
-						Type.INTERNAL_RESULT, message.getQueryID(),
-						resultTablet.serialize());
-
+	            TabletMessage response = new TabletMessage(message.getQueryId(),
+	                    resultTablet.serialize());
 				parentChannel.write(response);
 			} catch (IOException e) {
 				log.warn("Caught exception while creating result: {}",
@@ -334,7 +341,7 @@ public class Slave extends ChannelNode implements Stoppable {
 				// find a suitable parent
 				int temp = childrenAdded % degree;
 				ServingChannel ch = directChildren.get(temp);
-				newChild.write(new SimpleMessage(Type.REDIR, (byte) -1, ch
+				newChild.write(new SimpleMessage(MessageType.REDIR, -1, ch
 						.getServingAddress().toString().getBytes()));
 			}
 			// add new child to ChannelGroup / List
@@ -367,7 +374,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	 */
 	private SimpleMessage getRegMsg() {
 
-		return new SimpleMessage(Type.REGINNER, (byte) 0,
+		return new SimpleMessage(MessageType.REGINNER, 0,
 				ServingChannel.intToByte(ownPort));
 	}
 
@@ -419,7 +426,9 @@ public class Slave extends ChannelNode implements Stoppable {
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 		log.debug("Message received from {}.", e.getRemoteAddress());
-		if (e.getMessage() instanceof SimpleMessage) {
+        if (e.getMessage() instanceof QueryMessage) {
+            query((QueryMessage) e.getMessage());
+        } else if (e.getMessage() instanceof SimpleMessage) {
 			SimpleMessage message = ((SimpleMessage) e.getMessage());
 			log.debug("Message: {}", message.toString());
 			switch (message.getType()) {
@@ -427,9 +436,6 @@ public class Slave extends ChannelNode implements Stoppable {
 				break;
 			case REDIR:
 				this.connectNReg(getSockAddrFromBytes(message.getPayload()));
-				break;
-			case INTERNAL_QUERY:
-				this.query(message);
 				break;
 			case INTERNAL_RESULT:
 				// TODO aggregating of partial results within intermediate layer
@@ -445,13 +451,14 @@ public class Slave extends ChannelNode implements Stoppable {
 			case REGINNER:
 				this.addChild(e.getChannel(), message);
 				break;
+			case INTERNAL_QUERY:
 			case REGLEAF:
 			case UNKNOWN:
 			case CLIENT_QUERY:
 			case CLIENT_RESULT:
 			case REGCLIENT:
 				e.getChannel().write(
-						new SimpleMessage(Type.NACK, message.getQueryID(),
+						new SimpleMessage(MessageType.NACK, message.getQueryID(),
 								new byte[] { (byte) 0 }));
 				break;
 

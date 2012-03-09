@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.data.columnar.ondisk;
+package de.tuberlin.dima.presslufthammer.data.columnar.local;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,30 +15,34 @@ import com.google.common.collect.Maps;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderImpl;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderBool;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderDouble;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderFloat;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderInt32;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderInt64;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderString;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriterImpl;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
 /**
- * {@link Tablet} implementation that stores the column data in files on disk.
- * The data is stored in one directory on disk, this directory has one file
- * called "schema.proto" that contains the schema of the tablet and one binary
- * file per column that stores the columnar data (at the beginning this file
- * might be empty).
+ * {@link Tablet} implementation that stores the column data in files on a local
+ * disk. The data is stored in one directory on disk, this directory has one
+ * file called "schema.proto" that contains the schema of the tablet and one
+ * binary file per column that stores the columnar data (at the beginning this
+ * file might be empty).
  * 
  * @author Aljoscha Krettek
  * 
  */
-public class OnDiskTablet implements Tablet {
+public class LocalDiskTablet implements Tablet {
     private SchemaNode schema;
     private Map<SchemaNode, File> columnFiles;
-    private Map<SchemaNode, ColumnWriterImpl> columnWriters;
+    private Map<SchemaNode, ColumnWriter> columnWriters;
 
     /**
      * Internal constructor.
      */
-    private OnDiskTablet(SchemaNode schema, File directory) {
+    private LocalDiskTablet(SchemaNode schema, File directory) {
         this.schema = schema;
         columnWriters = Maps.newHashMap();
         columnFiles = Maps.newHashMap();
@@ -47,7 +51,7 @@ public class OnDiskTablet implements Tablet {
     /**
      * Opens an existing tablet from the specified directory.
      */
-    public static OnDiskTablet openTablet(File directory) throws IOException {
+    public static LocalDiskTablet openTablet(File directory) throws IOException {
         if (!directory.exists() && directory.isDirectory()) {
             throw new IOException(
                     "Directory given in openTablet does not exist or is not a directory.");
@@ -59,7 +63,7 @@ public class OnDiskTablet implements Tablet {
         }
         SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(schemaFile
                 .getAbsolutePath());
-        OnDiskTablet tablet = new OnDiskTablet(schema, directory);
+        LocalDiskTablet tablet = new LocalDiskTablet(schema, directory);
         tablet.createOrOpenColumnFiles(directory, schema);
 
         return tablet;
@@ -68,9 +72,9 @@ public class OnDiskTablet implements Tablet {
     /**
      * Creates a new tablet in the given directory for the given schema.
      */
-    public static OnDiskTablet createTablet(SchemaNode schema, File directory)
+    public static LocalDiskTablet createTablet(SchemaNode schema, File directory)
             throws IOException {
-        OnDiskTablet tablet = new OnDiskTablet(schema, directory);
+        LocalDiskTablet tablet = new LocalDiskTablet(schema, directory);
         if (directory.exists()) {
             throw new RuntimeException("Directory for tablet already exists: "
                     + directory);
@@ -109,7 +113,7 @@ public class OnDiskTablet implements Tablet {
                     + ".column");
             columnFile.createNewFile();
 
-            columnWriters.put(schema, new ColumnWriterImpl(schema,
+            columnWriters.put(schema, new ColumnWriter(schema,
                     new FileOutputStream(columnFile, true)));
             // We need these for creating the readers
             columnFiles.put(schema, columnFile);
@@ -175,8 +179,28 @@ public class OnDiskTablet implements Tablet {
 
         try {
             columnWriters.get(schema).flush();
-            return new ColumnReaderImpl(schema, new FileInputStream(
-                    columnFiles.get(schema)));
+            switch (schema.getPrimitiveType()) {
+            case INT32:
+                return new ColumnReaderInt32(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            case INT64:
+                return new ColumnReaderInt64(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            case BOOLEAN:
+                return new ColumnReaderBool(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            case FLOAT:
+                return new ColumnReaderFloat(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            case DOUBLE:
+                return new ColumnReaderDouble(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            case STRING:
+                return new ColumnReaderString(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            default:
+                throw new RuntimeException("Unknown primitive type.");
+            }
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -187,7 +211,7 @@ public class OnDiskTablet implements Tablet {
      * Calls {@code close} on all column writers. Should be called on shutdown.
      */
     public void close() throws IOException {
-        for (ColumnWriterImpl writer : columnWriters.values()) {
+        for (ColumnWriter writer : columnWriters.values()) {
             writer.close();
         }
     }
@@ -197,7 +221,7 @@ public class OnDiskTablet implements Tablet {
      * reading from the tablet columns.
      */
     public void flush() throws IOException {
-        for (ColumnWriterImpl writer : columnWriters.values()) {
+        for (ColumnWriter writer : columnWriters.values()) {
             writer.flush();
         }
     }

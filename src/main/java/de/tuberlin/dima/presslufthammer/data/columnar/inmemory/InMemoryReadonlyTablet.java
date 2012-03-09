@@ -11,7 +11,12 @@ import com.google.common.collect.Maps;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderImpl;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderBool;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderDouble;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderFloat;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderInt32;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderInt64;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderString;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
@@ -32,7 +37,7 @@ import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 public class InMemoryReadonlyTablet implements Tablet {
     private SchemaNode schema;
     private Map<SchemaNode, byte[]> columns;
-    private Map<SchemaNode, ColumnReaderImpl> columnReaders;
+    private Map<SchemaNode, ColumnReader> columnReaders;
 
     /**
      * Constructs the tablet from the given column data.
@@ -128,7 +133,32 @@ public class InMemoryReadonlyTablet implements Tablet {
         DataInputStream in = new DataInputStream(new BufferedInputStream(
                 arrayStream));
         try {
-            ColumnReaderImpl reader = new ColumnReaderImpl(schema, in);
+            ColumnReader reader = null;
+            if (schema.isPrimitive()) {
+                switch (schema.getPrimitiveType()) {
+                case INT32:
+                    reader = new ColumnReaderInt32(schema, in);
+                    break;
+                case INT64:
+                    reader = new ColumnReaderInt64(schema, in);
+                    break;
+                case BOOLEAN:
+                    reader = new ColumnReaderBool(schema, in);
+                    break;
+                case FLOAT:
+                    reader = new ColumnReaderFloat(schema, in);
+                    break;
+                case DOUBLE:
+                    reader = new ColumnReaderDouble(schema, in);
+                    break;
+                case STRING:
+                    reader = new ColumnReaderString(schema, in);
+                    break;
+                default:
+                    throw new RuntimeException("Unknown primitive type: "
+                            + schema.getPrimitiveType());
+                }
+            }
             columnReaders.put(schema, reader);
         } catch (IOException e) {
             // This cannot happen, we do nothing with I/O here, comes from the
@@ -192,11 +222,34 @@ public class InMemoryReadonlyTablet implements Tablet {
             DataInputStream in = new DataInputStream(new BufferedInputStream(
                     arrayStream));
             try {
-                ColumnReaderImpl reader = new ColumnReaderImpl(schema, in);
+                ColumnReader reader = null;
+                switch (schema.getPrimitiveType()) {
+                case INT32:
+                    reader = new ColumnReaderInt32(schema, in);
+                    break;
+                case INT64:
+                    reader = new ColumnReaderInt64(schema, in);
+                    break;
+                case BOOLEAN:
+                    reader = new ColumnReaderBool(schema, in);
+                    break;
+                case FLOAT:
+                    reader = new ColumnReaderFloat(schema, in);
+                    break;
+                case DOUBLE:
+                    reader = new ColumnReaderDouble(schema, in);
+                    break;
+                case STRING:
+                    reader = new ColumnReaderString(schema, in);
+                    break;
+                default:
+                    throw new RuntimeException("Unknown primitive type.");
+                }
                 while (reader.hasNext()) {
-                    System.out.println(reader.getNextRepetition());
-                    System.out.println(reader.getNextDefinition());
-                    System.out.println(reader.getNextValue());
+                    reader.advance();
+                    System.out.println(reader.getCurrentRepetition());
+                    System.out.println(reader.getCurrentDefinition());
+                    System.out.println(reader.getValue());
                 }
             } catch (IOException e) {
                 // TODO Auto-generated catch block

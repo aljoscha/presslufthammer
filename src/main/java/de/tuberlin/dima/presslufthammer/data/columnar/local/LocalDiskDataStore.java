@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.data.columnar.ondisk;
+package de.tuberlin.dima.presslufthammer.data.columnar.local;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,54 +17,55 @@ import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
 /**
  * {@link DataStore} implementation that stores the tablets (tablet data) in
- * files on disk. Objects of this class cannot be directly instantiated and one
- * should use the {@code openDataStore} and {@code createDataStore} methods.
+ * files on a local disk. Objects of this class cannot be directly instantiated
+ * and one should use the {@code openDataStore} and {@code createDataStore}
+ * methods.
  * 
  * @author Aljoscha Krettek
  * 
  */
-public class OnDiskDataStore implements DataStore {
+public class LocalDiskDataStore implements DataStore {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private File rootDirectory;
-    private Map<TabletKey, OnDiskTablet> tablets;
+    private Map<TabletKey, LocalDiskTablet> tablets;
 
     /**
      * Constructs the data store and sets the storage directory. Only used
      * internally.
      */
-    private OnDiskDataStore(File rootDirectory) {
+    private LocalDiskDataStore(File rootDirectory) {
         this.rootDirectory = rootDirectory;
         tablets = Maps.newHashMap();
         log.info("Opening OnDiskDataStore from " + rootDirectory + ".");
     }
 
     /**
-     * Returns an {@link OnDiskDataStore} that uses the given directory for
+     * Returns an {@link LocalDiskDataStore} that uses the given directory for
      * storing/loading tablets.
      */
-    public static OnDiskDataStore openDataStore(File directory)
+    public static LocalDiskDataStore openDataStore(File directory)
             throws IOException {
         if (!directory.exists() || !directory.isDirectory()) {
             throw new IOException(
                     "Directory given in openDataStore does not exist or is not a directory.");
         }
-        OnDiskDataStore store = new OnDiskDataStore(directory);
+        LocalDiskDataStore store = new LocalDiskDataStore(directory);
         store.openTablets();
 
         return store;
     }
 
     /**
-     * Creates a new empty {@link OnDiskDataStore} in the given directory and
+     * Creates a new empty {@link LocalDiskDataStore} in the given directory and
      * returns it.
      */
-    public static OnDiskDataStore createDataStore(File directory)
+    public static LocalDiskDataStore createDataStore(File directory)
             throws IOException {
         if (directory.exists()) {
             throw new RuntimeException("Directory for tablet already exists: "
                     + directory);
         }
-        OnDiskDataStore store = new OnDiskDataStore(directory);
+        LocalDiskDataStore store = new LocalDiskDataStore(directory);
         directory.mkdirs();
 
         return store;
@@ -92,7 +93,7 @@ public class OnDiskDataStore implements DataStore {
             String dirname = tabletDir.getName();
             String[] splitted = dirname.split("\\.");
             int partitionNum = Integer.parseInt(splitted[1]);
-            OnDiskTablet tablet = OnDiskTablet.openTablet(tabletDir);
+            LocalDiskTablet tablet = LocalDiskTablet.openTablet(tabletDir);
             tablets.put(new TabletKey(tablet.getSchema().getName(),
                     partitionNum), tablet);
             log.debug("Opened tablet " + tablet.getSchema().getName() + ":"
@@ -104,7 +105,7 @@ public class OnDiskDataStore implements DataStore {
      * Calls {@code flush} on all the managed tablets.
      */
     public void flush() throws IOException {
-        for (OnDiskTablet tablet : tablets.values()) {
+        for (LocalDiskTablet tablet : tablets.values()) {
             log.info("Flushing data of tablet " + tablet.getSchema().getName()
                     + ".");
             tablet.flush();
@@ -134,7 +135,7 @@ public class OnDiskDataStore implements DataStore {
                     + partition);
             log.info("Creating new tablet " + schema.getName() + ":"
                     + partition);
-            OnDiskTablet newTablet = OnDiskTablet.createTablet(schema,
+            LocalDiskTablet newTablet = LocalDiskTablet.createTablet(schema,
                     tablePath);
             tablets.put(key, newTablet);
             return newTablet;
@@ -157,7 +158,7 @@ public class OnDiskDataStore implements DataStore {
 
 /**
  * The key that is used in the internal map of tablets in
- * {@link OnDiskDataStore}.
+ * {@link LocalDiskDataStore}.
  * 
  * @author Aljoscha Krettek
  * 

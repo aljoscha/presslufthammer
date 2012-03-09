@@ -2,6 +2,7 @@ package de.tuberlin.dima.presslufthammer.transport;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -22,10 +23,12 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.query.Projection;
 import de.tuberlin.dima.presslufthammer.query.Query;
+import de.tuberlin.dima.presslufthammer.query.SelectClause;
+import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
+import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.messages.TabletMessage;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericHandler;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
 import de.tuberlin.dima.presslufthammer.transport.util.QueryHandler;
@@ -107,28 +110,28 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		log.info("Coordinator stopped.");
 	}
 
-	public void query(SimpleMessage message, Channel client) {
+	public void query(QueryMessage message, Channel client) {
 		log.info("Received query({}) from client {}.", message,
 				client.getLocalAddress());
 
 		if (isServing()) {
 
 			byte qid = nextQID();
-			message.setQueryID(qid);
-			Query query = new Query(message.getPayload());
+			Query query = message.getQuery();
+			message = new QueryMessage(qid, query);
 			log.info("Received query: {}", query);
 
-			String tableName = query.getFrom();
+			String tableName = query.getTableName();
 			if (!tables.containsKey(tableName)) {
-				client.write(new SimpleMessage(Type.CLIENT_RESULT, (byte) -1,
+				client.write(new SimpleMessage(MessageType.CLIENT_RESULT, (byte) -1,
 						"Table not available".getBytes()));
 				log.info("Table {} not in tables.", tableName);
 			} else {
 				DataSource table = tables.get(tableName);
 				Set<String> projectedFields = Sets.newHashSet();
-				for (Projection project : query.getSelect()) {
-					projectedFields.add(project.getColumn());
-				}
+                for (SelectClause selectClause : query.getSelectClauses()) {
+                    projectedFields.add(selectClause.getColumn());
+                }
 				SchemaNode projectedSchema = null;
 				if (projectedFields.contains("*")) {
 					log.debug("Query is a 'select * ...' query.");
@@ -138,20 +141,37 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 							.project(projectedFields);
 				}
 
-				message.setType(Type.INTERNAL_QUERY);
 				if (rootChannel != null) {
 					log.info("Handing query to root node of our node tree.");
 					// clientChans.add(client);// optional
-					message.setQueryID(qid);
 					queries.put(qid, new QueryHandler(table.getNumPartitions(),
 							message, projectedSchema, client));
-					// send a seperate query for each tablet
-					for (int i = 0; i < table.getNumPartitions(); i++) {
-						query.setPart((byte) i);
-						message.setPayload(query.getBytes());
-						rootChannel.write(message);
-					}
+//					// send a seperate query for each tablet
+//					for (int i = 0; i < table.getNumPartitions(); i++) {
+//						query.setPart((byte) i);
+//						message.setPayload(query.getBytes());
+//						rootChannel.write(message);
+//					}
+					// send a request to the leafs for every partition
+                    Iterator<Channel> leafIter = slaveChannels.iterator();
+                    for (int i = 0; i < table.getNumPartitions(); ++i) {
+                        Channel leaf = null;
+                        if (leafIter.hasNext()) {
+                            leaf = leafIter.next();
+                        } else {
 
+                            leafIter = slaveChannels.iterator();
+                            leaf = leafIter.next();
+                        }
+                        // create a new query for only the specific partition
+                        Query leafQuery = new Query(query);
+                        leafQuery.setPartition(i);
+                        QueryMessage leafMessage = new QueryMessage(qid,
+                                leafQuery);
+                        leaf.write(leafMessage);
+                        log.info("Sent query to leaf {}: {}",
+                                leaf.getRemoteAddress(), leafQuery);
+                    }
 				} else {
 					log.info("Cannot process query w/o at least one slave.");
 				}
@@ -197,9 +217,9 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 	}
 
 	private SimpleMessage getRootInfo() {
-		Type type = Type.REDIR;
+		MessageType type = MessageType.REDIR;
 		byte[] payload = rootChannel.getServingAddress().toString().getBytes();
-		return new SimpleMessage(type, (byte) -1, payload);
+		return new SimpleMessage(type, -1, payload);
 	}
 
 	/*
@@ -220,9 +240,9 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		// log.debug( "" + openChannels.remove( channel));
 	}
 
-	public void handleResult(SimpleMessage message) {
+	public void handleResult(TabletMessage message) {
 		// TODO
-		byte qid = message.getQueryID();
+		int qid = message.getQueryId();
 		QueryHandler qhand = queries.get(qid);
 		if (qhand != null) {
 			qhand.addPart(message);
@@ -243,7 +263,12 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 		log.debug("Message received from {}.", e.getRemoteAddress());
-		if (e.getMessage() instanceof SimpleMessage) {
+
+        if (e.getMessage() instanceof QueryMessage) {
+            query((QueryMessage) e.getMessage(), e.getChannel());
+        } else if (e.getMessage() instanceof TabletMessage) {
+            handleResult((TabletMessage) e.getMessage());
+        } else if (e.getMessage() instanceof SimpleMessage) {
 			SimpleMessage message = ((SimpleMessage) e.getMessage());
 			log.debug("Message: {}", message.toString());
 
@@ -257,16 +282,9 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 				this.addInner(e.getChannel(), message.getPayload());
 				break;
 			case INTERNAL_RESULT:
-				// Send the result to the coordinator so it can be assembled
-				this.handleResult(message);
-				break;
 			case CLIENT_QUERY:
-				// handle the query from the client
-				this.query(message, e.getChannel());
-				break;
-			case UNKNOWN:
-				break;
 			case REDIR:
+			case UNKNOWN:
 				break;
 			case REGCLIENT:
 				this.addClient(e.getChannel());

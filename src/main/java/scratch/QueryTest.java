@@ -3,11 +3,12 @@ package scratch;
 import java.io.File;
 
 import de.tuberlin.dima.presslufthammer.query.Query;
+import de.tuberlin.dima.presslufthammer.query.parser.QueryParser;
+import de.tuberlin.dima.presslufthammer.query.parser.QueryParser.ParseError;
 import de.tuberlin.dima.presslufthammer.transport.CLIClient;
 import de.tuberlin.dima.presslufthammer.transport.Coordinator;
 import de.tuberlin.dima.presslufthammer.transport.Leaf;
-import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
+import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 
 /**
  * Test the query handling by creating a coordinator and some leafs in the same
@@ -35,10 +36,15 @@ public class QueryTest {
         CLIClient client = new CLIClient(HOST, PORT);
 
         if (client.start()) {
-            Query query = new Query(
-                    "0:Document.DocId,Document.Name.Language.Code,Document.Name.Language.Country:Document:-1::");
-            SimpleMessage queryMsg = new SimpleMessage(Type.CLIENT_QUERY, (byte)-1, query.toString().getBytes());
-            client.query(queryMsg);
+            try {
+                Query query = QueryParser
+                        .parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://A\"");
+                System.out.println("QUERY: " + query);
+                QueryMessage queryMsg = new QueryMessage(-1, query);
+                client.query(queryMsg);
+            } catch (ParseError e) {
+                System.out.println(e.getErrors());
+            }
         }
 
         Thread.sleep(2000);

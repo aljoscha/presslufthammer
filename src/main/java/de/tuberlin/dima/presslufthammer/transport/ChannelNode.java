@@ -14,10 +14,6 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 
-import de.tuberlin.dima.presslufthammer.query.Query;
-import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
-
 /**
  * Abstract superclass for Netty based network nodes.
  * 
@@ -53,31 +49,6 @@ public abstract class ChannelNode implements Closeable {
 	 */
 	public boolean connectNReg(SocketAddress address) {
 		return false;
-	}
-
-	/**
-	 * Handles the supplied query string.
-	 * 
-	 * @param query
-	 *            String representation of a {@link Query}
-	 */
-	public void query(String query) {
-		if (query != null && query.length() > 0) {
-			// Query q = new Query(query);
-			query(new SimpleMessage(Type.CLIENT_QUERY, (byte) -1,
-					query.getBytes()));
-		}
-		return;
-	}
-
-	/**
-	 * Handles a {@link SimpleMessage} containing a {@link Query}.
-	 * 
-	 * @param query
-	 *            {@link Query} wrapped in a {@link SimpleMessage}
-	 */
-	public void query(SimpleMessage query) {
-		return;
 	}
 
 	/*

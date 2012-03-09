@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Set;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -17,18 +16,16 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
-
-import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
-import de.tuberlin.dima.presslufthammer.data.columnar.ondisk.OnDiskDataStore;
-import de.tuberlin.dima.presslufthammer.qexec.TabletProjector;
-import de.tuberlin.dima.presslufthammer.query.Projection;
+import de.tuberlin.dima.presslufthammer.data.columnar.local.LocalDiskDataStore;
+import de.tuberlin.dima.presslufthammer.qexec.QueryExecutor;
 import de.tuberlin.dima.presslufthammer.query.Query;
+import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
+import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
+import de.tuberlin.dima.presslufthammer.transport.messages.TabletMessage;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
 
@@ -38,8 +35,8 @@ import de.tuberlin.dima.presslufthammer.util.Stoppable;
  * 
  */
 public class Leaf extends ChannelNode implements Stoppable {
-    private static final SimpleMessage REGMSG = new SimpleMessage(Type.REGLEAF,
-            (byte) 0, "Hello".getBytes());
+    private static final SimpleMessage REGMSG = new SimpleMessage(
+            MessageType.REGLEAF, (byte) 0, "Hello".getBytes());
     private static int CONNECT_TIMEOUT = 10000;
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -48,14 +45,16 @@ public class Leaf extends ChannelNode implements Stoppable {
     private String serverHost;
     private int serverPort;
 
-    private OnDiskDataStore dataStore;
+    private LocalDiskDataStore dataStore;
+
+    private boolean running = false;
 
     public Leaf(String serverHost, int serverPort, File dataDirectory) {
         this.serverHost = serverHost;
         this.serverPort = serverPort;
 
         try {
-            dataStore = OnDiskDataStore.openDataStore(dataDirectory);
+            dataStore = LocalDiskDataStore.openDataStore(dataDirectory);
         } catch (IOException e) {
             log.warn("Exception caught while while loading datastore: {}",
                     e.getMessage());
@@ -81,6 +80,7 @@ public class Leaf extends ChannelNode implements Stoppable {
             log.info("Connected to coordinator at {}:{}", serverHost,
                     serverPort);
             Runtime.getRuntime().addShutdownHook(new ShutdownStopper(this));
+            running = true;
         } else {
             bootstrap.releaseExternalResources();
             log.info("Failed to conncet to coordinator at {}:{}", serverHost,
@@ -89,69 +89,46 @@ public class Leaf extends ChannelNode implements Stoppable {
 
     }
 
-    @Override
-    public void query(SimpleMessage message) {
-        Query query = new Query(message.getPayload());
-        log.info("Received query: " + query);
+    public void query(QueryMessage message, Channel channel) {
+        Query query = message.getQuery();
+        log.info("Received query \"{}\" from {}", query,
+                channel.getRemoteAddress());
 
-        String table = query.getFrom();
+        String tableName = query.getTableName();
 
         try {
-            Tablet tablet = dataStore.getTablet(table, query.getPart());
+            Tablet tablet = dataStore
+                    .getTablet(tableName, query.getPartition());
+
             log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
-                    query.getPart());
+                    query.getPartition());
 
-            Set<String> projectedFields = Sets.newHashSet();
-            for (Projection project : query.getSelect()) {
-                projectedFields.add(project.getColumn());
-            }
-            SchemaNode projectedSchema = null;
-            if (projectedFields.contains("*")) {
-                log.debug("Query is a 'select * ...' query.");
-                projectedSchema = tablet.getSchema();
-            } else {
+            QueryExecutor qx = new QueryExecutor(tablet, query);
 
-                projectedSchema = tablet.getSchema().project(projectedFields);
-            }
+            InMemoryWriteonlyTablet resultTablet = qx.performQuery();
 
-            InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
-                    projectedSchema);
+            TabletMessage response = new TabletMessage(message.getQueryId(),
+                    resultTablet.serialize());
 
-            TabletProjector copier = new TabletProjector();
-            copier.project(projectedSchema, tablet, resultTablet);
-
-            SimpleMessage response = new SimpleMessage(Type.INTERNAL_RESULT,
-                    message.getQueryID(), resultTablet.serialize());
-
-            coordinatorChannel.write(response);
+            channel.write(response);
         } catch (IOException e) {
-            log.warn("Caught exception while creating result: {}",
-                    e.getMessage());
+            log.warn("Caught exception while performing query: {}", e);
         }
     }
 
-    public void query(Query query) {
-        // TODO
-        log.debug("Query received: " + query);
-    }
-
-	@Override
-	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
-		log.debug("Message received from {}.", e.getRemoteAddress());
-		if (e.getMessage() instanceof SimpleMessage) {
-			SimpleMessage simpleMsg = ((SimpleMessage) e.getMessage());
-			log.debug("Message: {}", simpleMsg.toString());
+    @Override
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+        log.debug("Message received from {}.", e.getRemoteAddress());
+        if (e.getMessage() instanceof QueryMessage) {
+            query((QueryMessage) e.getMessage(), e.getChannel());
+        } else if (e.getMessage() instanceof SimpleMessage) {
+            SimpleMessage simpleMsg = ((SimpleMessage) e.getMessage());
+            log.debug("Message: {}", simpleMsg.toString());
             switch (simpleMsg.getType()) {
             case ACK:
                 break;
             case REDIR:
                 // InetSocketAddress innerAddress = getSockAddrFromBytes(pressluft
-                // .getPayload());
-                // // leaf.close();
-                // leaf.connectNReg(innerAddress);
-                break;
-            case INTERNAL_QUERY:
-                this.query(simpleMsg);
                 break;
             case REGINNER:
             case REGLEAF:
@@ -161,16 +138,19 @@ public class Leaf extends ChannelNode implements Stoppable {
 
             }
         }
-	}
+    }
 
     @Override
     public void stop() {
-        log.info("Stopping leaf.");
-        if (coordinatorChannel != null) {
-            coordinatorChannel.close().awaitUninterruptibly();
+        if (running) {
+            log.info("Stopping leaf.");
+            if (coordinatorChannel != null) {
+                coordinatorChannel.close().awaitUninterruptibly();
+            }
+            bootstrap.releaseExternalResources();
+            log.info("Leaf stopped.");
+            running = false;
         }
-        bootstrap.releaseExternalResources();
-        log.info("Leaf stopped.");
     }
 
     private static void printUsage() {

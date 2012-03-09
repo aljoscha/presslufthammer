@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Iterator;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -18,11 +17,10 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Splitter;
-
 import de.tuberlin.dima.presslufthammer.query.Query;
+import de.tuberlin.dima.presslufthammer.query.parser.QueryParser;
+import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-import de.tuberlin.dima.presslufthammer.transport.messages.Type;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
 
 /**
@@ -34,7 +32,7 @@ import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
 public class CLIClient extends ChannelNode {
 
     private static final SimpleMessage REGMSG = new SimpleMessage(
-            de.tuberlin.dima.presslufthammer.transport.messages.Type.REGCLIENT,
+            de.tuberlin.dima.presslufthammer.transport.messages.MessageType.REGCLIENT,
             (byte) 0, new byte[] { (byte) 7 });
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -77,8 +75,7 @@ public class CLIClient extends ChannelNode {
         }
     }
 
-    @Override
-	public void query(SimpleMessage query) {
+    public void query(QueryMessage query) {
         if (query != null && coordinatorChannel != null
                 && coordinatorChannel.isConnected()
                 && coordinatorChannel.isWritable()) {
@@ -91,8 +88,8 @@ public class CLIClient extends ChannelNode {
         System.out.println(resultString);
     }
 
-	@Override
-	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+    @Override
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 
         log.debug("Message received from {}.", e.getRemoteAddress());
         if (e.getMessage() instanceof SimpleMessage) {
@@ -111,7 +108,7 @@ public class CLIClient extends ChannelNode {
                 break;
             }
         }
-	}
+    }
 
     public void stop() throws IOException {
         if (coordinatorChannel != null) {
@@ -145,25 +142,23 @@ public class CLIClient extends ChannelNode {
         BufferedReader bufferedReader = new BufferedReader(
                 new InputStreamReader(System.in));
 
-        Splitter querySplitter = Splitter.on(" from ");
-
         while (running) {
             String line = bufferedReader.readLine();
             if (line.startsWith("x")) {
                 running = false;
             } else {
-                // for debugging we take a fixed query:
-                // line =
-                // "Document.DocId,Document.Name.Language.Code,Document.Name.Language.Country from Document";
-                Iterable<String> split = querySplitter.split(line);
-                Iterator<String> splitIt = split.iterator();
-                String projection = splitIt.next();
-                String table = splitIt.next();
-                Query query = new Query("0:" + projection + ":" + table
-                        + ":-1::");
-                SimpleMessage queryMsg = new SimpleMessage(Type.CLIENT_QUERY,
-                        (byte) -1, query.toString().getBytes());
-                client.query(queryMsg);
+
+                Query query;
+                try {
+                    query = QueryParser.parse(line);
+                    QueryMessage queryMsg = new QueryMessage(-1, query);
+                    client.query(queryMsg);
+                } catch (QueryParser.ParseError e) {
+                    System.err.println("Error parsing query:");
+                    for (String error : e.getErrors()) {
+                        System.err.println(error);
+                    }
+                }
             }
         }
 

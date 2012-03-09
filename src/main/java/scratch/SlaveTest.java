@@ -9,9 +9,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.tuberlin.dima.presslufthammer.query.Query;
+import de.tuberlin.dima.presslufthammer.query.parser.QueryParser;
+import de.tuberlin.dima.presslufthammer.query.parser.QueryParser.ParseError;
 import de.tuberlin.dima.presslufthammer.transport.CLIClient;
 import de.tuberlin.dima.presslufthammer.transport.Slave;
 import de.tuberlin.dima.presslufthammer.transport.SlaveCoordinator;
+import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 
 /**
  * Test the query handling by a Slave tree.
@@ -25,8 +29,8 @@ public class SlaveTest {
 	private static final int PORT = 44444;
 	private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
 	private static final File LEAF_DATADIR = new File("data-dir");
-	private static final int NUM_SLAVES = 11;
-	private static final int SLAVE_DEGREE = 10;
+	private static final int NUM_SLAVES = 6;
+	private static final int SLAVE_DEGREE = 5;
 
 	public static void main(String[] args) throws Exception {
 
@@ -61,11 +65,19 @@ public class SlaveTest {
 			String line = bufferedReader.readLine();
 			if (line.startsWith("x")) {
 				running = false;
-//			} else if (line.startsWith("kill")) {
-////				int random = (int) (Math.random() * NUM_SLAVES);
-//				slaves.get(slaves.size() - 1).stop();
+				// } else if (line.startsWith("kill")) {
+				// // int random = (int) (Math.random() * NUM_SLAVES);
+				// slaves.get(slaves.size() - 1).stop();
 			} else {
-				client.query("0:Document.DocId,Document.Name.Language.Code,Document.Name.Language.Country:Document:-1::");
+				try {
+					Query query = QueryParser
+							.parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://A\"");
+					System.out.println("QUERY: " + query);
+					QueryMessage queryMsg = new QueryMessage(-1, query);
+					client.query(queryMsg);
+				} catch (ParseError e) {
+					System.out.println(e.getErrors());
+				}
 				// client.query(line);
 			}
 		}

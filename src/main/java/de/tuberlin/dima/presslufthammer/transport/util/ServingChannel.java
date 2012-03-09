@@ -98,6 +98,10 @@ public class ServingChannel {
 	public void write(SimpleMessage message) {
 		channel.write(message);
 	}
+	
+	public void write(Object obj) {
+		channel.write(obj);
+	}
 
 	/**
 	 * @return channel.getRemoteAddress()

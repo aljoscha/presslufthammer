@@ -7,7 +7,7 @@ import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
-import de.tuberlin.dima.presslufthammer.data.columnar.ondisk.OnDiskDataStore;
+import de.tuberlin.dima.presslufthammer.data.columnar.local.LocalDiskDataStore;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordFile;
 
 public class Columnarizer {
@@ -33,11 +33,11 @@ public class Columnarizer {
         int partitionNum = Integer.parseInt(args[3]);
 
         File directory = new File(dataDir);
-        OnDiskDataStore dataStore = null;
+        LocalDiskDataStore dataStore = null;
         if (!directory.exists()) {
-            dataStore = OnDiskDataStore.createDataStore(directory);
+            dataStore = LocalDiskDataStore.createDataStore(directory);
         } else {
-            dataStore = OnDiskDataStore.openDataStore(directory);
+            dataStore = LocalDiskDataStore.openDataStore(directory);
         }
 
         SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(schemaFile);

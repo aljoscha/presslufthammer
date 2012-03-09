@@ -8,7 +8,7 @@ import de.tuberlin.dima.presslufthammer.data.AssemblyFSM;
 import de.tuberlin.dima.presslufthammer.data.FieldStriper;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
-import de.tuberlin.dima.presslufthammer.data.columnar.ondisk.OnDiskTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.local.LocalDiskTablet;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordFile;
 
 public class OnDiskAssemblyTest {
@@ -22,8 +22,8 @@ public class OnDiskAssemblyTest {
         JSONRecordFile records = new JSONRecordFile(schema,
                 "src/main/example-data/documents.json");
 
-        OnDiskTablet.removeTablet(new File("documents.tablet"));
-        OnDiskTablet tablet = OnDiskTablet.createTablet(schema, new File(
+        LocalDiskTablet.removeTablet(new File("documents.tablet"));
+        LocalDiskTablet tablet = LocalDiskTablet.createTablet(schema, new File(
                 "documents.tablet"));
         FieldStriper striper = new FieldStriper(schema);
         striper.dissectRecords(records, tablet);
@@ -41,7 +41,7 @@ public class OnDiskAssemblyTest {
 
         // Now reopen the tablet ...
 
-        OnDiskTablet reopenedTablet = OnDiskTablet.openTablet(new File(
+        LocalDiskTablet reopenedTablet = LocalDiskTablet.openTablet(new File(
                 "documents.tablet"));
         SchemaNode reopenedSchema = reopenedTablet.getSchema();
 

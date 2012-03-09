@@ -1,4 +1,4 @@
-package de.tuberlin.dima.presslufthammer.data.columnar.ondisk;
+package de.tuberlin.dima.presslufthammer.data.columnar.local;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,16 +25,16 @@ import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
 /**
- * {@link Tablet} implementation that stores the column data in files on disk.
- * The data is stored in one directory on disk, this directory has one file
- * called "schema.proto" that contains the schema of the tablet and one binary
- * file per column that stores the columnar data (at the beginning this file
- * might be empty).
+ * {@link Tablet} implementation that stores the column data in files on a local
+ * disk. The data is stored in one directory on disk, this directory has one
+ * file called "schema.proto" that contains the schema of the tablet and one
+ * binary file per column that stores the columnar data (at the beginning this
+ * file might be empty).
  * 
  * @author Aljoscha Krettek
  * 
  */
-public class OnDiskTablet implements Tablet {
+public class LocalDiskTablet implements Tablet {
     private SchemaNode schema;
     private Map<SchemaNode, File> columnFiles;
     private Map<SchemaNode, ColumnWriter> columnWriters;
@@ -42,7 +42,7 @@ public class OnDiskTablet implements Tablet {
     /**
      * Internal constructor.
      */
-    private OnDiskTablet(SchemaNode schema, File directory) {
+    private LocalDiskTablet(SchemaNode schema, File directory) {
         this.schema = schema;
         columnWriters = Maps.newHashMap();
         columnFiles = Maps.newHashMap();
@@ -51,7 +51,7 @@ public class OnDiskTablet implements Tablet {
     /**
      * Opens an existing tablet from the specified directory.
      */
-    public static OnDiskTablet openTablet(File directory) throws IOException {
+    public static LocalDiskTablet openTablet(File directory) throws IOException {
         if (!directory.exists() && directory.isDirectory()) {
             throw new IOException(
                     "Directory given in openTablet does not exist or is not a directory.");
@@ -63,7 +63,7 @@ public class OnDiskTablet implements Tablet {
         }
         SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(schemaFile
                 .getAbsolutePath());
-        OnDiskTablet tablet = new OnDiskTablet(schema, directory);
+        LocalDiskTablet tablet = new LocalDiskTablet(schema, directory);
         tablet.createOrOpenColumnFiles(directory, schema);
 
         return tablet;
@@ -72,9 +72,9 @@ public class OnDiskTablet implements Tablet {
     /**
      * Creates a new tablet in the given directory for the given schema.
      */
-    public static OnDiskTablet createTablet(SchemaNode schema, File directory)
+    public static LocalDiskTablet createTablet(SchemaNode schema, File directory)
             throws IOException {
-        OnDiskTablet tablet = new OnDiskTablet(schema, directory);
+        LocalDiskTablet tablet = new LocalDiskTablet(schema, directory);
         if (directory.exists()) {
             throw new RuntimeException("Directory for tablet already exists: "
                     + directory);

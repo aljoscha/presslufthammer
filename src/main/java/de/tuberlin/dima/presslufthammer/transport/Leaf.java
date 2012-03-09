@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
-import de.tuberlin.dima.presslufthammer.data.columnar.ondisk.OnDiskDataStore;
+import de.tuberlin.dima.presslufthammer.data.columnar.local.LocalDiskDataStore;
 import de.tuberlin.dima.presslufthammer.qexec.QueryExecutor;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
@@ -44,7 +44,7 @@ public class Leaf extends ChannelNode implements Stoppable {
     private String serverHost;
     private int serverPort;
 
-    private OnDiskDataStore dataStore;
+    private LocalDiskDataStore dataStore;
 
     private boolean running = false;
 
@@ -53,7 +53,7 @@ public class Leaf extends ChannelNode implements Stoppable {
         this.serverPort = serverPort;
 
         try {
-            dataStore = OnDiskDataStore.openDataStore(dataDirectory);
+            dataStore = LocalDiskDataStore.openDataStore(dataDirectory);
         } catch (IOException e) {
             log.warn("Exception caught while while loading datastore: {}",
                     e.getMessage());

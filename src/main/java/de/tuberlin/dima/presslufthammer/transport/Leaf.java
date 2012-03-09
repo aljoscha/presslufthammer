@@ -111,8 +111,7 @@ public class Leaf extends ChannelNode implements Stoppable {
 
             channel.write(response);
         } catch (IOException e) {
-            log.warn("Caught exception while performing query: {}",
-                    e.getMessage());
+            log.warn("Caught exception while performing query: {}", e);
         }
     }
 

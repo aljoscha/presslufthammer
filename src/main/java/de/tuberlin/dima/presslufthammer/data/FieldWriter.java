@@ -95,7 +95,7 @@ public final class FieldWriter {
                     }
                 }
             }
-            writer.writeField(field, repetitionLevel, maxDefinition);
+            field.writeToColumn(writer, repetitionLevel, maxDefinition);
         } else {
             fetchParentStates();
         }

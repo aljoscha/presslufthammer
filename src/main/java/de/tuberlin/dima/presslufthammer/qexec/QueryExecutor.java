@@ -11,6 +11,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.query.Query;
@@ -70,9 +71,10 @@ public class QueryExecutor {
 
             if (evalWhereClause(slice, selectedFields)) {
                 for (SchemaNode field : selectedFields) {
-                    SliceColumn column = slice.getColumn(field);
+                    ColumnReader column = slice.getColumn(field);
                     if (column.getCurrentRepetition() >= selectLevel) {
-                        column.writeValue(targetTablet.getColumnWriter(field));
+                        column.writeToColumn(targetTablet
+                                .getColumnWriter(field));
                     }
                 }
 
@@ -83,15 +85,16 @@ public class QueryExecutor {
         }
     }
 
-    private boolean evalWhereClause(Slice slice, List<SchemaNode> selectedFields) {
+    private boolean evalWhereClause(Slice slice, List<SchemaNode> selectedFields) throws IOException {
         if (query.getWhereClauses().size() <= 0) {
             return true;
         }
         for (WhereClause clause : query.getWhereClauses()) {
             for (SchemaNode schema : selectedFields) {
                 if (schema.getQualifiedName().equals(clause.getColumn())) {
-                    if (!slice.getColumn(schema).isNull() && slice.getColumn(schema).asString()
-                            .equals(clause.getValue())) {
+                    if (!slice.getColumn(schema).isNull()
+                            && slice.getColumn(schema).getValue().toString()
+                                    .equals(clause.getValue())) {
                         return true;
                     }
                 }

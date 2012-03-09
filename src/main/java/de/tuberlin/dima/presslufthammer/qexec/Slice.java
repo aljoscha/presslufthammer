@@ -7,10 +7,11 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
 public class Slice {
-    private Map<SchemaNode, SliceColumn> columns;
+    private Map<SchemaNode, ColumnReader> columns;
 
     private int fetchLevel = 0;
 
@@ -18,44 +19,7 @@ public class Slice {
         columns = Maps.newHashMap();
         for (SchemaNode field : selectedFields) {
             if (field.isPrimitive()) {
-                switch (field.getPrimitiveType()) {
-                case INT32:
-                    columns.put(
-                            field,
-                            new Int32SliceColumn(sourceTablet
-                                    .getColumnReader(field)));
-                    break;
-                case INT64:
-                    columns.put(
-                            field,
-                            new Int64SliceColumn(sourceTablet
-                                    .getColumnReader(field)));
-                    break;
-                case FLOAT:
-                    columns.put(
-                            field,
-                            new FloatSliceColumn(sourceTablet
-                                    .getColumnReader(field)));
-                    break;
-                case DOUBLE:
-                    columns.put(
-                            field,
-                            new DoubleSliceColumn(sourceTablet
-                                    .getColumnReader(field)));
-                    break;
-                case BOOLEAN:
-                    columns.put(
-                            field,
-                            new BoolSliceColumn(sourceTablet
-                                    .getColumnReader(field)));
-                    break;
-                case STRING:
-                    columns.put(
-                            field,
-                            new StringSliceColumn(sourceTablet
-                                    .getColumnReader(field)));
-                    break;
-                }
+                columns.put(field, sourceTablet.getColumnReader(field));
             }
         }
     }
@@ -65,7 +29,7 @@ public class Slice {
     }
 
     public boolean hasNext() throws IOException {
-        for (SliceColumn column : columns.values()) {
+        for (ColumnReader column : columns.values()) {
             if (column.hasNext()) {
                 return true;
             }
@@ -75,8 +39,8 @@ public class Slice {
 
     public void fetch() throws IOException {
         int nextLevel = 0;
-        for (SliceColumn column : columns.values()) {
-            if (column.getNextRepetition() >= fetchLevel) {
+        for (ColumnReader column : columns.values()) {
+            if (column.hasNext() && column.getNextRepetition() >= fetchLevel) {
                 column.advance();
             }
             nextLevel = Math.max(column.getNextRepetition(), nextLevel);
@@ -84,7 +48,7 @@ public class Slice {
         fetchLevel = nextLevel;
     }
 
-    public SliceColumn getColumn(SchemaNode schema) {
+    public ColumnReader getColumn(SchemaNode schema) {
         return columns.get(schema);
     }
 
@@ -93,8 +57,20 @@ public class Slice {
         StringBuilder result = new StringBuilder();
         result.append("SLICE: --------------------------------------\n");
         result.append("FETCH-LEVEL: " + fetchLevel + "\n");
-        for (SliceColumn column : columns.values()) {
+        for (ColumnReader column : columns.values()) {
             result.append(column + "\n");
+            if (column.isNull()) {
+
+                return "rep: " + column.getCurrentRepetition() + " def: "
+                        + column.getCurrentDefinition() + " val: NULL";
+            }
+            try {
+                return "rep: " + column.getCurrentRepetition() + " def: "
+                        + column.getCurrentDefinition() + " val: "
+                        + column.getValue();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         return result.toString();
     }

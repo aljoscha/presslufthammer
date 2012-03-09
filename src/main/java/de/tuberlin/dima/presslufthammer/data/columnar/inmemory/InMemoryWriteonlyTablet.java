@@ -12,9 +12,13 @@ import com.google.common.collect.Maps;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderImpl;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderBool;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderDouble;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderFloat;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderInt32;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderInt64;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderString;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriterImpl;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
 /**
@@ -30,7 +34,7 @@ public class InMemoryWriteonlyTablet implements Tablet {
     public static int TABLET_MAGIC_NUMBER = 0xCAFEBABE;
     private SchemaNode schema;
     private Map<SchemaNode, ByteArrayOutputStream> columns;
-    private Map<SchemaNode, ColumnWriterImpl> columnWriters;
+    private Map<SchemaNode, ColumnWriter> columnWriters;
 
     /**
      * Constructs the tablet by creating empty byte arrays for all the columns
@@ -93,7 +97,7 @@ public class InMemoryWriteonlyTablet implements Tablet {
     private void createColumns(SchemaNode schema) {
         ByteArrayOutputStream column = new ByteArrayOutputStream();
         try {
-            ColumnWriterImpl writer = new ColumnWriterImpl(schema, column);
+            ColumnWriter writer = new ColumnWriter(schema, column);
             columnWriters.put(schema, writer);
         } catch (IOException e) {
             // This cannot happen, we do nothing with I/O here, comes from the
@@ -178,11 +182,30 @@ public class InMemoryWriteonlyTablet implements Tablet {
             DataInputStream in = new DataInputStream(new BufferedInputStream(
                     arrayStream));
             try {
-                ColumnReaderImpl reader = new ColumnReaderImpl(schema, in);
+                ColumnReader reader = null;
+                switch (schema.getPrimitiveType()) {
+                case INT32:
+                    reader = new ColumnReaderInt32(schema, in);
+                    break;
+                case INT64:
+                    reader = new ColumnReaderInt64(schema, in);
+                    break;
+                case BOOLEAN:
+                    reader = new ColumnReaderBool(schema, in);
+                case FLOAT:
+                    reader = new ColumnReaderFloat(schema, in);
+                case DOUBLE:
+                    reader = new ColumnReaderDouble(schema, in);
+                case STRING:
+                    reader = new ColumnReaderString(schema, in);
+                default:
+                    throw new RuntimeException("Unknown primitive type.");
+                }
                 while (reader.hasNext()) {
-                    System.out.println(reader.getNextRepetition());
-                    System.out.println(reader.getNextDefinition());
-                    System.out.println(reader.getNextValue());
+                    reader.advance();
+                    System.out.println(reader.getCurrentRepetition());
+                    System.out.println(reader.getCurrentDefinition());
+                    System.out.println(reader.getValue());
                 }
             } catch (IOException e) {
                 // TODO Auto-generated catch block

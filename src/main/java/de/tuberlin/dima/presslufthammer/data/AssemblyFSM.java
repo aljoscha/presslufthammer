@@ -68,13 +68,13 @@ public class AssemblyFSM {
             record.returnToLevel(commonAncestor.getParent());
         }
 
-        if (reader.getNextDefinition() >= currentSchema.getMaxDefinition()) {
+        if (reader.getCurrentDefinition() >= currentSchema.getMaxDefinition()) {
             record.moveToLevel(currentSchema.getParent());
         } else {
             // just move to the correct level for the definition level of the
             // reader
             SchemaNode correctSchema = currentSchema
-                    .getSchemaForDefinitionLevel(reader.getNextDefinition());
+                    .getSchemaForDefinitionLevel(reader.getCurrentDefinition());
             record.moveToLevel(correctSchema);
         }
     }
@@ -92,11 +92,12 @@ public class AssemblyFSM {
 
         // System.out.println("START OF ASSEMBLE -----------------------");
         while (reader != null && reader.hasNext()) {
+            reader.advance();
             // System.out.println("READER: " +
             // currentSchema.getQualifiedName());
             adjustRecordStructure(reader, record, currentSchema, lastSchema);
             // System.out.println(record);
-            Object value = reader.getNextValue();
+            Object value = reader.getValue();
             if (value != null) {
                 // System.out.println("APPENDING VALUE: " + value);
                 record.appendValue(currentSchema, value);

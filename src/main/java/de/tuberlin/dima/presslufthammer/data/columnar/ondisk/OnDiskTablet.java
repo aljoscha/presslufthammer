@@ -15,9 +15,13 @@ import com.google.common.collect.Maps;
 import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderImpl;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderBool;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderDouble;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderFloat;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderInt32;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderInt64;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReaderString;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
-import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriterImpl;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
 /**
@@ -33,7 +37,7 @@ import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 public class OnDiskTablet implements Tablet {
     private SchemaNode schema;
     private Map<SchemaNode, File> columnFiles;
-    private Map<SchemaNode, ColumnWriterImpl> columnWriters;
+    private Map<SchemaNode, ColumnWriter> columnWriters;
 
     /**
      * Internal constructor.
@@ -109,7 +113,7 @@ public class OnDiskTablet implements Tablet {
                     + ".column");
             columnFile.createNewFile();
 
-            columnWriters.put(schema, new ColumnWriterImpl(schema,
+            columnWriters.put(schema, new ColumnWriter(schema,
                     new FileOutputStream(columnFile, true)));
             // We need these for creating the readers
             columnFiles.put(schema, columnFile);
@@ -175,8 +179,28 @@ public class OnDiskTablet implements Tablet {
 
         try {
             columnWriters.get(schema).flush();
-            return new ColumnReaderImpl(schema, new FileInputStream(
-                    columnFiles.get(schema)));
+            switch (schema.getPrimitiveType()) {
+            case INT32:
+                return new ColumnReaderInt32(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            case INT64:
+                return new ColumnReaderInt64(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            case BOOLEAN:
+                return new ColumnReaderBool(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            case FLOAT:
+                return new ColumnReaderFloat(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            case DOUBLE:
+                return new ColumnReaderDouble(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            case STRING:
+                return new ColumnReaderString(schema, new FileInputStream(
+                        columnFiles.get(schema)));
+            default:
+                throw new RuntimeException("Unknown primitive type.");
+            }
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -187,7 +211,7 @@ public class OnDiskTablet implements Tablet {
      * Calls {@code close} on all column writers. Should be called on shutdown.
      */
     public void close() throws IOException {
-        for (ColumnWriterImpl writer : columnWriters.values()) {
+        for (ColumnWriter writer : columnWriters.values()) {
             writer.close();
         }
     }
@@ -197,7 +221,7 @@ public class OnDiskTablet implements Tablet {
      * reading from the tablet columns.
      */
     public void flush() throws IOException {
-        for (ColumnWriterImpl writer : columnWriters.values()) {
+        for (ColumnWriter writer : columnWriters.values()) {
             writer.flush();
         }
     }

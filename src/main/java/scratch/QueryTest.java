@@ -30,15 +30,15 @@ public class QueryTest {
         Leaf leaf2 = new Leaf(HOST, PORT, LEAF_DATAFIR);
         Leaf leaf3 = new Leaf(HOST, PORT, LEAF_DATAFIR);
         leaf1.start();
-        // leaf2.start();
-        // leaf3.start();
+        leaf2.start();
+        leaf3.start();
 
         CLIClient client = new CLIClient(HOST, PORT);
 
         if (client.start()) {
             try {
                 Query query = QueryParser
-                        .parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://B\"");
+                        .parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://A\"");
                 System.out.println("QUERY: " + query);
                 QueryMessage queryMsg = new QueryMessage(-1, query);
                 client.query(queryMsg);

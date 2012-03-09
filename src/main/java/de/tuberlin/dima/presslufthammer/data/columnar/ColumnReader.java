@@ -1,87 +1,204 @@
 package de.tuberlin.dima.presslufthammer.data.columnar;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
+
+import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
+import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 
 /**
- * This interface must be used when reading data form a column of a
- * {@link Tablet}. An object implementing this interface is returned by the
- * method {@code getColumnReader} of {@link Tablet}.
+ * A reader for reading columnar data from the column of a {@link Tablet}. A
+ * subclass of this is returned by the method {@code getColumnReader} of
+ * {@link Tablet}.
  * 
  * <p>
  * All the methods can possibly throw a {@link IOException} because the column
  * data could be coming from a file.
  * 
  * <p>
- * The next repetition/definition levels are stored internally and can be
- * retrieved multiple times with the respective methods without advancing the
- * reader. The {@code getNextValue} type methods advance the reader, however.
+ * Use advance() to advance the reader to the next value of the column, the
+ * current value of the column and the repetition/definition levels can be
+ * retrieved multiple times using the respective methods.
+ * 
+ * <p>
+ * The data in that {@link InputStream} must of course be organized in such a
+ * way that this class understands it, {@link ColumnWriter} writes column data
+ * in such a way.
+ * 
+ * <p>
+ * There is a specific implementation for every primitive data type.
  * 
  * @author Aljoscha Krettek
  * 
  */
-public interface ColumnReader {
+public abstract class ColumnReader {
+    protected SchemaNode schema;
+    protected DataInputStream in;
+    protected int nextRepetition = -1;
+    protected int nextDefinition = -1;
+    protected int currentRepetition = -1;
+    protected int currentDefinition = -1;
+
+    /**
+     * Constructs a column reader from the given input stream.
+     */
+    public ColumnReader(SchemaNode schema, InputStream inputStream)
+            throws IOException {
+        this(schema, new DataInputStream(new BufferedInputStream(inputStream)));
+    }
+
+    /**
+     * Constructs a column reader directly from the given data input stream.
+     */
+    public ColumnReader(SchemaNode schema, DataInputStream inputStream)
+            throws IOException {
+        this.schema = schema;
+        this.in = inputStream;
+        advanceLevels();
+    }
+
+    /**
+     * Internal method that reads the next levels from the input stream and sets
+     * both to -1 when EOF is reached.
+     */
+    protected void advanceLevels() throws IOException {
+        currentRepetition = nextRepetition;
+        currentDefinition = nextDefinition;
+        try {
+            nextRepetition = in.readInt();
+            nextDefinition = in.readInt();
+        } catch (EOFException e) {
+            // end is reached, or something else went wrong
+            nextRepetition = -1;
+            nextDefinition = -1;
+        }
+    }
+
     /**
      * Returns true when there is a next value available, the next value could
      * be {@code null} though.
      */
-    public boolean hasNext() throws IOException;
+    public boolean hasNext() {
+        return nextRepetition >= 0;
+    }
 
     /**
-     * Returns true when the next column value is {@code null}. This can be
-     * determined from the next definition level and the definition level of the
-     * {@link SchemaNode} of the column.
+     * Returns true when the current column value is NULL.
      */
-    public boolean nextIsNull() throws IOException;
+    public boolean isNull() {
+        return currentDefinition < schema.getMaxDefinition();
+    }
 
     /**
-     * Returns the next value that can be read from the column and advances the
-     * reader.
+     * Returns the current repetition level.
      */
-    public Object getNextValue() throws IOException;
+    public int getCurrentRepetition() {
+        return currentRepetition;
+    }
+
+    /**
+     * Returns the current definition level.
+     */
+    public int getCurrentDefinition() {
+        return currentDefinition;
+    }
 
     /**
      * Returns the next repetition level without advancing the reader.
      */
-    public int getNextRepetition() throws IOException;
+    public int getNextRepetition() {
+        if (hasNext()) {
+            return nextRepetition;
+        }
+        return 0; // seems to work with the assembly fsm
+    }
 
     /**
      * Returns the next definition level without advancing the reader.
      */
-    public int getNextDefinition() throws IOException;
+    public int getNextDefinition() {
+        if (hasNext()) {
+            return nextDefinition;
+        }
+        return 0; // seems to work with the assembly fsm
+    }
 
     /**
-     * Returns the next value of the reader as an {@code int}. Must only be
-     * called on column readers of primitive type int32.
+     * Returns the current value of the reader.
      */
-    public int getNextInt32() throws IOException;
+    public Object getValue() throws IOException {
+        if (isNull()) {
+            return null;
+        }
+
+        if (schema.getPrimitiveType() == PrimitiveType.INT32) {
+            return getInt32();
+        } else if (schema.getPrimitiveType() == PrimitiveType.INT64) {
+            return getInt64();
+        } else if (schema.getPrimitiveType() == PrimitiveType.BOOLEAN) {
+            return getBool();
+        } else if (schema.getPrimitiveType() == PrimitiveType.FLOAT) {
+            return getFloat();
+        } else if (schema.getPrimitiveType() == PrimitiveType.DOUBLE) {
+            return getDouble();
+        } else if (schema.getPrimitiveType() == PrimitiveType.STRING) {
+            return getString();
+        }
+        return null;
+    }
 
     /**
-     * Returns the next value of the reader as an {@code long}. Must only be
-     * called on column readers of primitive type int64.
+     * Advances the reader to the next column value, if there is one.
      */
-    public long getNextInt64() throws IOException;
+    public abstract void advance() throws IOException;
 
     /**
-     * Returns the next value of the reader as an {@code boolean}. Must only be
-     * called on column readers of primitive type bool.
+     * Returns the current value of the reader.
      */
-    public boolean getNextBool() throws IOException;
+    public int getInt32() throws IOException {
+        throw new RuntimeException("Column reader is no int32 reader.");
+    }
 
     /**
-     * Returns the next value of the reader as an {@code float}. Must only be
-     * called on column readers of primitive type float.
+     * Returns the current value of the reader.
      */
-    public float getNextFloat() throws IOException;
+    public long getInt64() throws IOException {
+        throw new RuntimeException("Column reader is no int64 reader.");
+    }
 
     /**
-     * Returns the next value of the reader as an {@code double}. Must only be
-     * called on column readers of primitive type double.
+     * Returns the current value of the reader.
      */
-    public double getNextDouble() throws IOException;
+    public boolean getBool() throws IOException {
+        throw new RuntimeException("Column reader is no bool reader.");
+    }
 
     /**
-     * Returns the next value of the reader as an {@code String}. Must only be
-     * called on column readers of primitive type string.
+     * Returns the current value of the reader.
      */
-    public String getNextString() throws IOException;
+    public float getFloat() throws IOException {
+        throw new RuntimeException("Column reader is no float reader.");
+    }
+
+    /**
+     * Returns the current value of the reader.
+     */
+    public double getDouble() throws IOException {
+        throw new RuntimeException("Column reader is no double reader.");
+    }
+
+    /**
+     * Returns the current value of the reader.
+     */
+    public String getString() throws IOException {
+        throw new RuntimeException("Column reader is no String reader.");
+    }
+
+    /**
+     * Writes the current value of the reader to the given column writer.
+     */
+    public abstract void writeToColumn(ColumnWriter writer) throws IOException;
 }

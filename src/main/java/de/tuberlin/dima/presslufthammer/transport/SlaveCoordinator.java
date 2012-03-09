@@ -54,7 +54,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 	private ChannelGroup clientChannels = new DefaultChannelGroup();
 	private final GenericHandler handler = new GenericHandler(this);
 	private ServingChannel rootChannel = null;
-	private final Map<Byte, QueryHandler> queries = new HashMap<Byte, QueryHandler>();
+	private final Map<Integer, QueryHandler> queries = new HashMap<Integer, QueryHandler>();
 	private Map<String, DataSource> tables;
 	private byte priorQID = 0;
 
@@ -116,22 +116,22 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 
 		if (isServing()) {
 
-			byte qid = nextQID();
+			int qid = nextQID();
 			Query query = message.getQuery();
 			message = new QueryMessage(qid, query);
 			log.info("Received query: {}", query);
 
 			String tableName = query.getTableName();
 			if (!tables.containsKey(tableName)) {
-				client.write(new SimpleMessage(MessageType.CLIENT_RESULT, (byte) -1,
-						"Table not available".getBytes()));
+				client.write(new SimpleMessage(MessageType.CLIENT_RESULT,
+						(byte) -1, "Table not available".getBytes()));
 				log.info("Table {} not in tables.", tableName);
 			} else {
 				DataSource table = tables.get(tableName);
 				Set<String> projectedFields = Sets.newHashSet();
-                for (SelectClause selectClause : query.getSelectClauses()) {
-                    projectedFields.add(selectClause.getColumn());
-                }
+				for (SelectClause selectClause : query.getSelectClauses()) {
+					projectedFields.add(selectClause.getColumn());
+				}
 				SchemaNode projectedSchema = null;
 				if (projectedFields.contains("*")) {
 					log.debug("Query is a 'select * ...' query.");
@@ -142,43 +142,36 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 				}
 
 				if (rootChannel != null) {
-					log.info("Handing query to root node of our node tree.");
+					log.info("Handing query {} to root node of the tree.", qid);
 					// clientChans.add(client);// optional
 					queries.put(qid, new QueryHandler(table.getNumPartitions(),
 							message, projectedSchema, client));
-//					// send a seperate query for each tablet
-//					for (int i = 0; i < table.getNumPartitions(); i++) {
-//						query.setPart((byte) i);
-//						message.setPayload(query.getBytes());
-//						rootChannel.write(message);
-//					}
 					// send a request to the leafs for every partition
-                    Iterator<Channel> leafIter = slaveChannels.iterator();
-                    for (int i = 0; i < table.getNumPartitions(); ++i) {
-                        Channel leaf = null;
-                        if (leafIter.hasNext()) {
-                            leaf = leafIter.next();
-                        } else {
+					Iterator<Channel> leafIter = slaveChannels.iterator();
+					for (int i = 0; i < table.getNumPartitions(); ++i) {
+						Channel leaf = null;
+						if (leafIter.hasNext()) {
+							leaf = leafIter.next();
+						} else {
 
-                            leafIter = slaveChannels.iterator();
-                            leaf = leafIter.next();
-                        }
-                        // create a new query for only the specific partition
-                        Query leafQuery = new Query(query);
-                        leafQuery.setPartition(i);
-                        QueryMessage leafMessage = new QueryMessage(qid,
-                                leafQuery);
-                        leaf.write(leafMessage);
-                        log.info("Sent query to leaf {}: {}",
-                                leaf.getRemoteAddress(), leafQuery);
-                    }
+							leafIter = slaveChannels.iterator();
+							leaf = leafIter.next();
+						}
+						// create a new query for only the specific partition
+						Query leafQuery = new Query(query);
+						leafQuery.setPartition(i);
+						QueryMessage leafMessage = new QueryMessage(qid,
+								leafQuery);
+						leaf.write(leafMessage);
+						log.info("Sent query to leaf {}: {}",
+								leaf.getRemoteAddress(), leafQuery);
+					}
 				} else {
 					log.info("Cannot process query w/o at least one slave.");
 				}
 			}
-
 		} else {
-			log.warn("Query cannot be processed because we have no slaves.");
+			log.warn("Query cannot be processed w/o slaves.");
 		}
 	}
 
@@ -200,20 +193,17 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		// TODO
 		log.info("Adding inner node: {};", channel.getRemoteAddress());
 		synchronized (slaveChannels) {
-//			log.debug("lock obtained");
-			if(slaveChannels.add(channel)) {
-				log.debug("addition successful");
+			if (slaveChannels.add(channel)) {
+				log.debug("New node added successfully.");
 			}
 			if (rootChannel == null) {
 				rootChannel = new ServingChannel(channel, portbs);
-				log.info("new root node connected at "
-						+ rootChannel.getRemoteAddress());
+				log.info("New root node connected at {}.",
+						rootChannel.getRemoteAddress());
 			} else {
 				channel.write(getRootInfo());
-//				System.out.println("CCCCCCCCC");
 			}
 		}
-//		log.debug("lock released");
 	}
 
 	private SimpleMessage getRootInfo() {
@@ -264,11 +254,11 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 		log.debug("Message received from {}.", e.getRemoteAddress());
 
-        if (e.getMessage() instanceof QueryMessage) {
-            query((QueryMessage) e.getMessage(), e.getChannel());
-        } else if (e.getMessage() instanceof TabletMessage) {
-            handleResult((TabletMessage) e.getMessage());
-        } else if (e.getMessage() instanceof SimpleMessage) {
+		if (e.getMessage() instanceof QueryMessage) {
+			query((QueryMessage) e.getMessage(), e.getChannel());
+		} else if (e.getMessage() instanceof TabletMessage) {
+			handleResult((TabletMessage) e.getMessage());
+		} else if (e.getMessage() instanceof SimpleMessage) {
 			SimpleMessage message = ((SimpleMessage) e.getMessage());
 			log.debug("Message: {}", message.toString());
 
@@ -285,6 +275,9 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 			case CLIENT_QUERY:
 			case REDIR:
 			case UNKNOWN:
+				e.getChannel().write(
+						new SimpleMessage(MessageType.NACK, message
+								.getQueryID(), new byte[] { (byte) 0 }));
 				break;
 			case REGCLIENT:
 				this.addClient(e.getChannel());
@@ -297,7 +290,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		}
 	}
 
-	private byte nextQID() {
+	private int nextQID() {
 		return ++priorQID;
 	}
 

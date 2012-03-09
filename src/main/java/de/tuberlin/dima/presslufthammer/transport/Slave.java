@@ -122,31 +122,6 @@ public class Slave extends ChannelNode implements Stoppable {
 	private LocalDiskDataStore dataStore;
 	private boolean connecting = false;
 
-	//
-	// /**
-	// * Constructor<br />
-	// * Reads data from the data directory.
-	// *
-	// * @param serverHost
-	// * coordinator hostname or address
-	// * @param serverPort
-	// * coordinator port
-	// * @param dataDirectory
-	// * directory containing data sources
-	// */
-	// public Slave(String serverHost, int serverPort, File dataDirectory) {
-	// this.serverHost = serverHost;
-	// this.serverPort = serverPort;
-	// this.degree = 2;
-	//
-	// try {
-	// dataStore = OnDiskDataStore.openDataStore(dataDirectory);
-	// } catch (IOException e) {
-	// log.warn("Exception caught while while loading datastore: {}",
-	// e.getMessage());
-	// }
-	// }
-
 	/**
 	 * Constructor<br />
 	 * Reads data from the data directory.
@@ -267,45 +242,18 @@ public class Slave extends ChannelNode implements Stoppable {
 		case LEAF:
 			try {
 				String tableName = query.getTableName();
-//				Tablet tablet = dataStore.getTablet(table, query.getPartition());
-//				log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
-//						query.getPartition());
-//
-//				Set<String> projectedFields = Sets.newHashSet();
-//				for (Projection project : query.getSelect()) {
-//					projectedFields.add(project.getColumn());
-//				}
-//				SchemaNode projectedSchema = null;
-//				if (projectedFields.contains("*")) {
-//					log.debug("Query is a 'select * ...' query.");
-//					projectedSchema = tablet.getSchema();
-//				} else {
-//
-//					projectedSchema = tablet.getSchema().project(
-//							projectedFields);
-//				}
-//
-//				InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
-//						projectedSchema);
-//
-//				TabletProjector copier = new TabletProjector();
-//				copier.project(projectedSchema, tablet, resultTablet);
-//
-//				SimpleMessage response = new SimpleMessage(
-//						Type.INTERNAL_RESULT, message.getQueryID(),
-//						resultTablet.serialize());
-				Tablet tablet = dataStore
-	                    .getTablet(tableName, query.getPartition());
+				Tablet tablet = dataStore.getTablet(tableName,
+						query.getPartition());
 
-	            log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
-	                    query.getPartition());
+				log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
+						query.getPartition());
 
-	            QueryExecutor qx = new QueryExecutor(tablet, query);
+				QueryExecutor qx = new QueryExecutor(tablet, query);
 
-	            InMemoryWriteonlyTablet resultTablet = qx.performQuery();
+				InMemoryWriteonlyTablet resultTablet = qx.performQuery();
 
-	            TabletMessage response = new TabletMessage(message.getQueryId(),
-	                    resultTablet.serialize());
+				TabletMessage response = new TabletMessage(
+						message.getQueryId(), resultTablet.serialize());
 				parentChannel.write(response);
 			} catch (IOException e) {
 				log.warn("Caught exception while creating result: {}",
@@ -426,9 +374,11 @@ public class Slave extends ChannelNode implements Stoppable {
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 		log.debug("Message received from {}.", e.getRemoteAddress());
-        if (e.getMessage() instanceof QueryMessage) {
-            query((QueryMessage) e.getMessage());
-        } else if (e.getMessage() instanceof SimpleMessage) {
+		if (e.getMessage() instanceof QueryMessage) {
+			query((QueryMessage) e.getMessage());
+		} else if (e.getMessage() instanceof TabletMessage) {
+			handleResult((TabletMessage) e.getMessage());
+		} else if (e.getMessage() instanceof SimpleMessage) {
 			SimpleMessage message = ((SimpleMessage) e.getMessage());
 			log.debug("Message: {}", message.toString());
 			switch (message.getType()) {
@@ -458,11 +408,23 @@ public class Slave extends ChannelNode implements Stoppable {
 			case CLIENT_RESULT:
 			case REGCLIENT:
 				e.getChannel().write(
-						new SimpleMessage(MessageType.NACK, message.getQueryID(),
-								new byte[] { (byte) 0 }));
+						new SimpleMessage(MessageType.NACK, message
+								.getQueryID(), new byte[] { (byte) 0 }));
 				break;
 
 			}
+		}
+	}
+
+	private void handleResult(TabletMessage message) {
+		// TODO aggregating of partial results within intermediate layer
+		if (parentChannel != null && parentChannel.isConnected()) {
+			parentChannel.write(message);
+		} else if (coordinatorChannel != null
+				&& coordinatorChannel.isConnected()) {
+			coordinatorChannel.write(message);
+		} else {
+			log.warn("Received internal result w/o parent connection available.");
 		}
 	}
 

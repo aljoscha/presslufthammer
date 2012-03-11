@@ -515,7 +515,11 @@ public class Slave extends ChannelNode implements Stoppable {
 	public void removeChannel(Channel channel) {
 		// TODO
 		log.debug("Channel to {} closed.", channel.getRemoteAddress());
-		if (parentChannel == channel) {
+		if(coordinatorChannel == channel) {
+			// TODO
+			stop();
+		} else if (parentChannel == channel) {
+			// TODO
 			if (!connecting) {
 				// parentChannel = null;
 				// if (coordinatorChannel.isConnected()) {
@@ -527,6 +531,7 @@ public class Slave extends ChannelNode implements Stoppable {
 				// log.info("Connection to parent lost. Contacting Coordinator.");
 			}
 		} else {
+			// connection to a child lost
 			for (ServingChannel sc : directChildren) {
 				if (sc.equals(channel)) {
 					directChildren.remove(sc);

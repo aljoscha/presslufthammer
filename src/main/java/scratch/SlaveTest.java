@@ -39,16 +39,18 @@ public class SlaveTest {
 		coord.start();
 
 		List<Slave> slaves = new ArrayList<Slave>();
-		Slave slave_0 = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR, DATASOURCES);
+		Slave slave_0 = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR,
+				DATASOURCES);
 		slave_0.start();
 		slaves.add(0, slave_0);
 		log.info("Waiting for the coordinator to accept the root node.");
 		Thread.sleep(5000);// wait until slave_0 has been established as root
 		for (int i = 1; i < NUM_SLAVES; i++) {
-			Slave s = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR, DATASOURCES);
+			Slave s = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR,
+					DATASOURCES);
 			s.start();
-			slaves.add(i, s);
-//			Thread.sleep(1000);
+			slaves.add(s);
+			// Thread.sleep(1000);
 		}
 		log.info("{} Slaves have been added.", NUM_SLAVES);
 		Thread.sleep(2000);

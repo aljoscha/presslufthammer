@@ -89,7 +89,6 @@ public class Slave extends ChannelNode implements Stoppable {
 	 * for incoming connections of children
 	 */
 	private ServerBootstrap bootstrapServer;
-
 	/**
 	 * host name or address of the coordinator server
 	 */
@@ -123,24 +122,29 @@ public class Slave extends ChannelNode implements Stoppable {
 	 */
 	private NodeStatus status = NodeStatus.STARTUP;
 	/**
-	 * 
+	 * the data store used for data access
 	 */
 	private LocalDiskDataStore dataStore;
 	private Map<String, DataSource> tables;
+	/**
+	 * true if the slave is connecting to a new parent.
+	 */
 	private boolean connecting = false;
 
 	/**
 	 * Constructor<br />
-	 * Reads data from the data directory.
+	 * Opens a data store in the data directory.
 	 * 
 	 * @param degree
 	 *            the number of direct children the slave should accept
 	 * @param serverHost
-	 *            coordinator hostname or address
+	 *            coordinator host name or address
 	 * @param serverPort
 	 *            coordinator port
 	 * @param dataDirectory
 	 *            directory containing data sources
+	 * @param dataSources
+	 *            path to DataSources.xml
 	 */
 	public Slave(int degree, String serverHost, int serverPort,
 			File dataDirectory, String dataSources) {
@@ -155,6 +159,21 @@ public class Slave extends ChannelNode implements Stoppable {
 		dataStore = openDataStore(dataDirectory);
 	}
 
+	/**
+	 * Constructor<br />
+	 * Opens a data store in the data directory.
+	 * 
+	 * @param degree
+	 *            the number of direct children the slave should accept
+	 * @param serverHost
+	 *            coordinator host name or address
+	 * @param serverPort
+	 *            coordinator port
+	 * @param dataDirectory
+	 *            directory containing data sources
+	 * @param dataSources
+	 *            path to DataSources.xml
+	 */
 	public Slave(int degree, String serverHost, int serverPort,
 			String dataDirectory, String dataSources) {
 		if (degree < 1) {
@@ -168,10 +187,24 @@ public class Slave extends ChannelNode implements Stoppable {
 		dataStore = openDataStore(dataDirectory);
 	}
 
+	/**
+	 * Wrapper.
+	 * 
+	 * @param dataDirectory
+	 *            path as a String
+	 * @return data store at the given directory
+	 */
 	private LocalDiskDataStore openDataStore(String dataDirectory) {
 		return openDataStore(new File(dataDirectory));
 	}
 
+	/**
+	 * Opens a LocalDiskDataStore at the given directory.
+	 * 
+	 * @param dataDirectory
+	 *            File object
+	 * @return data store at the given directory
+	 */
 	private LocalDiskDataStore openDataStore(File dataDirectory) {
 		try {
 			return LocalDiskDataStore.openDataStore(dataDirectory);
@@ -181,7 +214,7 @@ public class Slave extends ChannelNode implements Stoppable {
 			return null;
 		}
 	}
-	
+
 	public void readDataSources(String dataSources) {
 		DataSourcesReader dsReader = new DataSourcesReaderImpl();
 		try {
@@ -268,12 +301,17 @@ public class Slave extends ChannelNode implements Stoppable {
 	 */
 	private int getPortFromSocketAddress(SocketAddress localAddress) {
 		String s = localAddress.toString();
-		// log.debug( s);
 		String[] temp = s.split(":");
-
+		// assuming an IPv4 address
 		return Integer.parseInt(temp[temp.length - 1]);
 	}
 
+	/**
+	 * Handles with incoming queries depending on status.
+	 * 
+	 * @param message
+	 *            QueryMessage
+	 */
 	public void query(QueryMessage message) {
 		Query query = message.getQuery();
 		log.info("Received query: " + query);
@@ -306,7 +344,9 @@ public class Slave extends ChannelNode implements Stoppable {
 			}
 			break;
 		case STARTUP:
-			log.warn("Query received during startup");
+			log.warn("Query received during startup.");
+			parentChannel.write(new SimpleMessage(MessageType.NACK, message
+					.getQueryId(), new byte[] { (byte) 0 }));
 			break;
 		}
 	}
@@ -371,13 +411,6 @@ public class Slave extends ChannelNode implements Stoppable {
 				ServingChannel.intToByte(ownPort));
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * de.tuberlin.dima.presslufthammer.transport.ChannelNode#connectNReg(java
-	 * .net.SocketAddress)
-	 */
 	@Override
 	public boolean connectNReg(SocketAddress address) {
 		// TODO
@@ -461,6 +494,11 @@ public class Slave extends ChannelNode implements Stoppable {
 		}
 	}
 
+	/**
+	 * Handles incoming TabletMessages.
+	 * 
+	 * @param message
+	 */
 	private void handleResult(TabletMessage message) {
 		// TODO aggregating of partial results within intermediate layer
 		if (parentChannel != null && parentChannel.isConnected()) {
@@ -478,20 +516,21 @@ public class Slave extends ChannelNode implements Stoppable {
 		// TODO
 		log.debug("Channel to {} closed.", channel.getRemoteAddress());
 		if (parentChannel == channel) {
-//			if (!connecting) {
-//				parentChannel = null;
-//				if (coordinatorChannel.isConnected()) {
-////					coordinatorChannel.write(getRegMsg());
-//				} else {
-////					connectNReg(serverHost, serverPort);
-//				}
-////				log.info("Connection to parent lost. Contacting Coordinator.");
-//			}
+			if (!connecting) {
+				// parentChannel = null;
+				// if (coordinatorChannel.isConnected()) {
+				// // coordinatorChannel.write(getRegMsg());
+				// } else {
+				// // connectNReg(serverHost, serverPort);
+				// }
+				// //
+				// log.info("Connection to parent lost. Contacting Coordinator.");
+			}
 		} else {
 			for (ServingChannel sc : directChildren) {
 				if (sc.equals(channel)) {
 					directChildren.remove(sc);
-					if(directChildren.isEmpty()) {
+					if (directChildren.isEmpty()) {
 						status = NodeStatus.LEAF;
 					}
 					break;

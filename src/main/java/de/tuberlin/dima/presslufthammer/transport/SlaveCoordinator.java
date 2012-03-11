@@ -212,13 +212,6 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		return new SimpleMessage(type, -1, payload);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * de.tuberlin.dima.presslufthammer.transport.ChannelNode#removeChannel(
-	 * org.jboss.netty.channel.Channel)
-	 */
 	@Override
 	public void removeChannel(Channel channel) {
 		// TODO
@@ -227,7 +220,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		}
 		slaveChannels.remove(channel);
 		channel.close();
-		// log.debug( "" + openChannels.remove( channel));
+		log.debug("" + openChannels.remove(channel));
 	}
 
 	public void handleResult(TabletMessage message) {
@@ -242,14 +235,6 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * de.tuberlin.dima.presslufthammer.transport.ChannelNode#messageReceived
-	 * (org.jboss.netty.channel.ChannelHandlerContext,
-	 * org.jboss.netty.channel.MessageEvent)
-	 */
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 		log.debug("Message received from {}.", e.getRemoteAddress());
@@ -283,10 +268,6 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 				this.addClient(e.getChannel());
 				break;
 			}
-			//
-			// e.getChannel().write(
-			// new SimpleMessage(Type.ACK, (byte) 0,
-			// new byte[] { (byte) 0 }));
 		}
 	}
 

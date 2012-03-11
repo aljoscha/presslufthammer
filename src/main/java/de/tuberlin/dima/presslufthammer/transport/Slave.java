@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -23,6 +24,8 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Maps;
+
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.local.LocalDiskDataStore;
@@ -36,6 +39,9 @@ import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
 import de.tuberlin.dima.presslufthammer.transport.util.ServingChannel;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
+import de.tuberlin.dima.presslufthammer.xml.DataSource;
+import de.tuberlin.dima.presslufthammer.xml.DataSourcesReader;
+import de.tuberlin.dima.presslufthammer.xml.DataSourcesReaderImpl;
 
 /**
  * ChannelNode that can serve both as an intermediate server or a leaf server.
@@ -120,6 +126,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	 * 
 	 */
 	private LocalDiskDataStore dataStore;
+	private Map<String, DataSource> tables;
 	private boolean connecting = false;
 
 	/**
@@ -136,7 +143,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	 *            directory containing data sources
 	 */
 	public Slave(int degree, String serverHost, int serverPort,
-			File dataDirectory) {
+			File dataDirectory, String dataSources) {
 		if (degree < 1) {
 			log.error("not a valid degree: " + degree, new Exception());
 		}
@@ -144,11 +151,49 @@ public class Slave extends ChannelNode implements Stoppable {
 		this.serverPort = serverPort;
 		this.degree = degree;
 
+		readDataSources(dataSources);
+		dataStore = openDataStore(dataDirectory);
+	}
+
+	public Slave(int degree, String serverHost, int serverPort,
+			String dataDirectory, String dataSources) {
+		if (degree < 1) {
+			log.error("not a valid degree: " + degree, new Exception());
+		}
+		this.serverHost = serverHost;
+		this.serverPort = serverPort;
+		this.degree = degree;
+
+		readDataSources(dataSources);
+		dataStore = openDataStore(dataDirectory);
+	}
+
+	private LocalDiskDataStore openDataStore(String dataDirectory) {
+		return openDataStore(new File(dataDirectory));
+	}
+
+	private LocalDiskDataStore openDataStore(File dataDirectory) {
 		try {
-			dataStore = LocalDiskDataStore.openDataStore(dataDirectory);
+			return LocalDiskDataStore.openDataStore(dataDirectory);
 		} catch (IOException e) {
 			log.warn("Exception caught while while loading datastore: {}",
 					e.getMessage());
+			return null;
+		}
+	}
+	
+	public void readDataSources(String dataSources) {
+		DataSourcesReader dsReader = new DataSourcesReaderImpl();
+		try {
+			tables = dsReader.readFromXML(dataSources);
+			log.info("Read datasources from {}.", dataSources);
+			log.info(tables.toString());
+		} catch (Exception e) {
+			log.warn("Error reading datasources from {}: {}", dataSources,
+					e.getMessage());
+			if (tables == null) {
+				tables = Maps.newHashMap();
+			}
 		}
 	}
 
@@ -433,21 +478,22 @@ public class Slave extends ChannelNode implements Stoppable {
 		// TODO
 		log.debug("Channel to {} closed.", channel.getRemoteAddress());
 		if (parentChannel == channel) {
-			if (!connecting) {
-				parentChannel = null;
-				if (coordinatorChannel.isConnected()) {
-					coordinatorChannel.write(getRegMsg());
-					System.out.println("AAA");
-				} else {
-					connectNReg(serverHost, serverPort);
-					System.out.println("BBB");
-				}
-				log.info("Connection to parent lost. Contacting Coordinator.");
-			}
+//			if (!connecting) {
+//				parentChannel = null;
+//				if (coordinatorChannel.isConnected()) {
+////					coordinatorChannel.write(getRegMsg());
+//				} else {
+////					connectNReg(serverHost, serverPort);
+//				}
+////				log.info("Connection to parent lost. Contacting Coordinator.");
+//			}
 		} else {
 			for (ServingChannel sc : directChildren) {
 				if (sc.equals(channel)) {
 					directChildren.remove(sc);
+					if(directChildren.isEmpty()) {
+						status = NodeStatus.LEAF;
+					}
 					break;
 				}
 			}

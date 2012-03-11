@@ -7,8 +7,6 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 
-import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
-
 /**
  * @author feichh
  * 
@@ -95,10 +93,6 @@ public class ServingChannel {
 	 * 
 	 * @param message
 	 */
-	public void write(SimpleMessage message) {
-		channel.write(message);
-	}
-	
 	public void write(Object obj) {
 		channel.write(obj);
 	}

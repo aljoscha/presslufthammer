@@ -1,0 +1,13 @@
+package Sentence;
+message Sentence {
+  message Predicate {
+    required string lemma = 1;
+    required string text = 2;
+    message Argument {
+      required string text = 1;
+      required string role = 2;
+    }
+    repeated Argument argument = 3;
+  }
+  required Predicate predicate = 1;
+}

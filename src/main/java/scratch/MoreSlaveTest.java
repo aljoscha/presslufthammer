@@ -23,32 +23,24 @@ import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
  * @author feichh
  * @author Aljoscha Krettek
  */
-public class SlaveTest {
+public class MoreSlaveTest {
 	private static final Logger log = LoggerFactory.getLogger("SlaveTest");
 	private static final String HOST = "localhost";
 	private static final int PORT = 44444;
 	private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
 	private static final File LEAF_DATADIR = new File("data-dir");
-	private static final int NUM_SLAVES = 7;
+	private static final int NUM_SLAVES = 8;
 	private static final int SLAVE_DEGREE = 2;
 
 	public static void main(String[] args) throws Exception {
 
-		log.info("Test Starting");
-		SlaveCoordinator coord = new SlaveCoordinator(PORT, DATASOURCES);
-		coord.start();
+		log.info("Starting additional slaves.");
 
 		List<Slave> slaves = new ArrayList<Slave>();
-		Slave slave_0 = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR, DATASOURCES);
-		slave_0.start();
-		slaves.add(0, slave_0);
-		log.info("Waiting for the coordinator to accept the root node.");
-		Thread.sleep(5000);// wait until slave_0 has been established as root
-		for (int i = 1; i < NUM_SLAVES; i++) {
+		for (int i = 0; i < NUM_SLAVES; i++) {
 			Slave s = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR, DATASOURCES);
 			s.start();
 			slaves.add(i, s);
-//			Thread.sleep(1000);
 		}
 		log.info("{} Slaves have been added.", NUM_SLAVES);
 		Thread.sleep(2000);
@@ -87,6 +79,5 @@ public class SlaveTest {
 		for (Slave s : slaves) {
 			s.stop();
 		}
-		coord.stop();
 	}
 }

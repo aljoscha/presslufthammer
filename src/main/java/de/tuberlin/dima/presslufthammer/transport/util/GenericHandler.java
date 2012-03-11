@@ -50,7 +50,15 @@ public class GenericHandler extends SimpleChannelHandler {
         super.channelOpen(ctx, e);
     }
 
-    @Override
+	@Override
+	public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
+			throws Exception {
+		// TODO Auto-generated method stub
+		node.removeChannel(ctx.getChannel());
+		super.channelClosed(ctx, e);
+	}
+
+	@Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
             throws Exception {
         if (e.getMessage() instanceof SimpleMessage) {

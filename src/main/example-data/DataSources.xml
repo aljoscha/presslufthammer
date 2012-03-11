@@ -2,3 +2,4 @@
 <!-- XML file listing all available data sources -->
 
 <dataSource name="Document" schema="Document.proto" partitions="10"></dataSource>
+<!-- <dataSource name="Sentence" schema="Sentence.proto" partitions="1"></dataSource> -->

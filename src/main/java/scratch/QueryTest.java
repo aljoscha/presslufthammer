@@ -38,7 +38,7 @@ public class QueryTest {
         if (client.start()) {
             try {
                 Query query = QueryParser
-                        .parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://A\"");
+                        .parse("SELECT COUNT(*) FROM Document");
                 System.out.println("QUERY: " + query);
                 QueryMessage queryMsg = new QueryMessage(-1, query);
                 client.query(queryMsg);

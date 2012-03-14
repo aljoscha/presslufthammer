@@ -9,10 +9,12 @@ package de.tuberlin.dima.presslufthammer.query;
 public class SelectClause {
     private final boolean isAll;
     private final String column;
+    private final Aggregation aggregation;
     private final String renameAs;
 
-    public SelectClause(String column, String renameAs) {
+    public SelectClause(String column, Aggregation aggregation, String renameAs) {
         this.column = column;
+        this.aggregation = aggregation;
         this.renameAs = renameAs;
         if (column.equals("*")) {
             isAll = true;
@@ -29,6 +31,10 @@ public class SelectClause {
         return column;
     }
 
+    public Aggregation getAggregation() {
+        return aggregation;
+    }
+
     public String getRenameAs() {
         return renameAs;
     }
@@ -39,5 +45,9 @@ public class SelectClause {
             return column + " AS " + renameAs;
         }
         return column;
+    }
+
+    public static enum Aggregation {
+        NONE, COUNT, SUM
     }
 }

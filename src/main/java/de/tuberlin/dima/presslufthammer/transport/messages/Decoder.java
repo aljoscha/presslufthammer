@@ -54,7 +54,7 @@ public class Decoder extends ReplayingDecoder<Decoder.DecodingState> {
                 switch (messageType) {
                 case QUERY:
                     ChannelBuffer buf = ChannelBuffers.copiedBuffer(buffer);
-                    System.out.println("DECODING: " + buf.toString(charset));
+//                    System.out.println("DECODING: " + buf.toString(charset));
                     Query query = QueryParser.parse(buf.toString(charset));
                     QueryMessage msg = new QueryMessage(queryId, query);
                     return msg;

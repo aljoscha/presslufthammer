@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- XML file listing all available data sources -->
-
-<!-- <dataSource name="Document" schema="Document.proto" partitions="5"></dataSource>  -->
-<dataSource name="Sentence" schema="Sentence.proto" partitions="8"></dataSource>

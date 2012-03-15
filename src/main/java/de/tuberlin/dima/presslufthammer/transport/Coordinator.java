@@ -1,5 +1,6 @@
 package de.tuberlin.dima.presslufthammer.transport;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,11 +30,10 @@ import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
 import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.TabletMessage;
+import de.tuberlin.dima.presslufthammer.util.Config;
+import de.tuberlin.dima.presslufthammer.util.Config.TableConfig;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
-import de.tuberlin.dima.presslufthammer.xml.DataSource;
-import de.tuberlin.dima.presslufthammer.xml.DataSourcesReader;
-import de.tuberlin.dima.presslufthammer.xml.DataSourcesReaderImpl;
 
 /**
  * @author feichh
@@ -52,20 +52,21 @@ public class Coordinator extends ChannelNode implements Stoppable {
     private final GenericHandler handler = new GenericHandler(this);
     private Channel rootChannel = null;
     private final Map<Integer, QueryHandler> queries = new HashMap<Integer, QueryHandler>();
-    private Map<String, DataSource> tables;
+    private Config config;
+    private Map<String, TableConfig> tables;
     private int priorQID = -1;
 
     private boolean running = false;
 
-    public Coordinator(int port, String dataSources) {
+    public Coordinator(int port, String configFile) {
         this.port = port;
-        DataSourcesReader dsReader = new DataSourcesReaderImpl();
         try {
-            tables = dsReader.readFromXML(dataSources);
-            log.info("Read datasources from {}.", dataSources);
+            config = new Config(new File(configFile));
+            tables = config.getTables();
+            log.info("Read config from {}.", configFile);
             log.info(tables.toString());
         } catch (Exception e) {
-            log.warn("Error reading datasources from {}: {}", dataSources,
+            log.warn("Error reading config from {}: {}", configFile,
                     e.getMessage());
             if (tables == null) {
                 tables = Maps.newHashMap();
@@ -137,7 +138,7 @@ public class Coordinator extends ChannelNode implements Stoppable {
                             (byte) -1, "Table not available".getBytes()));
                     log.info("Table {} not in tables.", tableName);
                 } else {
-                    DataSource table = tables.get(tableName);
+                    TableConfig table = tables.get(tableName);
                     Set<String> projectedFields = Sets.newHashSet();
                     for (SelectClause selectClause : query.getSelectClauses()) {
                         projectedFields.add(selectClause.getColumn());

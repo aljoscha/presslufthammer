@@ -29,7 +29,7 @@ public class SlaveTest {
 	private static final int PORT = 44444;
 	private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
 	private static final File LEAF_DATADIR = new File("data-dir");
-	private static final int NUM_SLAVES = 6;
+	private static final int NUM_SLAVES = 1;
 	private static final int SLAVE_DEGREE = 5;
 
 	public static void main(String[] args) throws Exception {
@@ -73,8 +73,8 @@ public class SlaveTest {
 			} else {
 				try {
 					Query query = QueryParser
-							.parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://A\"");
-//							.parse("SELECT * FROM Sentence");
+//							.parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://A\"");
+							.parse("SELECT * FROM Sentence");
 					System.out.println("QUERY: " + query);
 					QueryMessage queryMsg = new QueryMessage(-1, query);
 					client.query(queryMsg);

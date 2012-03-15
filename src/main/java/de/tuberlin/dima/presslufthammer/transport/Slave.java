@@ -337,7 +337,7 @@ public class Slave extends ChannelNode implements Stoppable {
 
 				TabletMessage response = new TabletMessage(
 						message.getQueryId(), resultTablet.serialize());
-				parentChannel.write(response);
+				handleResult(response);
 			} catch (IOException e) {
 				log.warn("Caught exception while creating result: {}",
 						e.getMessage());
@@ -350,7 +350,6 @@ public class Slave extends ChannelNode implements Stoppable {
 			break;
 		}
 	}
-
 	/**
 	 * Adds a channel as direct child to the Slave.
 	 * 

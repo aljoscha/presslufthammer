@@ -36,7 +36,7 @@ public class LocalDiskDataStore implements DataStore {
     private LocalDiskDataStore(File rootDirectory) {
         this.rootDirectory = rootDirectory;
         tablets = Maps.newHashMap();
-        log.info("Opening OnDiskDataStore from " + rootDirectory + ".");
+        log.info("Opening LocalDiskDataStore from " + rootDirectory + ".");
     }
 
     /**

@@ -25,7 +25,7 @@ public class AssemblyTest {
         InMemoryWriteonlyTablet inMemoryTablet = new InMemoryWriteonlyTablet(
                 schema);
         FieldStriper striper = new FieldStriper(schema);
-        striper.dissectRecords(records, inMemoryTablet);
+        striper.dissectRecords(records.recordIterator(), inMemoryTablet, -1);
 
         inMemoryTablet.printColumns();
 

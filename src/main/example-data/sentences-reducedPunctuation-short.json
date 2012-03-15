@@ -1,0 +1,7 @@
+{"predicate":{"lemma":"c","text":"c","arguments":[{"text":"el","role":"NMOD"},{"text":"war thingy turmoil","role":"NMOD"}]}}
+{"predicate":{"lemma":"hb","text":"hb","arguments":[{"text":"half-baked solutions","role":"TMP"},{"text":"the leaders","role":"NMOD"},{"text":"immense pressure, crisis","role":"LOC"}]}}
+{"predicate":{"lemma":"sur","text":"sur","arguments":[{"text":"wsm","role":"NMOD"},{"text":"hi thu","role":"NMOD"},{"text":"on news","role":"ADV"}]}}
+{"predicate":{"lemma":"rose","text":"rose","arguments":[{"text":"Oil prices","role":"NMOD"},{"text":"above $92","role":"EXT"},{"text":"while euro","role":"TMP"}]}}
+{"predicate":{"lemma":"reached","text":"reached","arguments":[{"text":"\"We","role":"SBJ"},{"text":"an agreement bla bla","role":"NMOD"}]}}
+{"predicate":{"lemma":"took","text":"took","arguments":[{"text":"bec complexity","role":"ADV"},{"text":"it","role":"SBJ"},{"text":"us","role":"OBJ"},{"text":"a full night","role":"NMOD"}]}}
+{"predicate":{"lemma":"wi be","text":"wi be","arguments":[{"text":"but","role":"DEP"},{"text":"the results","role":"NMOD"},{"text":"a","role":"NMOD"},{"text":"source","role":"PRD"},{"text":"of","role":"NMOD"},{"text":"huge","role":"NMOD"},{"text":"relief","role":"NMOD"},{"text":"worldwide","role":"PMOD"},{"text":"\"","role":"VOC"}]}}

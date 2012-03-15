@@ -67,10 +67,11 @@ public final class ColumnReaderInt32 extends ColumnReader {
     @Override
     public void writeToColumn(ColumnWriter writer) throws IOException {
         if (isNull()) {
-            writer.writeNull(currentRepetition, currentDefinition);
+            writer.writeNull(currentWriteRepetition, currentDefinition);
         } else {
-            writer.writeInt32(currentValue, currentRepetition,
+            writer.writeInt32(currentValue, currentWriteRepetition,
                     currentDefinition);
         }
+        currentWriteRepetition = nextRepetition;
     }
 }

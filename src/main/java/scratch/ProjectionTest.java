@@ -40,7 +40,7 @@ public class ProjectionTest {
         InMemoryWriteonlyTablet writeTablet = new InMemoryWriteonlyTablet(
                 schema);
         FieldStriper striper = new FieldStriper(schema);
-        striper.dissectRecords(records, writeTablet);
+        striper.dissectRecords(records.recordIterator(), writeTablet, -1);
 
         writeTablet.printColumns();
 

@@ -105,9 +105,10 @@ public class LocalDiskDataStore implements DataStore {
      * Calls {@code flush} on all the managed tablets.
      */
     public void flush() throws IOException {
-        for (LocalDiskTablet tablet : tablets.values()) {
+        for (TabletKey key : tablets.keySet()) {
+            LocalDiskTablet tablet = tablets.get(key);
             log.info("Flushing data of tablet " + tablet.getSchema().getName()
-                    + ".");
+                    + "." + key.getPartition());
             tablet.flush();
         }
     }
@@ -185,6 +186,14 @@ class TabletKey {
             return false;
         }
         return true;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public int getPartition() {
+        return partition;
     }
 
     @Override

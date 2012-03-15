@@ -17,6 +17,7 @@ import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonly
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.query.SelectClause;
 import de.tuberlin.dima.presslufthammer.query.WhereClause;
+import de.tuberlin.dima.presslufthammer.query.WhereClause.Op;
 
 /**
  * The executor is responsible for executing a query given a source tablet. The
@@ -85,15 +86,23 @@ public class QueryExecutor {
         }
     }
 
-    private boolean evalWhereClause(Slice slice, List<SchemaNode> selectedFields) throws IOException {
+    private boolean evalWhereClause(Slice slice, List<SchemaNode> selectedFields)
+            throws IOException {
         if (query.getWhereClauses().size() <= 0) {
             return true;
         }
-        for (WhereClause clause : query.getWhereClauses()) {
-            for (SchemaNode schema : selectedFields) {
+        for (SchemaNode schema : selectedFields) {
+            if (slice.getColumn(schema).isNull()) {
+                continue;
+            }
+            for (WhereClause clause : query.getWhereClauses()) {
                 if (schema.getQualifiedName().equals(clause.getColumn())) {
-                    if (!slice.getColumn(schema).isNull()
+                    if (clause.getOp() == Op.EQ
                             && slice.getColumn(schema).getValue().toString()
+                                    .equals(clause.getValue())) {
+                        return true;
+                    } else if (clause.getOp() == Op.NEQ
+                            && !slice.getColumn(schema).getValue().toString()
                                     .equals(clause.getValue())) {
                         return true;
                     }

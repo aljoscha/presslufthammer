@@ -28,14 +28,14 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		DataSourcesReader {
 
 	public enum ParseState {
-		START, DS,
+		START, LIST, DS,
 	}
 
 	private Logger log = LoggerFactory.getLogger(getClass());
 	private Map<String, DataSource> dataSourceMap = null;
 	private ParseState parseState = ParseState.DS;
 	private DataSource currentSource = null;
-	
+
 	private File xmlPath;
 
 	private static String convertToFileURL(String filename) {
@@ -52,7 +52,7 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 	public Map<String, DataSource> readFromXML(String path)
 			throws ParserConfigurationException, SAXException, IOException {
 
-	    this.xmlPath = new File(path);
+		this.xmlPath = new File(path);
 		log.debug("Attempting to read data sources from {}.", path);
 
 		SAXParserFactory spf = SAXParserFactory.newInstance();
@@ -81,23 +81,30 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		// TODO
 		switch (parseState) {
 		case START: {
+			parseState = ParseState.LIST;
+			break;
+		}
+		case LIST: {
 			assert (localName == "dataSource");
 			try {
 				String name = attributes.getValue(0);
 				String path = attributes.getValue(1);
 				File schemaFile = new File(xmlPath.getParentFile(), path);
 				int parts = Integer.valueOf(attributes.getValue(2));
-				currentSource = new DataSource(schemaFile.getAbsolutePath(), parts);
+				currentSource = new DataSource(schemaFile.getAbsolutePath(),
+						parts);
 				dataSourceMap.put(name, currentSource);
 				parseState = ParseState.DS;
 			} catch (Exception e) {
+				e.printStackTrace();
 				throw new SAXException(e);
 			}
 			break;
 		}
 		case DS: {
 			// could be considered irrelevant
-			throw new SAXParseException("XML Structure: nested <dataSource>s",
+			throw new SAXParseException(
+					"XML Structure: list of <dataSource>s inside <dataSources>",
 					null);
 		}
 		}
@@ -111,9 +118,12 @@ public class DataSourcesReaderImpl extends DefaultHandler implements
 		switch (parseState) {
 		case START:
 			break;
+		case LIST:
+			parseState = ParseState.START;
+			break;
 		case DS:
 			if (localName == "dataSource") {
-				parseState = ParseState.START;
+				parseState = ParseState.LIST;
 			}
 			break;
 		}

@@ -124,11 +124,17 @@ public class Slave extends ChannelNode implements Stoppable {
 	 * the data store used for data access
 	 */
 	private LocalDiskDataStore dataStore;
-    private Map<String, TableConfig> tables;
+	/**
+	 * the configs of all available tables as defined in config.json
+	 */
+	private Map<String, TableConfig> tables;
 	/**
 	 * true if the slave is connecting to a new parent.
 	 */
 	private boolean connecting = false;
+	/**
+	 * the Config Object to load the config.json file
+	 */
 	private Config config;
 
 	/**
@@ -215,25 +221,32 @@ public class Slave extends ChannelNode implements Stoppable {
 		}
 	}
 
+	/**
+	 * Reads the configuration from a JSON file expected at the given path.
+	 * Fills the tables map using this configuration.
+	 * 
+	 * @param configFile
+	 *            path to the JSON configuration file (config.json)
+	 */
 	public void readConfig(String configFile) {
-
-        try {
-            config = new Config(new File(configFile));
-            tables = config.getTables();
-            log.info("Read config from {}.", configFile);
-            log.info(tables.toString());
-        } catch (Exception e) {
-            log.warn("Error reading config from {}: {}", configFile,
-                    e.getMessage());
-            if (tables == null) {
-                tables = Maps.newHashMap();
-            }
-        }
+		try {
+			config = new Config(new File(configFile));
+			tables = config.getTables();
+			log.info("Read config from {}.", configFile);
+			log.info(tables.toString());
+		} catch (Exception e) {
+			log.warn("Error reading config from {}: {}", configFile,
+					e.getMessage());
+			if (tables == null) {
+				tables = Maps.newHashMap();
+			}
+		}
 	}
 
 	/**
 	 * Sets up a server socket listening for client connections. Connects to the
 	 * coordinator using the connection info supplied to the constructor.
+	 * Changes ownPort.
 	 */
 	public void start() {
 		ownPort = 0;
@@ -351,6 +364,7 @@ public class Slave extends ChannelNode implements Stoppable {
 			break;
 		}
 	}
+
 	/**
 	 * Adds a channel as direct child to the Slave.
 	 * 
@@ -465,21 +479,21 @@ public class Slave extends ChannelNode implements Stoppable {
 			case REDIR:
 				this.connectNReg(getSockAddrFromBytes(message.getPayload()));
 				break;
-//			case INTERNAL_RESULT:
-//				if (parentChannel != null && parentChannel.isConnected()) {
-//					parentChannel.write(message);
-//				} else if (coordinatorChannel != null
-//						&& coordinatorChannel.isConnected()) {
-//					coordinatorChannel.write(message);
-//				} else {
-//					log.warn("Received internal result w/o parent connection available.");
-//				}
-//				break;
+			// case INTERNAL_RESULT:
+			// if (parentChannel != null && parentChannel.isConnected()) {
+			// parentChannel.write(message);
+			// } else if (coordinatorChannel != null
+			// && coordinatorChannel.isConnected()) {
+			// coordinatorChannel.write(message);
+			// } else {
+			// log.warn("Received internal result w/o parent connection available.");
+			// }
+			// break;
 			case REGLEAF:
 			case REGINNER:
 				this.addChild(e.getChannel(), message);
 				break;
-//			case INTERNAL_QUERY:
+			// case INTERNAL_QUERY:
 			case CLIENT_QUERY:
 			case CLIENT_RESULT:
 			case REGCLIENT:
@@ -494,9 +508,9 @@ public class Slave extends ChannelNode implements Stoppable {
 	}
 
 	/**
-	 * Handles incoming TabletMessages.
+	 * Handles TabletMessages containing result data.
 	 * 
-	 * @param message
+	 * @param message a TabletMessage containing a result tablet.
 	 */
 	private void handleResult(TabletMessage message) {
 		// TODO aggregating of partial results within intermediate layer
@@ -514,11 +528,11 @@ public class Slave extends ChannelNode implements Stoppable {
 	public void removeChannel(Channel channel) {
 		// TODO
 		log.debug("Channel to {} closed.", channel.getRemoteAddress());
-		if(coordinatorChannel == channel) {
+		if (coordinatorChannel == channel) {
 			// TODO
 			stop();
 		} else if (parentChannel == channel) {
-			// TODO
+			// TODO reconnect to the coordinator to reenter the tree?
 			if (!connecting) {
 				// parentChannel = null;
 				// if (coordinatorChannel.isConnected()) {

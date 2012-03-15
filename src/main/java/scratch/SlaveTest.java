@@ -29,7 +29,7 @@ public class SlaveTest {
 	private static final int PORT = 44444;
 	private static final String CONFIG = "src/main/example-data/config.json";
 	private static final File LEAF_DATADIR = new File("data-dir");
-	private static final int NUM_SLAVES = 1;
+	private static final int NUM_SLAVES = 6;
 	private static final int SLAVE_DEGREE = 5;
 
 	public static void main(String[] args) throws Exception {

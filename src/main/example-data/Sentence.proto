@@ -1,13 +1,13 @@
 package Sentence;
 message Sentence {
-  message Predicate {
+  message predicate {
     required string lemma = 1;
     required string text = 2;
-    message Argument {
+    message arguments {
       required string text = 1;
       required string role = 2;
     }
-    repeated Argument arguments = 3;
+    repeated arguments arguments = 3;
   }
-  required Predicate predicate = 1;
+  required predicate predicate = 1;
 }

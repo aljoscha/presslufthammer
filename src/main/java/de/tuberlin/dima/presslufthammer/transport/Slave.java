@@ -464,26 +464,25 @@ public class Slave extends ChannelNode implements Stoppable {
 			case REDIR:
 				this.connectNReg(getSockAddrFromBytes(message.getPayload()));
 				break;
-			case INTERNAL_RESULT:
-				// TODO aggregating of partial results within intermediate layer
-				if (parentChannel != null && parentChannel.isConnected()) {
-					parentChannel.write(message);
-				} else if (coordinatorChannel != null
-						&& coordinatorChannel.isConnected()) {
-					coordinatorChannel.write(message);
-				} else {
-					log.warn("Received internal result w/o parent connection available.");
-				}
-				break;
+//			case INTERNAL_RESULT:
+//				if (parentChannel != null && parentChannel.isConnected()) {
+//					parentChannel.write(message);
+//				} else if (coordinatorChannel != null
+//						&& coordinatorChannel.isConnected()) {
+//					coordinatorChannel.write(message);
+//				} else {
+//					log.warn("Received internal result w/o parent connection available.");
+//				}
+//				break;
+			case REGLEAF:
 			case REGINNER:
 				this.addChild(e.getChannel(), message);
 				break;
-			case INTERNAL_QUERY:
-			case REGLEAF:
-			case UNKNOWN:
+//			case INTERNAL_QUERY:
 			case CLIENT_QUERY:
 			case CLIENT_RESULT:
 			case REGCLIENT:
+			case UNKNOWN:
 				e.getChannel().write(
 						new SimpleMessage(MessageType.NACK, message
 								.getQueryID(), new byte[] { (byte) 0 }));

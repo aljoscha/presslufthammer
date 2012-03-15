@@ -73,8 +73,8 @@ public class SlaveTest {
 			} else {
 				try {
 					Query query = QueryParser
-//							.parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://A\"");
-							.parse("SELECT * FROM Sentence");
+							.parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://A\"");
+//							.parse("SELECT * FROM Sentence");
 					System.out.println("QUERY: " + query);
 					QueryMessage queryMsg = new QueryMessage(-1, query);
 					client.query(queryMsg);

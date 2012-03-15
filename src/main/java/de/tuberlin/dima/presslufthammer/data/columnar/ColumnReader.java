@@ -37,10 +37,13 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 public abstract class ColumnReader {
     protected SchemaNode schema;
     protected DataInputStream in;
-    protected int nextRepetition = -1;
-    protected int nextDefinition = -1;
-    protected int currentRepetition = -1;
-    protected int currentDefinition = -1;
+    protected int nextRepetition = 0;
+    protected int nextDefinition = 0;
+    protected int currentRepetition = 0;
+    protected int currentDefinition = 0;
+
+    // for writing during query execution
+    protected int currentWriteRepetition = 0;
 
     /**
      * Constructs a column reader from the given input stream.
@@ -74,6 +77,9 @@ public abstract class ColumnReader {
             // end is reached, or something else went wrong
             nextRepetition = -1;
             nextDefinition = -1;
+        }
+        if (currentRepetition <= currentWriteRepetition) {
+            currentWriteRepetition = currentRepetition;
         }
     }
 

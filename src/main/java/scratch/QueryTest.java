@@ -38,7 +38,9 @@ public class QueryTest {
         if (client.start()) {
             try {
                 Query query = QueryParser
-                        .parse("SELECT COUNT(*) FROM Document");
+//                        .parse("SELECT * FROM Sentence");
+//                        .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"PMOD\" OR Sentence.predicate.arguments.role == \"NMOD\"");
+                        .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\" OR Sentence.predicate.arguments.role == \"DEP\"");
                 System.out.println("QUERY: " + query);
                 QueryMessage queryMsg = new QueryMessage(-1, query);
                 client.query(queryMsg);
@@ -47,7 +49,7 @@ public class QueryTest {
             }
         }
 
-        Thread.sleep(2000);
+        Thread.sleep(5000);
 
         client.stop();
         leaf1.stop();

@@ -68,9 +68,11 @@ public final class ColumnReaderBool extends ColumnReader {
     @Override
     public void writeToColumn(ColumnWriter writer) throws IOException {
         if (isNull()) {
-            writer.writeNull(currentRepetition, currentDefinition);
+            writer.writeNull(currentWriteRepetition, currentDefinition);
         } else {
-            writer.writeBool(currentValue, currentRepetition, currentDefinition);
+            writer.writeBool(currentValue, currentWriteRepetition,
+                    currentDefinition);
         }
+        currentWriteRepetition = nextRepetition;
     }
 }

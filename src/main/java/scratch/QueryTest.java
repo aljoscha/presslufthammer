@@ -38,6 +38,7 @@ public class QueryTest {
         if (client.start()) {
             try {
                 Query query = QueryParser
+//                        .parse("SELECT * FROM Document WHERE Document.Name.Language.Country == \"gb\"");
 //                        .parse("SELECT * FROM Sentence");
 //                        .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"PMOD\" OR Sentence.predicate.arguments.role == \"NMOD\"");
                         .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\" OR Sentence.predicate.arguments.role == \"DEP\"");

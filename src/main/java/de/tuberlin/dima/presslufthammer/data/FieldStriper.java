@@ -33,18 +33,29 @@ public final class FieldStriper {
     }
 
     /**
-     * Dissects records from the given record store to the target tablet.
+     * Dissects records from the given record store to the target tablet. Until
+     * either the record iterator is depleted or the given number of records has
+     * been dissected.
+     * 
+     * Returns true when the record iterator was not depleted by this run of
+     * dissecting.
      */
-    public void dissectRecords(RecordStore records, Tablet targetTablet)
-            throws IOException {
+    public boolean dissectRecords(RecordIterator records, Tablet targetTablet,
+            int numRecords) throws IOException {
         rootWriter = createWriterTree(null, this.schema, targetTablet);
-        RecordIterator iterator = records.recordIterator();
+        RecordIterator iterator = records;
         RecordDecoder decoder = iterator.next();
+        int count = 0;
         while (decoder != null) {
             dissectRecord(decoder, rootWriter, 0);
+            count++;
+            if (count >= numRecords && numRecords > 0) {
+                break;
+            }
             decoder = iterator.next();
         }
         rootWriter.finalizeLevels();
+        return decoder != null;
     }
 
     /**

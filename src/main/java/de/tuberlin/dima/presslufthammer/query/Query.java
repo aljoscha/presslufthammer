@@ -86,9 +86,10 @@ public class Query {
         result.append(commaJoiner.join(selectClauses));
         result.append(" FROM " + tableName + ":" + partition);
 
+        Joiner orJoiner = Joiner.on(" OR ");
         if (whereClauses.size() > 0) {
             result.append(" WHERE ");
-            result.append(commaJoiner.join(whereClauses));
+            result.append(orJoiner.join(whereClauses));
         }
 
         if (groupByColumns.size() > 0) {

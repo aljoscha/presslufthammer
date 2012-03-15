@@ -28,12 +28,15 @@ class JSONRecordFileIterator implements RecordIterator {
         if (scan == null) {
             return null;
         }
-        if (scan.hasNextLine()) {
-            JSONObject job = (JSONObject) JSONValue.parse(scan.nextLine());
+        while (scan.hasNextLine()) {
+            String line = scan.nextLine();
+            if (line.equals("")) {
+                continue;
+            }
+            JSONObject job = (JSONObject) JSONValue.parse(line);
             RecordDecoder decoder = new JSONRecordDecoder(schema, job);
             return decoder;
-        } else {
-            return null;
         }
+        return null;
     }
 }

@@ -8,13 +8,15 @@ import de.tuberlin.dima.presslufthammer.data.ProtobufSchemaHelper;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.local.LocalDiskDataStore;
+import de.tuberlin.dima.presslufthammer.data.hierarchical.RecordIterator;
 import de.tuberlin.dima.presslufthammer.data.hierarchical.json.JSONRecordFile;
 
 public class Columnarizer {
 
     private static void printUsage() {
         System.out.println("Usage:");
-        System.out.println("json-file schema-file data-dir partition-num");
+        System.out
+                .println("json-file schema-file data-dir records-per-partition");
     }
 
     /**
@@ -30,7 +32,7 @@ public class Columnarizer {
         String jsonFile = args[0];
         String schemaFile = args[1];
         String dataDir = args[2];
-        int partitionNum = Integer.parseInt(args[3]);
+        int recordsPerPartition = Integer.parseInt(args[3]);
 
         File directory = new File(dataDir);
         LocalDiskDataStore dataStore = null;
@@ -43,14 +45,22 @@ public class Columnarizer {
         SchemaNode schema = ProtobufSchemaHelper.readSchemaFromFile(schemaFile);
 
         JSONRecordFile jsonRecords = new JSONRecordFile(schema, jsonFile);
+        RecordIterator recordIterator = jsonRecords.recordIterator();
 
-        Tablet tablet = dataStore.createOrGetTablet(schema, partitionNum);
+        boolean running = true;
+        int partitionNum = 0;
+        while (running) {
+            Tablet tablet = dataStore.createOrGetTablet(schema, partitionNum);
+            ++partitionNum;
 
-        FieldStriper striper = new FieldStriper(schema);
-        
-        striper.dissectRecords(jsonRecords, tablet);
-        
+            FieldStriper striper = new FieldStriper(schema);
+
+            running = striper.dissectRecords(recordIterator, tablet, recordsPerPartition);
+        }
+
         dataStore.flush();
+        
+        System.out.println("Created " + partitionNum + " tablets for table " + schema.getName() + ".");
     }
 
 }

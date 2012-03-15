@@ -72,19 +72,34 @@ query returns [Query result]
     ;
     
 selectClause returns [SelectClause result]
-    : '*'
-      {
-        $result = new SelectClause("*", null);
-      }
-    | column=IDENTIFIER
+    : column=selectColumn
       ( 'AS' rename=IDENTIFIER )?
       {
         String renameAs = null;
         if ($rename != null) {
           renameAs = $rename.getText();
         }
-        $result = new SelectClause($column.getText(), renameAs);
+        $result = new SelectClause($column.result, SelectClause.Aggregation.NONE, renameAs);
       }
+    | agg=aggregationFunction '(' column=selectColumn ')'
+      ( 'AS' rename=IDENTIFIER )?
+      {
+        String renameAs = null;
+        if ($rename != null) {
+          renameAs = $rename.getText();
+        }
+        $result = new SelectClause($column.result, $agg.result, renameAs);
+      }
+    ;
+    
+selectColumn returns [String result]
+    : IDENTIFIER { $result = $IDENTIFIER.getText();}
+    | '*' { $result = "*"; }
+    ;
+
+aggregationFunction returns [SelectClause.Aggregation result]
+    : 'SUM' { $result = SelectClause.Aggregation.SUM; }
+    | 'COUNT' { $result = SelectClause.Aggregation.COUNT; }
     ;
     
 whereClause returns [WhereClause result]

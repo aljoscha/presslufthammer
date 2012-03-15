@@ -30,15 +30,18 @@ public class QueryTest {
         Leaf leaf2 = new Leaf(HOST, PORT, LEAF_DATADIR);
         Leaf leaf3 = new Leaf(HOST, PORT, LEAF_DATADIR);
         leaf1.start();
-        leaf2.start();
-        leaf3.start();
+        // leaf2.start();
+        // leaf3.start();
 
         CLIClient client = new CLIClient(HOST, PORT);
 
         if (client.start()) {
             try {
                 Query query = QueryParser
-                        .parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://A\"");
+//                        .parse("SELECT * FROM Document WHERE Document.Name.Language.Country == \"gb\"");
+//                        .parse("SELECT * FROM Sentence");
+//                        .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"PMOD\" OR Sentence.predicate.arguments.role == \"NMOD\"");
+                        .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\" OR Sentence.predicate.arguments.role == \"DEP\"");
                 System.out.println("QUERY: " + query);
                 QueryMessage queryMsg = new QueryMessage(-1, query);
                 client.query(queryMsg);
@@ -47,7 +50,7 @@ public class QueryTest {
             }
         }
 
-        Thread.sleep(2000);
+        Thread.sleep(5000);
 
         client.stop();
         leaf1.stop();

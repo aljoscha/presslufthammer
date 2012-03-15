@@ -23,7 +23,7 @@ public class JSONDefinitionTest {
         InMemoryWriteonlyTablet dummyTablet = new InMemoryWriteonlyTablet(
                 schema);
         FieldStriper striper = new FieldStriper(schema);
-        striper.dissectRecords(records, dummyTablet);
+        striper.dissectRecords(records.recordIterator(), dummyTablet, -1);
 
         dummyTablet.printColumns();
     }

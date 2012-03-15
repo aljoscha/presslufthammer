@@ -67,10 +67,11 @@ public final class ColumnReaderFloat extends ColumnReader {
     @Override
     public void writeToColumn(ColumnWriter writer) throws IOException {
         if (isNull()) {
-            writer.writeNull(currentRepetition, currentDefinition);
+            writer.writeNull(currentWriteRepetition, currentDefinition);
         } else {
-            writer.writeFloat(currentValue, currentRepetition,
+            writer.writeFloat(currentValue, currentWriteRepetition,
                     currentDefinition);
         }
+        currentWriteRepetition = nextRepetition;
     }
 }

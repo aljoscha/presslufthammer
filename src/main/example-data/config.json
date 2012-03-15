@@ -1,0 +1,15 @@
+{
+    "tables" :
+    [
+        {
+            "name": "Document",
+            "schema": "Document.proto",
+            "partitions": 5
+        },
+        {
+            "name": "Sentence",
+            "schema": "Sentence.proto",
+            "partitions": 8
+        }
+    ]
+}

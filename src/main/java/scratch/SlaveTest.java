@@ -27,7 +27,7 @@ public class SlaveTest {
 	private static final Logger log = LoggerFactory.getLogger("SlaveTest");
 	private static final String HOST = "localhost";
 	private static final int PORT = 44444;
-	private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
+	private static final String CONFIG = "src/main/example-data/config.json";
 	private static final File LEAF_DATADIR = new File("data-dir");
 	private static final int NUM_SLAVES = 1;
 	private static final int SLAVE_DEGREE = 5;
@@ -35,19 +35,19 @@ public class SlaveTest {
 	public static void main(String[] args) throws Exception {
 
 		log.info("Test Starting");
-		SlaveCoordinator coord = new SlaveCoordinator(PORT, DATASOURCES);
+		SlaveCoordinator coord = new SlaveCoordinator(PORT, CONFIG);
 		coord.start();
 
 		List<Slave> slaves = new ArrayList<Slave>();
 		Slave slave_0 = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR,
-				DATASOURCES);
+				CONFIG);
 		slave_0.start();
 		slaves.add(0, slave_0);
 		log.info("Waiting for the coordinator to accept the root node.");
 		Thread.sleep(5000);// wait until slave_0 has been established as root
 		for (int i = 1; i < NUM_SLAVES; i++) {
 			Slave s = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR,
-					DATASOURCES);
+					CONFIG);
 			s.start();
 			slaves.add(s);
 			// Thread.sleep(1000);

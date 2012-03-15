@@ -19,12 +19,12 @@ import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 public class QueryTest {
     private static final String HOST = "localhost";
     private static final int PORT = 44444;
-    private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
+    private static final String CONFIG = "src/main/example-data/config.json";
     private static final File LEAF_DATADIR = new File("data-dir");
 
     public static void main(String[] args) throws Exception {
 
-        Coordinator coord = new Coordinator(PORT, DATASOURCES);
+        Coordinator coord = new Coordinator(PORT, CONFIG);
         coord.start();
         Leaf leaf1 = new Leaf(HOST, PORT, LEAF_DATADIR);
         Leaf leaf2 = new Leaf(HOST, PORT, LEAF_DATADIR);
@@ -38,10 +38,10 @@ public class QueryTest {
         if (client.start()) {
             try {
                 Query query = QueryParser
-//                        .parse("SELECT * FROM Document WHERE Document.Name.Language.Country == \"gb\"");
+                        .parse("SELECT * FROM Document WHERE Document.Name.Language.Country == \"gb\"");
 //                        .parse("SELECT * FROM Sentence");
 //                        .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"PMOD\" OR Sentence.predicate.arguments.role == \"NMOD\"");
-                        .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\" OR Sentence.predicate.arguments.role == \"DEP\"");
+//                        .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\" OR Sentence.predicate.arguments.role == \"DEP\"");
                 System.out.println("QUERY: " + query);
                 QueryMessage queryMsg = new QueryMessage(-1, query);
                 client.query(queryMsg);

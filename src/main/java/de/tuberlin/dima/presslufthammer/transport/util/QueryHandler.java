@@ -39,13 +39,13 @@ public class QueryHandler {
 	final Channel client;
 	final QueryMessage queryMsg;
 	final Query query;
-	private int numPartsExpected;
+	private long numPartsExpected;
 	QueryStatus status;
 	SchemaNode schema;
 	List<InMemoryReadonlyTablet> parts;
 	long finished = 0L;
 
-	public QueryHandler(int parts, QueryMessage queryMsg, SchemaNode schema,
+	public QueryHandler(long parts, QueryMessage queryMsg, SchemaNode schema,
 			Channel client) {
 		assert (queryMsg.getQueryId() > 0);
 		this.parts = Lists.newLinkedList();

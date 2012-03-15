@@ -37,11 +37,10 @@ import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.TabletMessage;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
 import de.tuberlin.dima.presslufthammer.transport.util.ServingChannel;
+import de.tuberlin.dima.presslufthammer.util.Config;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
-import de.tuberlin.dima.presslufthammer.xml.DataSource;
-import de.tuberlin.dima.presslufthammer.xml.DataSourcesReader;
-import de.tuberlin.dima.presslufthammer.xml.DataSourcesReaderImpl;
+import de.tuberlin.dima.presslufthammer.util.Config.TableConfig;
 
 /**
  * ChannelNode that can serve both as an intermediate server or a leaf server.
@@ -125,11 +124,12 @@ public class Slave extends ChannelNode implements Stoppable {
 	 * the data store used for data access
 	 */
 	private LocalDiskDataStore dataStore;
-	private Map<String, DataSource> tables;
+    private Map<String, TableConfig> tables;
 	/**
 	 * true if the slave is connecting to a new parent.
 	 */
 	private boolean connecting = false;
+	private Config config;
 
 	/**
 	 * Constructor<br />
@@ -143,11 +143,11 @@ public class Slave extends ChannelNode implements Stoppable {
 	 *            coordinator port
 	 * @param dataDirectory
 	 *            directory containing data sources
-	 * @param dataSources
-	 *            path to DataSources.xml
+	 * @param configFile
+	 *            path to config.json
 	 */
 	public Slave(int degree, String serverHost, int serverPort,
-			File dataDirectory, String dataSources) {
+			File dataDirectory, String configFile) {
 		if (degree < 1) {
 			log.error("not a valid degree: " + degree, new Exception());
 		}
@@ -155,7 +155,7 @@ public class Slave extends ChannelNode implements Stoppable {
 		this.serverPort = serverPort;
 		this.degree = degree;
 
-		readDataSources(dataSources);
+		readConfig(configFile);
 		dataStore = openDataStore(dataDirectory);
 	}
 
@@ -183,7 +183,7 @@ public class Slave extends ChannelNode implements Stoppable {
 		this.serverPort = serverPort;
 		this.degree = degree;
 
-		readDataSources(dataSources);
+		readConfig(dataSources);
 		dataStore = openDataStore(dataDirectory);
 	}
 
@@ -215,19 +215,20 @@ public class Slave extends ChannelNode implements Stoppable {
 		}
 	}
 
-	public void readDataSources(String dataSources) {
-		DataSourcesReader dsReader = new DataSourcesReaderImpl();
-		try {
-			tables = dsReader.readFromXML(dataSources);
-			log.info("Read datasources from {}.", dataSources);
-			log.info(tables.toString());
-		} catch (Exception e) {
-			log.warn("Error reading datasources from {}: {}", dataSources,
-					e.getMessage());
-			if (tables == null) {
-				tables = Maps.newHashMap();
-			}
-		}
+	public void readConfig(String configFile) {
+
+        try {
+            config = new Config(new File(configFile));
+            tables = config.getTables();
+            log.info("Read config from {}.", configFile);
+            log.info(tables.toString());
+        } catch (Exception e) {
+            log.warn("Error reading config from {}: {}", configFile,
+                    e.getMessage());
+            if (tables == null) {
+                tables = Maps.newHashMap();
+            }
+        }
 	}
 
 	/**
@@ -566,25 +567,26 @@ public class Slave extends ChannelNode implements Stoppable {
 		}
 		log.info("Slave stopped.");
 	}
-	//
-	// private static void printUsage() {
-	// System.out.println("Usage:");
-	// System.out.println("degree hostname port data-dir");
-	// }
-	//
-	// public static void main(String[] args) throws InterruptedException {
-	// // Print usage if necessary.
-	// if (args.length < 4) {
-	// printUsage();
-	// return;
-	// }
-	// // Parse options.
-	// int degree = Integer.parseInt(args[0]);
-	// String host = args[1];
-	// int port = Integer.parseInt(args[2]);
-	// File dataDirectory = new File(args[3]);
-	//
-	// Slave slave = new Slave(degree, host, port, dataDirectory);
-	// slave.start();
-	// }
+
+	private static void printUsage() {
+		System.out.println("Usage:");
+		System.out.println("degree hostname port data-dir configFile");
+	}
+
+	public static void main(String[] args) throws InterruptedException {
+		// Print usage if necessary.
+		if (args.length < 5) {
+			printUsage();
+			return;
+		}
+		// Parse options.
+		int degree = Integer.parseInt(args[0]);
+		String host = args[1];
+		int port = Integer.parseInt(args[2]);
+		File dataDirectory = new File(args[3]);
+		String conf = args[4];
+
+		Slave slave = new Slave(degree, host, port, dataDirectory, conf);
+		slave.start();
+	}
 }

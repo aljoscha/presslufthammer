@@ -148,8 +148,9 @@ public class InMemoryWriteonlyTablet implements Tablet {
     @Override
     public ColumnWriter getColumnWriter(SchemaNode schema) {
         if (!columns.containsKey(schema)) {
-            throw new RuntimeException(
-                    "This should not happen, bug in program.");
+            throw new RuntimeException("Column " + schema.getQualifiedName()
+                    + " not contained in tablet, available columns: "
+                    + columns.keySet());
         }
         return columnWriters.get(schema);
     }

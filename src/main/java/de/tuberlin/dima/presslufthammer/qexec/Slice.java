@@ -64,13 +64,9 @@ public class Slice {
                 return "rep: " + column.getCurrentRepetition() + " def: "
                         + column.getCurrentDefinition() + " val: NULL";
             }
-            try {
-                return "rep: " + column.getCurrentRepetition() + " def: "
-                        + column.getCurrentDefinition() + " val: "
-                        + column.getValue();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            return "rep: " + column.getCurrentRepetition() + " def: "
+                    + column.getCurrentDefinition() + " val: "
+                    + column.getValue();
         }
         return result.toString();
     }

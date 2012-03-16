@@ -135,7 +135,7 @@ public abstract class ColumnReader {
     /**
      * Returns the current value of the reader.
      */
-    public Object getValue() throws IOException {
+    public Object getValue() {
         if (isNull()) {
             return null;
         }
@@ -164,42 +164,42 @@ public abstract class ColumnReader {
     /**
      * Returns the current value of the reader.
      */
-    public int getInt32() throws IOException {
+    public int getInt32() {
         throw new RuntimeException("Column reader is no int32 reader.");
     }
 
     /**
      * Returns the current value of the reader.
      */
-    public long getInt64() throws IOException {
+    public long getInt64() {
         throw new RuntimeException("Column reader is no int64 reader.");
     }
 
     /**
      * Returns the current value of the reader.
      */
-    public boolean getBool() throws IOException {
+    public boolean getBool() {
         throw new RuntimeException("Column reader is no bool reader.");
     }
 
     /**
      * Returns the current value of the reader.
      */
-    public float getFloat() throws IOException {
+    public float getFloat() {
         throw new RuntimeException("Column reader is no float reader.");
     }
 
     /**
      * Returns the current value of the reader.
      */
-    public double getDouble() throws IOException {
+    public double getDouble() {
         throw new RuntimeException("Column reader is no double reader.");
     }
 
     /**
      * Returns the current value of the reader.
      */
-    public String getString() throws IOException {
+    public String getString() {
         throw new RuntimeException("Column reader is no String reader.");
     }
 

@@ -14,13 +14,19 @@ import com.google.common.collect.Sets;
 
 import de.tuberlin.dima.presslufthammer.data.PrimitiveType;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.columnar.ColumnWriter;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
-import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
+import de.tuberlin.dima.presslufthammer.qexec.grouping.GroupField;
+import de.tuberlin.dima.presslufthammer.qexec.grouping.Int64CountGroupField;
+import de.tuberlin.dima.presslufthammer.qexec.grouping.Int64PlainGroupField;
+import de.tuberlin.dima.presslufthammer.qexec.grouping.Int64SumGroupField;
+import de.tuberlin.dima.presslufthammer.qexec.grouping.StringCountGroupField;
+import de.tuberlin.dima.presslufthammer.qexec.grouping.StringPlainGroupField;
+import de.tuberlin.dima.presslufthammer.qexec.grouping.StringSumGroupField;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.query.SelectClause;
 import de.tuberlin.dima.presslufthammer.query.SelectClause.Aggregation;
 import de.tuberlin.dima.presslufthammer.query.WhereClause;
-import de.tuberlin.dima.presslufthammer.util.Config.TableConfig;
 
 /**
  * For support during query execution, this class analyzes a query, rewrites the
@@ -45,13 +51,8 @@ public class QueryHelper {
     private Query rewrittenQuery;
     private Query rewrittenChildQuery;
 
-    public QueryHelper(Query query, TableConfig table) {
-        this.originalSchema = table.getSchema();
-        analyzeQuery(query);
-    }
-
-    public QueryHelper(Query query, Tablet sourceTablet) {
-        this.originalSchema = sourceTablet.getSchema();
+    public QueryHelper(Query query, SchemaNode schema) {
+        this.originalSchema = schema;
         analyzeQuery(query);
     }
 
@@ -92,7 +93,7 @@ public class QueryHelper {
             whereClauseFields.add(originalSchema
                     .getFullyQualifiedField(whereClause.getColumn()));
         }
-        
+
         // We do not need to add group by fields because they are required
         // to be in select clauses anyway
 
@@ -117,8 +118,14 @@ public class QueryHelper {
                 SchemaNode field = resultSchema
                         .getFullyQualifiedField(selectClause.getRenamedColumn());
                 field.setPrimitiveType(PrimitiveType.INT64);
+                field.setOptional();
+            } else if (selectClause.getAggregation() == Aggregation.SUM) {
+                SchemaNode field = resultSchema
+                        .getFullyQualifiedField(selectClause.getRenamedColumn());
+                field.setOptional();
             }
         }
+        log.debug("Original schema:\n{}", originalSchema.toString());
         log.debug("Result schema:\n{}", resultSchema.toString());
 
         // and now finally rewrite the queries (if necessary)
@@ -155,6 +162,93 @@ public class QueryHelper {
 
         log.debug("Rewritten query: {}", rewrittenQuery);
         log.debug("Rewritten child query: {}", rewrittenChildQuery);
+    }
+
+    public Map<SchemaNode, GroupField> createAggregationGroup(
+            Tablet targetTablet) {
+        Map<SchemaNode, GroupField> fields = Maps.newHashMap();
+
+        for (SelectClause clause : originalQuery.getSelectClauses()) {
+            if (clause.getColumn().equals("*")) {
+                continue;
+            }
+            if (clause.getAggregation() == Aggregation.NONE) {
+                SchemaNode originalField = originalSchema
+                        .getFullyQualifiedField(clause.getColumn());
+                SchemaNode renamedField = originalField;
+                if (clause.getRenameAs() != null) {
+                    renamedField = resultSchema.getFullyQualifiedField(clause
+                            .getRenamedColumn());
+                }
+                fields.put(
+                        originalField,
+                        createPlainGroupField(renamedField,
+                                targetTablet.getColumnWriter(renamedField)));
+
+            } else if (clause.getAggregation() == Aggregation.SUM) {
+                SchemaNode originalField = originalSchema
+                        .getFullyQualifiedField(clause.getColumn());
+                SchemaNode renamedField = resultSchema
+                        .getFullyQualifiedField(clause.getRenamedColumn());
+                fields.put(
+                        originalField,
+                        createSumGroupField(renamedField,
+                                targetTablet.getColumnWriter(renamedField)));
+
+            } else if (clause.getAggregation() == Aggregation.COUNT) {
+                SchemaNode originalField = originalSchema
+                        .getFullyQualifiedField(clause.getColumn());
+                SchemaNode renamedField = resultSchema
+                        .getFullyQualifiedField(clause.getRenamedColumn());
+                fields.put(
+                        originalField,
+                        createCountGroupField(renamedField,
+                                targetTablet.getColumnWriter(renamedField)));
+            }
+        }
+        return fields;
+    }
+
+    private GroupField createPlainGroupField(SchemaNode schema,
+            ColumnWriter writer) {
+        switch (schema.getPrimitiveType()) {
+        case INT64:
+            return new Int64PlainGroupField(writer);
+        case STRING:
+            return new StringPlainGroupField(writer);
+        default:
+            throw new RuntimeException("Unknown schema "
+                    + schema.getPrimitiveType()
+                    + " for grouping field generation.");
+        }
+    }
+
+    private GroupField createSumGroupField(SchemaNode schema,
+            ColumnWriter writer) {
+        switch (schema.getPrimitiveType()) {
+        case INT64:
+            return new Int64SumGroupField(writer);
+        case STRING:
+            return new StringSumGroupField(writer);
+        default:
+            throw new RuntimeException("Unknown schema "
+                    + schema.getPrimitiveType()
+                    + " for grouping field generation.");
+        }
+    }
+
+    private GroupField createCountGroupField(SchemaNode schema,
+            ColumnWriter writer) {
+        switch (schema.getPrimitiveType()) {
+        case INT64:
+            return new Int64CountGroupField(writer);
+        case STRING:
+            return new StringCountGroupField(writer);
+        default:
+            throw new RuntimeException("Unknown schema "
+                    + schema.getPrimitiveType()
+                    + " for grouping field generation.");
+        }
     }
 
     private List<SchemaNode> getAllSchemaFields(SchemaNode schema) {
@@ -206,10 +300,8 @@ public class QueryHelper {
         return rewrittenChildQuery;
     }
 
-    public Emitter createEmitter() {
-        InMemoryWriteonlyTablet resultTablet = new InMemoryWriteonlyTablet(
-                resultSchema);
-        Emitter emitter = new Emitter(resultTablet, this);
+    public Emitter createEmitter(Tablet tablet) {
+        Emitter emitter = new Emitter(tablet, this);
         return emitter;
     }
 }

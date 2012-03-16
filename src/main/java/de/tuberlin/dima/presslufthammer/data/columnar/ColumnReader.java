@@ -64,6 +64,21 @@ public abstract class ColumnReader {
     }
 
     /**
+     * Advances the current write repetition value, must be used if the value of
+     * the column reader is used in a group field for example.
+     */
+    public void advanceWriteRepetition() {
+        currentWriteRepetition = nextRepetition;
+    }
+
+    /**
+     * Returns the current write repetition.
+     */
+    public int getWriteRepetition() {
+        return currentWriteRepetition;
+    }
+
+    /**
      * Internal method that reads the next levels from the input stream and sets
      * both to -1 when EOF is reached.
      */

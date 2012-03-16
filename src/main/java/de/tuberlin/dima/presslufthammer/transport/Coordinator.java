@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 
-import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.qexec.QueryHelper;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.query.sema.SemaError;
@@ -137,10 +136,14 @@ public class Coordinator extends ChannelNode implements Stoppable {
                 try {
                     sema.checkQuery(query, tables);
                     TableConfig table = tables.get(tableName);
-                    QueryHelper queryHelper = new QueryHelper(query, table);
-                    SchemaNode resultSchema = queryHelper.getResultSchema();
-                    queries.put(qid, new QueryHandler(table.getNumPartitions(),
-                            message, resultSchema, client));
+                    QueryHelper queryHelper = new QueryHelper(query,
+                            table.getSchema());
+                    queries.put(
+                            qid,
+                            new QueryHandler(table.getNumPartitions(), message
+                                    .getQueryId(), queryHelper
+                                    .getRewrittenQuery(), queryHelper
+                                    .getResultSchema(), client));
 
                     // send a request to the leafs for every partition
                     Iterator<Channel> leafIter = leafChannels.iterator();
@@ -154,7 +157,8 @@ public class Coordinator extends ChannelNode implements Stoppable {
                             leaf = leafIter.next();
                         }
                         // create a new query for only the specific partition
-                        Query leafQuery = new Query(query);
+                        Query leafQuery = new Query(
+                                queryHelper.getRewrittenChildQuery());
                         leafQuery.setPartition(i);
                         QueryMessage leafMessage = new QueryMessage(qid,
                                 leafQuery);

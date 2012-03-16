@@ -19,12 +19,12 @@ import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 public class QueryTest {
     private static final String HOST = "localhost";
     private static final int PORT = 44444;
-    private static final String DATASOURCES = "src/main/example-data/config.json";
+    private static final String CONFIG = "src/main/example-data/config.json";
     private static final File LEAF_DATAFIR = new File("data-dir");
 
     public static void main(String[] args) throws Exception {
 
-        Coordinator coord = new Coordinator(PORT, DATASOURCES);
+        Coordinator coord = new Coordinator(PORT, CONFIG);
         coord.start();
         Leaf leaf1 = new Leaf(HOST, PORT, LEAF_DATAFIR);
         Leaf leaf2 = new Leaf(HOST, PORT, LEAF_DATAFIR);
@@ -38,11 +38,15 @@ public class QueryTest {
         if (client.start()) {
             try {
                 Query query = QueryParser
+                // .parse("SELECT * FROM Document");
                 // .parse("SELECT * FROM Document WHERE Document.Name.Language.Country == \"gb\"");
                 // .parse("SELECT * FROM Sentence");
                 // .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"PMOD\" OR Sentence.predicate.arguments.role == \"NMOD\"");
                 // .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\" OR Sentence.predicate.arguments.role == \"DEP\"");
-                        .parse("SELECT Document.DocId AS ID FROM Document");
+                // .parse("SELECT Document.DocId AS ID, COUNT(Document.Links.Forward) AS bla FROM Document");
+                // .parse("SELECT COUNT(Sentence.predicate.text) FROM Sentence");
+                // .parse("SELECT Sentence.predicate.text, COUNT(Sentence.predicate.arguments.text) FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\"");
+                        .parse("SELECT Sentence.predicate.text, COUNT(Sentence.predicate.arguments.text) FROM Sentence");
                 System.out.println("QUERY: " + query);
                 QueryMessage queryMsg = new QueryMessage(-1, query);
                 client.query(queryMsg);
@@ -51,7 +55,7 @@ public class QueryTest {
             }
         }
 
-        Thread.sleep(5000);
+        Thread.sleep(1000);
 
         client.stop();
         leaf1.stop();

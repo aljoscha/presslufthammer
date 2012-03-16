@@ -2,16 +2,12 @@ package de.tuberlin.dima.presslufthammer.qexec;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
-import de.tuberlin.dima.presslufthammer.query.Query;
-import de.tuberlin.dima.presslufthammer.query.SelectClause;
 import de.tuberlin.dima.presslufthammer.query.WhereClause;
 import de.tuberlin.dima.presslufthammer.query.WhereClause.Op;
 
@@ -23,38 +19,36 @@ import de.tuberlin.dima.presslufthammer.query.WhereClause.Op;
  * 
  */
 public class QueryExecutor {
-    //private final Logger log = LoggerFactory.getLogger(getClass());
+    // private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private Tablet sourceTablet;
-    private Query query;
+    private QueryHelper helper;
+    private List<SchemaNode> involvedFields;
+    private InMemoryWriteonlyTablet resultTablet;
+    private Emitter emitter;
 
-    public QueryExecutor(Tablet sourceTablet, Query query) {
-        this.sourceTablet = sourceTablet;
-        this.query = query;
+    public QueryExecutor(QueryHelper helper) {
+        this.helper = helper;
+        involvedFields = Lists.newArrayList(helper.getInvolvedFields());
+        resultTablet = new InMemoryWriteonlyTablet(helper.getResultSchema());
+        emitter = helper.createEmitter(resultTablet);
     }
 
-    public InMemoryWriteonlyTablet performQuery() throws IOException {
-        Set<String> projectedFields = Sets.newHashSet();
-        for (SelectClause selectClause : query.getSelectClauses()) {
-            projectedFields.add(selectClause.getColumn());
-        }
+    public void finalizeGroups() throws IOException {
+        emitter.finalizeGroups();
+    }
 
-        QueryHelper helper = new QueryHelper(query, sourceTablet);
+    public InMemoryWriteonlyTablet getResultTablet() {
+        return resultTablet;
+    }
 
-        List<SchemaNode> involvedFields = Lists.newArrayList(helper
-                .getInvolvedFields());
-        
+    public void performQuery(Tablet sourceTablet) throws IOException {
         Slice slice = new Slice(sourceTablet, involvedFields);
-
-        Emitter emitter = helper.createEmitter();
-
         performSelectProjectAggregate(slice, helper, emitter);
-
-        return emitter.getResultTablet();
     }
 
     private void performSelectProjectAggregate(Slice slice, QueryHelper helper,
             Emitter emitter) throws IOException {
+
         List<SchemaNode> whereClauseFields = Lists.newLinkedList(helper
                 .getWhereClauseFields());
 
@@ -69,18 +63,20 @@ public class QueryExecutor {
                         emitter.getSelectLevel()));
             }
         }
+
     }
 
     private boolean evalWhereClause(Slice slice, List<SchemaNode> selectedFields)
             throws IOException {
-        if (query.getWhereClauses().size() <= 0) {
+        if (helper.getOriginalQuery().getWhereClauses().size() <= 0) {
             return true;
         }
         for (SchemaNode schema : selectedFields) {
             if (slice.getColumn(schema).isNull()) {
                 continue;
             }
-            for (WhereClause clause : query.getWhereClauses()) {
+            for (WhereClause clause : helper.getOriginalQuery()
+                    .getWhereClauses()) {
                 if (schema.getQualifiedName().equals(clause.getColumn())) {
                     if (clause.getOp() == Op.EQ
                             && slice.getColumn(schema).getValue().toString()

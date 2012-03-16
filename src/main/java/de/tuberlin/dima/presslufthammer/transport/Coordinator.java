@@ -26,6 +26,8 @@ import com.google.common.collect.Sets;
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.query.SelectClause;
+import de.tuberlin.dima.presslufthammer.query.sema.SemaError;
+import de.tuberlin.dima.presslufthammer.query.sema.SemanticChecker;
 import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
 import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
@@ -133,11 +135,9 @@ public class Coordinator extends ChannelNode implements Stoppable {
                 Query query = message.getQuery();
 
                 String tableName = query.getTableName();
-                if (!tables.containsKey(tableName)) {
-                    client.write(new SimpleMessage(MessageType.CLIENT_RESULT,
-                            (byte) -1, "Table not available".getBytes()));
-                    log.info("Table {} not in tables.", tableName);
-                } else {
+                SemanticChecker sema = new SemanticChecker();
+                try {
+                    sema.checkQuery(query, tables);
                     TableConfig table = tables.get(tableName);
                     Set<String> projectedFields = Sets.newHashSet();
                     for (SelectClause selectClause : query.getSelectClauses()) {
@@ -174,6 +174,9 @@ public class Coordinator extends ChannelNode implements Stoppable {
                         log.info("Sent query to leaf {}: {}",
                                 leaf.getRemoteAddress(), leafQuery);
                     }
+                } catch (SemaError e) {
+                    client.write(new SimpleMessage(MessageType.CLIENT_RESULT,
+                            (byte) -1, e.getMessage().getBytes()));
                 }
             }
 

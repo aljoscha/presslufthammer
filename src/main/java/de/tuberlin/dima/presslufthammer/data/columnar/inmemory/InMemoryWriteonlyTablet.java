@@ -175,6 +175,9 @@ public class InMemoryWriteonlyTablet implements Tablet {
             e1.printStackTrace();
         }
         for (SchemaNode schema : columns.keySet()) {
+            if (!schema.isPrimitive()) {
+                continue;
+            }
             System.out.println("COLUMN: " + schema.getQualifiedName());
             System.out.println("SIZE: "
                     + columns.get(schema).toByteArray().length);

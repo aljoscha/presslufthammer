@@ -3,9 +3,7 @@ package de.tuberlin.dima.presslufthammer.transport;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -21,12 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
-import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.qexec.QueryHelper;
 import de.tuberlin.dima.presslufthammer.query.Query;
-import de.tuberlin.dima.presslufthammer.query.SelectClause;
 import de.tuberlin.dima.presslufthammer.query.sema.SemaError;
 import de.tuberlin.dima.presslufthammer.query.sema.SemanticChecker;
 import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
@@ -37,9 +32,9 @@ import de.tuberlin.dima.presslufthammer.transport.util.GenericHandler;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
 import de.tuberlin.dima.presslufthammer.transport.util.ServingChannel;
 import de.tuberlin.dima.presslufthammer.util.Config;
+import de.tuberlin.dima.presslufthammer.util.Config.TableConfig;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
 import de.tuberlin.dima.presslufthammer.util.Stoppable;
-import de.tuberlin.dima.presslufthammer.util.Config.TableConfig;
 
 /**
  * @author feichh

@@ -13,9 +13,9 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <antlr.version>3.4</antlr.version>
 	</properties>
-
+<!-- 
 	<repositories>
-		<!-- repository for Netty -->
+		repository for Netty
 		<repository>
 			<id>repository.jboss.org</id>
 			<url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
@@ -23,7 +23,7 @@
 				<enabled>false</enabled>
 			</snapshots>
 		</repository>
-	</repositories>
+	</repositories> -->
 
 	<build>
 		<plugins>
@@ -34,7 +34,7 @@
 					<source>1.6</source>
 					<target>1.6</target>
 				</configuration>
-            </plugin>
+      </plugin>
 
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
@@ -117,6 +117,26 @@
             <version>${antlr.version}</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+				  <groupId>jetty</groupId>
+				  <artifactId>jetty</artifactId>
+				  <version>6.0.2</version>
+				</dependency>
+				<dependency>
+				  <groupId>javax.servlet</groupId>
+				  <artifactId>javax.servlet-api</artifactId>
+				  <version>3.0.1</version>
+				</dependency>
+			<!-- 	<dependency>
+				  <groupId>jetty</groupId>
+				  <artifactId>jetty-embedded</artifactId>
+				  <version>6.0.2</version>
+				</dependency> -->
+				<dependency>
+				  <groupId>jetty</groupId>
+				  <artifactId>jetty-util</artifactId>
+				  <version>6.0.2</version>
+				</dependency>
 	</dependencies>
 
 </project>

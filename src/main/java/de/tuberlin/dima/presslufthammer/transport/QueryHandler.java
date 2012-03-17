@@ -38,7 +38,7 @@ public class QueryHandler {
 
     final int queryID;
     final Channel client;
-    private long numPartsExpected;
+    long numPartsExpected;
     QueryStatus status;
     SchemaNode schema;
     Query resultQuery;
@@ -100,6 +100,11 @@ public class QueryHandler {
         }
         writer.flush();
 
+        sendResult(outArray);
+        close();
+    }
+
+    protected void sendResult(ByteArrayOutputStream outArray) {
         if (client != null) {
             if (outArray.size() < 1) {
                 log.warn("Assembled response has size {}", outArray.size());
@@ -109,10 +114,9 @@ public class QueryHandler {
         } else {
             log.warn("No client in QueryHandler.");
         }
-        close();
-    }
+	}
 
-    public boolean isComplete() {
+	public boolean isComplete() {
         return this.status == QueryStatus.CLOSED;
     }
 

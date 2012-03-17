@@ -73,7 +73,7 @@ public class InMemoryReadonlyTablet implements Tablet {
             if (magicNumber != InMemoryWriteonlyTablet.TABLET_MAGIC_NUMBER) {
                 // this should not happen, programming bug
                 throw new RuntimeException(
-                        "Pressluft handed to InMemoryReadonlyTablet with wrong magic number.");
+                        "Message handed to InMemoryReadonlyTablet with wrong magic number.");
             }
 
             String schemaString = in.readUTF();

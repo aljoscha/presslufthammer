@@ -125,8 +125,8 @@ public class QueryHelper {
                 field.setOptional();
             }
         }
-        log.debug("Original schema:\n{}", originalSchema.toString());
-        log.debug("Result schema:\n{}", resultSchema.toString());
+//        log.debug("Original schema:\n{}", originalSchema.toString());
+//        log.debug("Result schema:\n{}", resultSchema.toString());
 
         // and now finally rewrite the queries (if necessary)
         // remove and renames from query (those are pushed down to child)

@@ -46,8 +46,7 @@ public class SlaveTest {
 		log.info("Waiting for the coordinator to accept the root node.");
 		Thread.sleep(5000);// wait until slave_0 has been established as root
 		for (int i = 1; i < NUM_SLAVES; i++) {
-			Slave s = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR,
-					CONFIG);
+			Slave s = new Slave(SLAVE_DEGREE, HOST, PORT, LEAF_DATADIR, CONFIG);
 			s.start();
 			slaves.add(s);
 			// Thread.sleep(1000);
@@ -72,9 +71,15 @@ public class SlaveTest {
 				// slaves.get(slaves.size() - 1).stop();
 			} else {
 				try {
-					Query query = QueryParser
-//							.parse("SELECT * FROM Document WHERE Document.Name.Url==\"http://A\"");
-							.parse("SELECT * FROM Sentence");
+					Query query = QueryParser.parse("SELECT * FROM Document");
+					// .parse("SELECT * FROM Document WHERE Document.Name.Language.Country == \"gb\"");
+					// .parse("SELECT * FROM Sentence");
+					// .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"PMOD\" OR Sentence.predicate.arguments.role == \"NMOD\"");
+					// .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\" OR Sentence.predicate.arguments.role == \"DEP\"");
+					// .parse("SELECT Document.DocId AS ID, COUNT(Document.Links.Forward) AS bla FROM Document");
+					// .parse("SELECT COUNT(Sentence.predicate.text) FROM Sentence");
+					// .parse("SELECT Sentence.predicate.text, COUNT(Sentence.predicate.arguments.text) FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\"");
+					// .parse("SELECT Sentence.predicate.text, COUNT(Sentence.predicate.arguments.text) FROM Sentence");
 					System.out.println("QUERY: " + query);
 					QueryMessage queryMsg = new QueryMessage(-1, query);
 					client.query(queryMsg);

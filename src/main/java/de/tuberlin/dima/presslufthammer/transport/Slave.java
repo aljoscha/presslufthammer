@@ -137,6 +137,7 @@ public class Slave extends ChannelNode implements Stoppable {
 	 * the Config Object to load the config.json file
 	 */
 	private Config config;
+	private Map<Integer, SlaveQueryHandler> queries = Maps.newHashMap();
 
 	/**
 	 * Constructor<br />
@@ -334,6 +335,22 @@ public class Slave extends ChannelNode implements Stoppable {
 		switch (status) {
 		case INNER:
 			// TODO rewriting of query
+			int qid = message.getQueryId();
+			Channel client = (parentChannel != null) ? parentChannel
+					: coordinatorChannel;
+
+			QueryHelper queryHelper = new QueryHelper(query, tables.get(
+					query.getTableName()).getSchema());
+			if (!queries.containsKey(qid)) {
+				queries.put(
+						qid,
+						new SlaveQueryHandler(1, message.getQueryId(), queryHelper
+								.getRewrittenQuery(), queryHelper
+								.getResultSchema(), client));
+			} else {
+				queries.get(qid).numPartsExpected++;
+			}
+
 			int temp = query.getPartition() % directChildren.size();
 			directChildren.get(temp).write(message);
 			break;
@@ -346,11 +363,11 @@ public class Slave extends ChannelNode implements Stoppable {
 				log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
 						query.getPartition());
 
-	            QueryHelper helper = new QueryHelper(query, tablet.getSchema());
-	            QueryExecutor qx = new QueryExecutor(helper);
+				QueryHelper helper = new QueryHelper(query, tablet.getSchema());
+				QueryExecutor qx = new QueryExecutor(helper);
 
-	            qx.performQuery(tablet);
-	            qx.finalizeGroups();
+				qx.performQuery(tablet);
+				qx.finalizeGroups();
 
 				InMemoryWriteonlyTablet resultTablet = qx.getResultTablet();
 
@@ -468,6 +485,30 @@ public class Slave extends ChannelNode implements Stoppable {
 		return true;
 	}
 
+	/**
+	 * Handles TabletMessages containing result data.
+	 * 
+	 * @param message
+	 *            a TabletMessage containing a result tablet.
+	 */
+	private void handleResult(TabletMessage message) {
+		// TODO aggregating of partial results within intermediate layer
+
+		int qid = message.getQueryId();
+		if (queries.containsKey(qid)) {
+			queries.get(qid).addPart(message);
+		} else {
+			if (parentChannel != null && parentChannel.isConnected()) {
+				parentChannel.write(message);
+			} else if (coordinatorChannel != null
+					&& coordinatorChannel.isConnected()) {
+				coordinatorChannel.write(message);
+			} else {
+				log.warn("Received internal result w/o parent connection available.");
+			}
+		}
+	}
+
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 		log.debug("Message received from {}.", e.getRemoteAddress());
@@ -509,23 +550,6 @@ public class Slave extends ChannelNode implements Stoppable {
 				break;
 
 			}
-		}
-	}
-
-	/**
-	 * Handles TabletMessages containing result data.
-	 * 
-	 * @param message a TabletMessage containing a result tablet.
-	 */
-	private void handleResult(TabletMessage message) {
-		// TODO aggregating of partial results within intermediate layer
-		if (parentChannel != null && parentChannel.isConnected()) {
-			parentChannel.write(message);
-		} else if (coordinatorChannel != null
-				&& coordinatorChannel.isConnected()) {
-			coordinatorChannel.write(message);
-		} else {
-			log.warn("Received internal result w/o parent connection available.");
 		}
 	}
 

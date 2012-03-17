@@ -71,15 +71,16 @@ public class SlaveTest {
 				// slaves.get(slaves.size() - 1).stop();
 			} else {
 				try {
-					Query query = QueryParser.parse("SELECT * FROM Document");
-					// .parse("SELECT * FROM Document WHERE Document.Name.Language.Country == \"gb\"");
-					// .parse("SELECT * FROM Sentence");
-					// .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"PMOD\" OR Sentence.predicate.arguments.role == \"NMOD\"");
-					// .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\" OR Sentence.predicate.arguments.role == \"DEP\"");
-					// .parse("SELECT Document.DocId AS ID, COUNT(Document.Links.Forward) AS bla FROM Document");
-					// .parse("SELECT COUNT(Sentence.predicate.text) FROM Sentence");
-					// .parse("SELECT Sentence.predicate.text, COUNT(Sentence.predicate.arguments.text) FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\"");
-					// .parse("SELECT Sentence.predicate.text, COUNT(Sentence.predicate.arguments.text) FROM Sentence");
+					Query query = QueryParser
+//			                 .parse("SELECT * FROM Document");
+			                // .parse("SELECT * FROM Document WHERE Document.Name.Language.Country == \"gb\"");
+			                // .parse("SELECT * FROM Sentence");
+			                // .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"PMOD\" OR Sentence.predicate.arguments.role == \"NMOD\"");
+			                // .parse("SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\" OR Sentence.predicate.arguments.role == \"DEP\"");
+			                // .parse("SELECT Document.DocId AS ID, COUNT(Document.Links.Forward) AS bla FROM Document");
+			                 .parse("SELECT COUNT(Sentence.predicate.text) FROM Sentence");
+			                // .parse("SELECT Sentence.predicate.text, COUNT(Sentence.predicate.arguments.text) FROM Sentence WHERE Sentence.predicate.arguments.role == \"ADV\"");
+//			                        .parse("SELECT Sentence.predicate.text, COUNT(Sentence.predicate.arguments.text) FROM Sentence");
 					System.out.println("QUERY: " + query);
 					QueryMessage queryMsg = new QueryMessage(-1, query);
 					client.query(queryMsg);

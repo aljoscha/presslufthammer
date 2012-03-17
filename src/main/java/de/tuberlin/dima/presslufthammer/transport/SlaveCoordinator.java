@@ -149,12 +149,10 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 				if (rootChannel != null) {
 					log.info("Handing query {} to root node of the tree.", qid);
 
-					queries.put(
-							qid,
-							new QueryHandler(1, message
-									.getQueryId(), queryHelper
-									.getRewrittenQuery(), queryHelper
-									.getResultSchema(), client));
+					queries.put(qid,
+							new QueryHandler(1, message.getQueryId(),
+									queryHelper.getRewrittenQuery(),
+									queryHelper.getResultSchema(), client));
 					// send a query for every partition
 					for (int i = 0; i < table.getNumPartitions(); ++i) {
 						// create a new query for only the specific partition
@@ -228,8 +226,9 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		int qid = message.getQueryId();
 		QueryHandler qhand = queries.get(qid);
 		if (qhand != null) {
-			qhand.client.write(new SimpleMessage(MessageType.CLIENT_RESULT, message.getQueryId(), message.getTabletData()));
-//			qhand.addPart(message);
+			qhand.client.write(new SimpleMessage(MessageType.CLIENT_RESULT,
+					message.getQueryId(), message.getTabletData()));
+			// qhand.addPart(message);
 		} else {
 			log.error("Received result for query " + qid
 					+ " but no handler was found.");
@@ -258,6 +257,14 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 				this.addInner(e.getChannel(), message.getPayload());
 				break;
 			case INTERNAL_RESULT:
+				int qid = message.getQueryID();
+				QueryHandler qhand = queries.get(qid);
+				if (qhand != null) {
+					qhand.client.write(new SimpleMessage(
+							MessageType.CLIENT_RESULT, qid, message
+									.getPayload()));
+				}
+				break;
 			case CLIENT_QUERY:
 			case REDIR:
 			case UNKNOWN:

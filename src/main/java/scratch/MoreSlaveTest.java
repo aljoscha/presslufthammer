@@ -28,7 +28,7 @@ public class MoreSlaveTest {
 	private static final int PORT = 44444;
 	private static final String DATASOURCES = "src/main/example-data/DataSources.xml";
 	private static final File LEAF_DATADIR = new File("data-dir");
-	private static final int NUM_SLAVES = 10;
+	private static final int NUM_SLAVES = 25;
 	private static final int SLAVE_DEGREE = 2;
 
 	public static void main(String[] args) throws Exception {

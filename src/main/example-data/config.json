@@ -4,12 +4,12 @@
         {
             "name": "Document",
             "schema": "Document.proto",
-            "partitions": 5
+            "partitions": 10
         },
         {
             "name": "Sentence",
             "schema": "Sentence.proto",
-            "partitions": 8
+            "partitions": 10
         }
     ]
 }

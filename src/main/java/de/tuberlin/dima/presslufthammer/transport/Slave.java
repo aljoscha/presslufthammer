@@ -344,9 +344,9 @@ public class Slave extends ChannelNode implements Stoppable {
 			if (!queries.containsKey(qid)) {
 				queries.put(
 						qid,
-						new SlaveQueryHandler(1, message.getQueryId(), queryHelper
-								.getRewrittenQuery(), queryHelper
-								.getResultSchema(), client));
+						new SlaveQueryHandler(1, message.getQueryId(),
+								queryHelper.getRewrittenQuery(), queryHelper
+										.getResultSchema(), client));
 			} else {
 				queries.get(qid).numPartsExpected++;
 			}
@@ -495,8 +495,14 @@ public class Slave extends ChannelNode implements Stoppable {
 		// TODO aggregating of partial results within intermediate layer
 
 		int qid = message.getQueryId();
-		if (queries.containsKey(qid)) {
-			queries.get(qid).addPart(message);
+		SlaveQueryHandler sqh = queries.get(qid);
+		if (sqh != null) {
+			if (sqh.numPartsExpected > 1) {
+				sqh.addPart(message);
+			} else {
+				sqh.client.write(new SimpleMessage(MessageType.CLIENT_RESULT,
+						qid, message.getTabletData()));
+			}
 		} else {
 			if (parentChannel != null && parentChannel.isConnected()) {
 				parentChannel.write(message);
@@ -525,16 +531,16 @@ public class Slave extends ChannelNode implements Stoppable {
 			case REDIR:
 				this.connectNReg(getSockAddrFromBytes(message.getPayload()));
 				break;
-			// case INTERNAL_RESULT:
-			// if (parentChannel != null && parentChannel.isConnected()) {
-			// parentChannel.write(message);
-			// } else if (coordinatorChannel != null
-			// && coordinatorChannel.isConnected()) {
-			// coordinatorChannel.write(message);
-			// } else {
-			// log.warn("Received internal result w/o parent connection available.");
-			// }
-			// break;
+			case INTERNAL_RESULT:
+				if (parentChannel != null && parentChannel.isConnected()) {
+					parentChannel.write(message);
+				} else if (coordinatorChannel != null
+						&& coordinatorChannel.isConnected()) {
+					coordinatorChannel.write(message);
+				} else {
+					log.warn("Received internal result w/o parent connection available.");
+				}
+				break;
 			case REGLEAF:
 			case REGINNER:
 				this.addChild(e.getChannel(), message);

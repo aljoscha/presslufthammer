@@ -64,7 +64,9 @@ public class AssemblyFSM {
         SchemaNode commonAncestor = commonAncestor(currentSchema, lastSchema);
 
         record.returnToLevel(commonAncestor);
-        if (currentSchema.isFirstField() && !currentSchema.isRepeated() && commonAncestor.hasParent()) {
+
+        if (currentSchema.isFirstField() && !currentSchema.isRepeated()
+                && !currentSchema.isOptional() && commonAncestor.hasParent()) {
             record.returnToLevel(commonAncestor.getParent());
         }
 
@@ -95,7 +97,9 @@ public class AssemblyFSM {
             reader.advance();
             // System.out.println("READER: " +
             // currentSchema.getQualifiedName());
+            // System.out.println("BEFORE ADJUST: " + record);
             adjustRecordStructure(reader, record, currentSchema, lastSchema);
+            // System.out.println("AFTER ADJUST: " + record);
             // System.out.println(record);
             Object value = reader.getValue();
             if (value != null) {

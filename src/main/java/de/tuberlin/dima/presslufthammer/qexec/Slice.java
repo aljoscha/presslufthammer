@@ -10,11 +10,26 @@ import de.tuberlin.dima.presslufthammer.data.SchemaNode;
 import de.tuberlin.dima.presslufthammer.data.columnar.ColumnReader;
 import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 
+/**
+ * A slice is used to advance column readers in lockstep according to a fetch
+ * level. (See dremel paper for (some superficial) details on this process)
+ * 
+ * <p>
+ * The advance method advances the column readers, getColumn can be used to
+ * retrieve a specific column reader.
+ * 
+ * @author Aljoscha Krettek
+ * 
+ */
 public class Slice {
     private Map<SchemaNode, ColumnReader> columns;
 
     private int fetchLevel = 0;
 
+    /**
+     * Initializes the column readers from the given tablet with only readers
+     * for the fields in selectedFields.
+     */
     public Slice(Tablet sourceTablet, List<SchemaNode> selectedFields) {
         columns = Maps.newHashMap();
         for (SchemaNode field : selectedFields) {
@@ -28,6 +43,9 @@ public class Slice {
         return fetchLevel;
     }
 
+    /**
+     * Returns true if any of the column readers can be advanced.
+     */
     public boolean hasNext() throws IOException {
         for (ColumnReader column : columns.values()) {
             if (column.hasNext()) {
@@ -37,6 +55,9 @@ public class Slice {
         return false;
     }
 
+    /**
+     * Advances the readers and adjusts the fetch level.
+     */
     public void fetch() throws IOException {
         int nextLevel = 0;
         for (ColumnReader column : columns.values()) {
@@ -64,13 +85,9 @@ public class Slice {
                 return "rep: " + column.getCurrentRepetition() + " def: "
                         + column.getCurrentDefinition() + " val: NULL";
             }
-            try {
-                return "rep: " + column.getCurrentRepetition() + " def: "
-                        + column.getCurrentDefinition() + " val: "
-                        + column.getValue();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            return "rep: " + column.getCurrentRepetition() + " def: "
+                    + column.getCurrentDefinition() + " val: "
+                    + column.getValue();
         }
         return result.toString();
     }

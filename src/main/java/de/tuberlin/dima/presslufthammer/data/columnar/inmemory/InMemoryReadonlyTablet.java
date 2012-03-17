@@ -215,6 +215,9 @@ public class InMemoryReadonlyTablet implements Tablet {
      */
     public void printColumns() {
         for (SchemaNode schema : columns.keySet()) {
+            if (!schema.isPrimitive()) {
+                continue;
+            }
             System.out.println("COLUMN: " + schema.getQualifiedName());
             System.out.println("SIZE: " + columns.get(schema).length);
             ByteArrayInputStream arrayStream = new ByteArrayInputStream(

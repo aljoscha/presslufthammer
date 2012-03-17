@@ -229,6 +229,20 @@ public class SchemaNode {
     }
 
     /**
+     * Sets the primitive type of this schema. Must only be caleld when the
+     * field is a primitive field.
+     * 
+     * @param newType
+     */
+    public void setPrimitiveType(PrimitiveType newType) {
+        if (type != Type.PRIMITIVE) {
+            throw new RuntimeException("SchemaTree " + name
+                    + " is not a primitive type.");
+        }
+        this.primitiveType = newType;
+    }
+
+    /**
      * Returns the SchemaNode in the path from schema root to this schema that
      * has a "max definition level" smaller or equal than the requested
      * definition level. This is used by the record assembly algorithm to adjust
@@ -321,6 +335,36 @@ public class SchemaNode {
     }
 
     /**
+     * Returns a field in the schema for a fully qualified name by recursing the
+     * schema tree.
+     */
+    public SchemaNode getFullyQualifiedField(String fieldName) {
+        if (fieldName.startsWith(name)) {
+            // remove an eventual prefix
+            int firstDotIndex = fieldName.indexOf('.');
+            fieldName = fieldName.substring(firstDotIndex + 1);
+        }
+        int firstDotIndex = fieldName.indexOf('.');
+        if (firstDotIndex < 0) {
+            if (fieldMap.containsKey(fieldName)) {
+                return fieldMap.get(fieldName);
+            } else {
+                throw new RuntimeException("Field " + fieldName
+                        + " not contained in " + getName() + ".");
+            }
+        }
+        String firstPart = fieldName.substring(0, firstDotIndex);
+        String secondPart = fieldName.substring(firstDotIndex + 1,
+                fieldName.length());
+        if (fieldMap.containsKey(firstPart)) {
+            return fieldMap.get(firstPart).getFullyQualifiedField(secondPart);
+        } else {
+            throw new RuntimeException("Field " + firstPart
+                    + " not contained in " + getName() + ".");
+        }
+    }
+
+    /**
      * Returns true when this SchemaNode has a parent.
      */
     public boolean hasParent() {
@@ -337,14 +381,15 @@ public class SchemaNode {
     /**
      * Returns a "projection" of this schema. That is a new tree of SchemaNodeS
      * that only contains those fields that are specified in projectedFields.
-     * The fields need to be specified as fully qualified field names.
+     * Also renames fields if they occur in the rename map.
      * 
      * <p>
      * The projection is performed recursively to process all SchemaNodes in the
      * tree.
      */
-    public SchemaNode project(Set<String> projectedFields) {
-        return internalProject(this.parent, projectedFields);
+    public SchemaNode projectAndRename(Set<SchemaNode> projectedFields,
+            Map<SchemaNode, String> renameMap) {
+        return internalProject(this.parent, projectedFields, renameMap);
     }
 
     /**
@@ -352,7 +397,7 @@ public class SchemaNode {
      * created SchemaNodesS.
      */
     private SchemaNode internalProject(SchemaNode parent,
-            Set<String> projectedFields) {
+            Set<SchemaNode> projectedFields, Map<SchemaNode, String> renameMap) {
         assert (!isPrimitive());
 
         SchemaNode result = createRecord(this.getName());
@@ -361,15 +406,22 @@ public class SchemaNode {
 
         for (SchemaNode field : fieldList) {
             // first project out primitive fields
-            if (field.isPrimitive()
-                    && projectedFields.contains(field.getQualifiedName())) {
-                result.addField(field);
+            if (field.isPrimitive() && projectedFields.contains(field)) {
+                SchemaNode childField;
+                if (renameMap.containsKey(field)) {
+                    childField = createPrimitive(renameMap.get(field),
+                            field.getPrimitiveType());
+                } else {
+                    childField = createPrimitive(field.getName(),
+                            field.getPrimitiveType());
+                }
+                childField.modifier = field.modifier;
+                result.addField(childField);
             } else if (!field.isPrimitive()) {
                 SchemaNode projectedField = field.internalProject(result,
-                        projectedFields);
+                        projectedFields, renameMap);
                 if (projectedField.fieldList.size() > 0
-                        || projectedFields.contains(projectedField
-                                .getQualifiedName())) {
+                        || projectedFields.contains(projectedField)) {
                     result.addField(projectedField);
                 }
             }

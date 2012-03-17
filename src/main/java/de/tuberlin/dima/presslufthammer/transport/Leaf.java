@@ -20,6 +20,7 @@ import de.tuberlin.dima.presslufthammer.data.columnar.Tablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
 import de.tuberlin.dima.presslufthammer.data.columnar.local.LocalDiskDataStore;
 import de.tuberlin.dima.presslufthammer.qexec.QueryExecutor;
+import de.tuberlin.dima.presslufthammer.qexec.QueryHelper;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
 import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
@@ -103,9 +104,13 @@ public class Leaf extends ChannelNode implements Stoppable {
             log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
                     query.getPartition());
 
-            QueryExecutor qx = new QueryExecutor(tablet, query);
+            QueryHelper helper = new QueryHelper(query, tablet.getSchema());
+            QueryExecutor qx = new QueryExecutor(helper);
 
-            InMemoryWriteonlyTablet resultTablet = qx.performQuery();
+            qx.performQuery(tablet);
+            qx.finalizeGroups();
+
+            InMemoryWriteonlyTablet resultTablet = qx.getResultTablet();
 
             TabletMessage response = new TabletMessage(message.getQueryId(),
                     resultTablet.serialize());

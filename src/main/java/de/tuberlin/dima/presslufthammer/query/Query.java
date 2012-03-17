@@ -32,6 +32,7 @@ public class Query {
     }
 
     public Query(Query other) {
+        this.partition = other.partition;
         this.selectClauses = Lists.newLinkedList(other.selectClauses);
         this.whereClauses = Lists.newLinkedList(other.whereClauses);
         this.groupByColumns = Lists.newLinkedList(other.groupByColumns);

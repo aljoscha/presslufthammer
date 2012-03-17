@@ -24,15 +24,17 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.qexec.QueryHelper;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.query.SelectClause;
+import de.tuberlin.dima.presslufthammer.query.sema.SemaError;
+import de.tuberlin.dima.presslufthammer.query.sema.SemanticChecker;
 import de.tuberlin.dima.presslufthammer.transport.messages.MessageType;
 import de.tuberlin.dima.presslufthammer.transport.messages.QueryMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.SimpleMessage;
 import de.tuberlin.dima.presslufthammer.transport.messages.TabletMessage;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericHandler;
 import de.tuberlin.dima.presslufthammer.transport.util.GenericPipelineFac;
-import de.tuberlin.dima.presslufthammer.transport.util.QueryHandler;
 import de.tuberlin.dima.presslufthammer.transport.util.ServingChannel;
 import de.tuberlin.dima.presslufthammer.util.Config;
 import de.tuberlin.dima.presslufthammer.util.ShutdownStopper;
@@ -55,7 +57,7 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 	private final GenericHandler handler = new GenericHandler(this);
 	private ServingChannel rootChannel = null;
 	private final Map<Integer, QueryHandler> queries = new HashMap<Integer, QueryHandler>();
-    private Map<String, TableConfig> tables;
+	private Map<String, TableConfig> tables;
 	private byte priorQID = 0;
 	private Config config;
 
@@ -63,21 +65,21 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 		this.port = port;
 		readConfig(configFile);
 	}
-	
+
 	public void readConfig(String configFile) {
 
-        try {
-            config = new Config(new File(configFile));
-            tables = config.getTables();
-            log.info("Read config from {}.", configFile);
-            log.info(tables.toString());
-        } catch (Exception e) {
-            log.warn("Error reading config from {}: {}", configFile,
-                    e.getMessage());
-            if (tables == null) {
-                tables = Maps.newHashMap();
-            }
-        }
+		try {
+			config = new Config(new File(configFile));
+			tables = config.getTables();
+			log.info("Read config from {}.", configFile);
+			log.info(tables.toString());
+		} catch (Exception e) {
+			log.warn("Error reading config from {}: {}", configFile,
+					e.getMessage());
+			if (tables == null) {
+				tables = Maps.newHashMap();
+			}
+		}
 	}
 
 	public void start() {
@@ -133,44 +135,36 @@ public class SlaveCoordinator extends ChannelNode implements Stoppable {
 						(byte) -1, "Table not available".getBytes()));
 				log.info("Table {} not in tables.", tableName);
 			} else {
+				SemanticChecker sema = new SemanticChecker();
+				try {
+					sema.checkQuery(query, tables);
+				} catch (SemaError e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				TableConfig table = tables.get(tableName);
-				Set<String> projectedFields = Sets.newHashSet();
-				for (SelectClause selectClause : query.getSelectClauses()) {
-					projectedFields.add(selectClause.getColumn());
-				}
-				SchemaNode projectedSchema = null;
-				if (projectedFields.contains("*")) {
-					log.debug("Query is a 'select * ...' query.");
-					projectedSchema = table.getSchema();
-				} else {
-					projectedSchema = table.getSchema()
-							.project(projectedFields);
-				}
+				QueryHelper queryHelper = new QueryHelper(query,
+						table.getSchema());
 
 				if (rootChannel != null) {
 					log.info("Handing query {} to root node of the tree.", qid);
-					// clientChans.add(client);// optional
-					queries.put(qid, new QueryHandler(table.getNumPartitions(),
-							message, projectedSchema, client));
-					// send a request to the leafs for every partition
-					Iterator<Channel> leafIter = slaveChannels.iterator();
-					for (int i = 0; i < table.getNumPartitions(); ++i) {
-						Channel leaf = null;
-						if (leafIter.hasNext()) {
-							leaf = leafIter.next();
-						} else {
 
-							leafIter = slaveChannels.iterator();
-							leaf = leafIter.next();
-						}
+					queries.put(
+							qid,
+							new QueryHandler(table.getNumPartitions(), message
+									.getQueryId(), queryHelper
+									.getRewrittenQuery(), queryHelper
+									.getResultSchema(), client));
+					// send a query for every partition
+					for (int i = 0; i < table.getNumPartitions(); ++i) {
 						// create a new query for only the specific partition
 						Query leafQuery = new Query(query);
 						leafQuery.setPartition(i);
 						QueryMessage leafMessage = new QueryMessage(qid,
 								leafQuery);
-						leaf.write(leafMessage);
-						log.info("Sent query to leaf {}: {}",
-								leaf.getRemoteAddress(), leafQuery);
+						rootChannel.write(leafMessage);
+						log.info("Sent query to root {}: {}",
+								rootChannel.getRemoteAddress(), leafQuery);
 					}
 				} else {
 					log.info("Cannot process query w/o at least one slave.");

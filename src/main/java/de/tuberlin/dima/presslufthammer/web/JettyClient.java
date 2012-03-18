@@ -29,12 +29,40 @@ import de.tuberlin.dima.presslufthammer.query.parser.QueryParser.ParseError;
  * 
  */
 public class JettyClient extends AbstractHandler {
-	
+
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
 	private ParsingClient client;
 	private String lastResult = "";
 	private Map<Integer, String> results;
+
+	private static final String CSS = "<style type=\"text/css\">\n"
+			+ "#main { margin:2em 3em 0 3em; color:#4959aa; font-size:150%;}\n"
+			+ "h1 { border-bottom: 1px dashed grey; margin:0 1em 1em 1em;}\n"
+			+ "#qfield { width:50%; height:2em; border:thin solid #4959aa;}\n"
+			+ "#qsub { height:2em; border:none; background:#4959aa; color:white; font-weight:bold;}\n"
+			+ "#qform { text-align:center; margin: 0 0 2em 0;}\n"
+			+ "#info { text-align:center; border-top: 1px dashed grey; margin: 0 1em 0 1em;}\n"
+			+ "#result { border-top: 1px dashed grey; margin: 1em 1em 1em 1em;"
+			+ " font-size:75%;}\n" + "</style>\n";
+	private static final String HEADER = "<!DOCTYPE html><html>\n"
+			+ "<head><meta charset='utf-8'>\n"
+			+ "<title>Presslufthammer</title>\n"
+			+ "<script src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js\">"
+			+ "</script>\n" + CSS + "</head>\n" + "<body>\n";
+	private static final String FORM = "<form id=\"qform\" action=\"#\">\n"
+			+ "<input id=\"qsub\" name=\"submit\" type=\"submit\" value=\"Query\" />\n"
+			+ "<input id=\"qfield\" name=\"query\" type=\"text\" />\n"
+			+ "</form>\n" + "<div id=\"output\"></div>\n";
+	private static final String FOOTER = "<script type=\"text/javascript\">\n"
+			+ "$('#qform').submit(function(event) {\n"
+			+ "event.preventDefault();\n"
+			+ "var q = $('#qfield').val();"
+			+ "$.post('', { query: q}, function(data) {\n"
+			+ "$('#output').empty().append(data)}).complete(setTimeout(loadResult, 2000));\n"//
+			+ "});\n" + "function loadResult() {\n"
+			+ "$.get('/result',function(data) { $('#output').append(data)});"
+			+ "}\n" + "</script>\n</body>\n</html>\n";
 
 	public JettyClient(String host, int port) {
 		client = new ParsingClient(host, port, this);
@@ -69,56 +97,45 @@ public class JettyClient extends AbstractHandler {
 		// (Response)response :
 		// HttpConnection.getCurrentConnection().getResponse();
 
+		String content = "";
 		PrintWriter writer = response.getWriter();
 		if ("/result".equalsIgnoreCase(target)) {
 			// String[] split = lastResult.split("\\s");
-			String format = "<!DOCTYPE html><html>\n"
-					+ "<head><meta charset='utf-8'></head>\n" + "<body>\n"
-					+ "<h2>Result:</h2>\n" + "<div>\n";
-			writer.println(format);
+			content = "<div id=\"result\"><h2>Result:</h2>\n" + "<div>\n";
+			// writer.println(format);
 			// for(String s: split) {
 			// format += "<li>" + s + "</li>";
 			// }
-			Integer index;
-			try {
-				index = Integer.parseInt(base_request.getParameter("page"));
-			} catch(NumberFormatException e) {
-				e.printStackTrace();
-				index = 0;
-			}
-//			writer.println(results.get(index));
-			writer.println(lastResult);
-			format = "</div>\n" + "</body>\n" + "</html>\n";
-			writer.println(format);
+			// Integer index;
+			// try {
+			// index = Integer.parseInt(base_request.getParameter("page"));
+			// } catch (NumberFormatException e) {
+			// e.printStackTrace();
+			// index = 0;
+			// }
+			// writer.println(results.get(index));
+			content += ((lastResult != null) ? lastResult
+					: "No data available.") + "</div>\n</div>\n";
 			// writer.format(format, new Object[] {});
 		} else if (base_request.getParameterMap().containsKey("query")) {
 
 			String query = base_request.getParameter("query");
+			String info = "<div id=\"info\" style=\"color:green;\">Query sent</div>\n";
 			try {
 				client.query(query);
 			} catch (ParseError e) {
+				info = "<div id=\"info\" style=\"color:red;\"><b>ParseError:</b> "
+						+ e.getMessage() + "</div>\n";
 				e.printStackTrace();
 			}
-			writer.format("<!DOCTYPE html><html>\n"
-					+ "<head><meta charset='utf-8'></head>\n" + "<body>\n"
-					+ "<h1>Presslufthammer</h1>\n<div>Query sent.</div>\n"
-					+ "<div>\n" + "<form method=\"POST\" action=\"\">\n"
-					+ "<input name=\"query\" type=\"text\" />\n"
-					+ "<input name=\"submit\" type=\"submit\" />\n"
-					+ "</form>\n" + "</div>\n" + "</body>\n" + "</html>\n",
-					new Object[] {});
 
+			content = info;
 		} else {
-
-			writer.format("<!DOCTYPE html><html>\n"
-					+ "<head><meta charset='utf-8'></head>\n" + "<body>\n"
-					+ "<h1>Presslufthammer</h1>\n" + "<div>\n"
-					+ "<form method=\"POST\" action=\"\">\n"
-					+ "<input name=\"query\" type=\"text\" />\n"
-					+ "<input name=\"submit\" type=\"submit\" />\n"
-					+ "</form>\n" + "</div>\n" + "</body>\n" + "</html>\n",
-					new Object[] {});
+			content = HEADER
+					+ "<div id=\"main\"><h1 style=\"align:center;\">Presslufthammer</h1>\n"
+					+ FORM + "</div>" + FOOTER;
 		}
+		writer.println(content);
 
 		base_request.setHandled(true);
 	}

@@ -3,18 +3,22 @@
  */
 package de.tuberlin.dima.presslufthammer.transport;
 
-import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 import org.jboss.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.tuberlin.dima.presslufthammer.data.SchemaNode;
+import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryReadonlyTablet;
+import de.tuberlin.dima.presslufthammer.data.columnar.inmemory.InMemoryWriteonlyTablet;
+import de.tuberlin.dima.presslufthammer.qexec.QueryExecutor;
+import de.tuberlin.dima.presslufthammer.qexec.QueryHelper;
 import de.tuberlin.dima.presslufthammer.query.Query;
 import de.tuberlin.dima.presslufthammer.transport.messages.TabletMessage;
 
 /**
- * @author h
+ * @author feihh
  * 
  */
 public class SlaveQueryHandler extends QueryHandler {
@@ -26,23 +30,28 @@ public class SlaveQueryHandler extends QueryHandler {
 		super(parts, queryId, resultQuery, schema, client);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * de.tuberlin.dima.presslufthammer.transport.QueryHandler#sendResult(java
-	 * .io.ByteArrayOutputStream)
-	 */
 	@Override
-	protected void sendResult(ByteArrayOutputStream outArray) {
+    protected void assemble() {
+        QueryHelper helper = new QueryHelper(resultQuery, schema);
+        QueryExecutor qx = new QueryExecutor(helper);
+
+        try {
+            for (InMemoryReadonlyTablet part : parts) {
+                qx.performQuery(part);
+            }
+            qx.finalizeGroups();
+        } catch (IOException e) {
+            log.warn("Caught exception while assembling result for client: {}",
+                    e.getMessage());
+        }
+
+        InMemoryWriteonlyTablet resultTablet = qx.getResultTablet();
+
 		if (client != null) {
-			if (outArray.size() < 1) {
-				log.warn("Assembled response has size {}", outArray.size());
-			}
-			client.write(new TabletMessage(queryID, outArray.toByteArray()));
+			
+			client.write(new TabletMessage(queryID, resultTablet.serialize()));
 		} else {
 			log.warn("No client in QueryHandler.");
 		}
-	}
-
+    }
 }

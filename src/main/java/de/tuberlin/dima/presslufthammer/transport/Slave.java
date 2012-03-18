@@ -342,12 +342,13 @@ public class Slave extends ChannelNode implements Stoppable {
 			QueryHelper queryHelper = new QueryHelper(query, tables.get(
 					query.getTableName()).getSchema());
 			if (!queries.containsKey(qid)) {
+				int numparts = (childrenAdded > degree) ? degree : 1;
 				queries.put(
 						qid,
-						new SlaveQueryHandler(1, message.getQueryId(),
+						new SlaveQueryHandler(numparts, message.getQueryId(),
 								queryHelper.getRewrittenQuery(), queryHelper
 										.getResultSchema(), client));
-			} else {
+			} else if (childrenAdded <= degree) {
 				queries.get(qid).numPartsExpected++;
 			}
 
@@ -360,8 +361,8 @@ public class Slave extends ChannelNode implements Stoppable {
 				Tablet tablet = dataStore.getTablet(tableName,
 						query.getPartition());
 
-				log.debug("Tablet: {}:{}", tablet.getSchema().getName(),
-						query.getPartition());
+				log.debug("Leaf processing Tablet: {}:{}", tablet.getSchema()
+						.getName(), query.getPartition());
 
 				QueryHelper helper = new QueryHelper(query, tablet.getSchema());
 				QueryExecutor qx = new QueryExecutor(helper);
@@ -493,15 +494,16 @@ public class Slave extends ChannelNode implements Stoppable {
 	 */
 	private void handleResult(TabletMessage message) {
 		// TODO aggregating of partial results within intermediate layer
-
 		int qid = message.getQueryId();
 		SlaveQueryHandler sqh = queries.get(qid);
 		if (sqh != null) {
 			if (sqh.numPartsExpected > 1) {
 				sqh.addPart(message);
+				log.debug("Received {}/{} parts.", sqh.parts.size(),
+						sqh.numPartsExpected);
 			} else {
-				sqh.client.write(new SimpleMessage(MessageType.CLIENT_RESULT,
-						qid, message.getTabletData()));
+				sqh.client.write(message);
+				sqh.close();
 			}
 		} else {
 			if (parentChannel != null && parentChannel.isConnected()) {
@@ -519,8 +521,10 @@ public class Slave extends ChannelNode implements Stoppable {
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 		log.debug("Message received from {}.", e.getRemoteAddress());
 		if (e.getMessage() instanceof QueryMessage) {
+			log.debug("Message: {}", e.getMessage().toString());
 			query((QueryMessage) e.getMessage());
 		} else if (e.getMessage() instanceof TabletMessage) {
+			log.debug("Message: {}", e.getMessage().toString());
 			handleResult((TabletMessage) e.getMessage());
 		} else if (e.getMessage() instanceof SimpleMessage) {
 			SimpleMessage message = ((SimpleMessage) e.getMessage());

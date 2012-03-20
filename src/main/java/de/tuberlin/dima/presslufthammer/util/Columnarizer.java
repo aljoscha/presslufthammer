@@ -16,7 +16,7 @@ public class Columnarizer {
     private static void printUsage() {
         System.out.println("Usage:");
         System.out
-                .println("json-file schema-file data-dir records-per-partition");
+                .println("schema-file json-file records-per-partition data-dir ");
     }
 
     /**
@@ -29,10 +29,10 @@ public class Columnarizer {
             return;
         }
 
-        String jsonFile = args[0];
-        String schemaFile = args[1];
-        String dataDir = args[2];
-        int recordsPerPartition = Integer.parseInt(args[3]);
+        String schemaFile = args[0];
+        String jsonFile = args[1];
+        int recordsPerPartition = Integer.parseInt(args[2]);
+        String dataDir = args[3];
 
         File directory = new File(dataDir);
         LocalDiskDataStore dataStore = null;

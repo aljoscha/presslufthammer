@@ -1,1 +1,52 @@
-dima.tu-berlin.de presslufthammer project
+Presslufthammer
+---------------
+
+Building:
+The project uses maven so a simple "mvn package"
+Is enough to build everything. The result is then available in the directory
+target/presslufthammer-0.1-bin/presslufthammer-0.1/
+
+Importing data:
+Data is imported in columnar format using:
+bin/import-data.sh
+Usage:
+schema-file json-file records-per-partition data-dir
+
+or alternatively
+bin/import-example-data.sh
+Usage:
+data-dir
+Which will import the Document and Sentence test datasets with reasonable
+partition sizes.
+
+The data-dir is the directory where the columnar data is stored, this must
+later be passed to the leaf on startup.
+
+
+Usage:
+For performing queries the Coordinator and at least one leaf must be started:
+
+bin/start-coordinator.sh port config
+bin/start-leaf.sh coordinator-ip port data-dir
+
+For example:
+bin/start-coordinator.sh 44444 config.json
+bin/start-leaf.sh localhost 44444 data-dir
+
+Then the client can be started:
+bin/start-client.sh coordinator-ip port
+
+When the commandline client is started you can enter queries or exit by
+entering x
+
+Some queries you might want to try on the example data:
+SELECT * FROM Document
+SELECT * FROM Document WHERE Document.Name.Language.Country == "gb"
+SELECT * FROM Sentence
+SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == "PMOD" OR Sentence.predicate.arguments.role == "NMOD"
+SELECT * FROM Sentence WHERE Sentence.predicate.arguments.role == "ADV" OR Sentence.predicate.arguments.role == "DEP"
+SELECT Document.DocId AS ID, COUNT(Document.Links.Forward) AS bla FROM Document
+SELECT COUNT(Sentence.predicate.text) FROM Sentence
+SELECT Sentence.predicate.text, COUNT(Sentence.predicate.arguments.text) FROM Sentence WHERE Sentence.predicate.arguments.role == "ADV"
+SELECT Sentence.predicate.text, COUNT(Sentence.predicate.arguments.text) FROM Sentence
+

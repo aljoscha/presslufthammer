@@ -299,7 +299,7 @@ public class Coordinator extends ChannelNode implements Stoppable {
 
     private static void printUsage() {
         System.out.println("Usage:");
-        System.out.println("port datasources");
+        System.out.println("port config");
     }
 
     public static void main(String[] args) {

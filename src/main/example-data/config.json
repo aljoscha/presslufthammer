@@ -9,7 +9,7 @@
         {
             "name": "Sentence",
             "schema": "Sentence.proto",
-            "partitions": 10
+            "partitions": 4
         }
     ]
 }
